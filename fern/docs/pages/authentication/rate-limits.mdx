@@ -119,18 +119,15 @@ Use exponential backoff with jitter when you receive a 429 response:
   </CodeBlock>
 </CodeBlocks>
 
-## Suspicious Behavior Detection
+## Abuse Protection
 
-The API includes anti-scraping protection that may temporarily block access. These checks are tier-aware:
+The API includes automated abuse detection that may temporarily block access if unusual request patterns are detected. Checks are tier-aware — Free tier has stricter protections, while Enterprise tier is the most permissive.
 
-| Check | Free | Pro | Enterprise |
-|-------|------|-----|------------|
-| Rapid-fire requests (&lt;1s apart) | Blocked 24h | Skipped | Skipped |
-| Always max drugs (3+ consecutive) | Blocked 24h | Skipped | Skipped |
-| Alphabetically sorted drug lists (3+ requests) | Blocked 24h | Blocked 1h | Skipped |
-| Empty/missing User-Agent | Blocked 24h | Blocked 24h | Blocked 24h |
-| Same drug list 10x in 2 minutes | Blocked 24h | Blocked 1h | Skipped |
-| >200 unique drug names / day | Blocked 24h | Skipped | Skipped |
+| Tier | Block Duration | Behavior |
+|------|---------------|----------|
+| Free | Up to 24 hours | Automated checks active |
+| Pro | Up to 1 hour | Relaxed checks |
+| Enterprise | No auto-block | Manual review only |
 
 ### 403 Block Response
 
@@ -143,12 +140,11 @@ The API includes anti-scraping protection that may temporarily block access. The
 }
 ```
 
-### Avoiding Blocks
+### Best Practices
 
-- Always include a `User-Agent` header
-- Space requests at least 1 second apart (Free tier)
-- Avoid sending the same drug list repeatedly — cache results client-side
-- Do not enumerate the drug database alphabetically
+- Always include a `User-Agent` header identifying your application
+- Cache results client-side to avoid redundant requests
+- Use reasonable request spacing appropriate for your use case
 
 If you are blocked and believe it is in error, contact support@saferx.online.
 

@@ -81,7 +81,7 @@ curl -X POST https://saferx.online/api/drug_safety/check \
 | Lifetime | Persistent (no expiry unless revoked) |
 | Scope | Free keys: global. Paid keys: per-environment |
 | Tracking | Rate limits tracked by API key (not IP) |
-| Caching | Lookup cached in Redis for 5 minutes |
+| Caching | Lookup cached for up to 5 minutes |
 
 ## Developer Portal (Production Keys)
 
@@ -102,7 +102,7 @@ Via the Developer Portal dashboard:
 
 ### Revocation
 
-Revoked keys return 401 immediately. Redis cache clears within 5 minutes.
+Revoked keys return 401 immediately. Cache clears within 5 minutes.
 
 ## Multi-Server Deployments
 

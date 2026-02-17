@@ -21,14 +21,13 @@ date: 2026-02-14
 - **Smart drug resolution** — fuzzy name matching for 28,557 Egyptian pharmaceutical products
 - **Alert bubbling** — critical safety issues surfaced as top-level alerts sorted by severity
 - **Bilingual support** — English and Arabic for rationale text, drug names, and clinical advice
-- **Transformation layer** — stable public field names decoupled from internal schema
+- **Stable API contract** — public field names are versioned and will not change without notice
 - **3-tier rate limiting** — Free (20/min, 60/day), Professional (60/min, 500/day), Enterprise (custom)
-- **Anti-scraping protection** — 6 heuristic checks with tier-aware enforcement
+- **Abuse protection** — automated checks with tier-aware enforcement
 - **Request integrity** — API key authentication with User-Agent validation
 
 ## Security
 
-- Recursive identifier stripping — no internal database IDs in API responses
-- 24-hour audit log retention with automatic purge
-- Redis-cached API key lookup (5-minute TTL)
+- No internal database identifiers exposed in API responses
+- Audit log retention with automatic purge
 - API key validation with tier-based access control

@@ -17,7 +17,7 @@ info:
     - **28,557 Egyptian products** with bilingual English/Arabic support
     - **Smart drug resolution** — accepts trade names, generic names, or partial matches
     - **Alert bubbling** — critical safety issues surfaced as top-level alerts
-    - **Transformation layer** — stable public field names decoupled from internal schema
+    - **Stable API contract** — public field names are versioned and will not change without notice
 
     ## Safety Domains
 
@@ -621,7 +621,7 @@ paths:
       summary: Health check
       description: |
         Returns health status of the Drug Safety API subsystem including
-        database connectivity, safety module availability, and Redis status.
+        overall system health and availability.
 
         No authentication required. Designed for monitoring services.
       tags:
@@ -659,18 +659,7 @@ paths:
                     status: "healthy"
                     subsystem: "drug_safety"
                     checks:
-                      database:
-                        status: "healthy"
-                        product_count: 28557
-                      adverse_effects:
-                        status: "healthy"
-                        products: 28113
-                      interactions:
-                        status: "healthy"
-                        pairs: 337000
-                      clinical:
-                        status: "healthy"
-                      redis:
+                      api:
                         status: "healthy"
                     latency_ms: 12.3
 
@@ -1018,7 +1007,7 @@ components:
           description: |
             Drug names that could not be resolved to a SafeRx product.
             These are not errors — they simply did not match any product
-            with sufficient confidence (similarity score >= 0.5).
+            with sufficient confidence.
           example:
             - "tylenol extra"
         safety:

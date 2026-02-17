@@ -8,19 +8,18 @@ subtitle: How SafeRx protects your data and ensures API integrity
 The SafeRx Drug Safety API runs on a hardened infrastructure stack:
 
 - **TLS 1.2+** on all connections — no plaintext HTTP
-- **Docker isolation** — API and database run in separate containers
-- **Nginx reverse proxy** — request filtering, rate limiting, and DDoS mitigation
-- **Redis-backed rate limiting** — per-minute and per-day windows
-- **Anti-scraping heuristics** — 6 behavioral checks with automatic blocking
+- **Container isolation** — API and database run in separate isolated environments
+- **Reverse proxy** — request filtering, rate limiting, and DDoS mitigation
+- **Rate limiting** — per-minute and per-day windows with standard headers
 
 ## Authentication Layers
 
 | Layer | Mechanism | Purpose |
 |-------|-----------|---------|
 | API key | `X-SafeRx-API-Key` | Identifies the caller and determines tier |
-| Anti-scraping | Automatic | 6 behavioral heuristics block abuse |
-| Rate limiting | Redis-backed | Per-minute and per-day windows per key |
-| User-Agent check | Automatic | Blocks automated scraping tools |
+| Abuse detection | Automatic | Behavioral checks block automated scraping |
+| Rate limiting | Per-key | Per-minute and per-day windows |
+| User-Agent check | Automatic | Validates request origin |
 
 ## Data Handling
 
@@ -36,23 +35,23 @@ The SafeRx Drug Safety API runs on a hardened infrastructure stack:
 - Prescription numbers or medical record numbers
 - Any personally identifiable information (PII)
 
-### Identifier Stripping
+### Response Integrity
 
-The transformation layer strips all internal database identifiers before returning responses. No internal IDs (database keys, external reference codes) are ever exposed to API consumers.
+All API responses use stable, versioned public field names. No internal database identifiers or reference codes are ever exposed to API consumers.
 
 ## Audit Trail
 
-Request metadata is logged to Redis with a 24-hour TTL for abuse detection:
+Request metadata is retained for a limited time for abuse detection:
 
 - Timestamp, IP address, User-Agent
 - Drug count and domain requests
 - Tier and API key presence (not the key itself)
 
-After 24 hours, audit data is automatically purged.
+Audit data is automatically purged after the retention window.
 
-## Anti-Scraping Protection
+## Abuse Protection
 
-Six heuristic checks detect and block automated data extraction attempts. See [Rate Limits](/api-reference/authentication/rate-limits) for details on which checks apply to each tier.
+Automated checks detect and block scraping or abuse patterns. These checks are tier-aware — Free tier has stricter protections, Enterprise tier relies on manual review. See [Rate Limits](/api-reference/authentication/rate-limits) for details.
 
 ## Vulnerability Reporting
 
