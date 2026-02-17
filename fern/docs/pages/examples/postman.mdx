@@ -1,0 +1,83 @@
+---
+title: Postman Collection
+subtitle: Import and test the SafeRx Drug Safety API in Postman
+---
+
+## Download
+
+<a href="https://saferx.online/postman/SafeRx-Drug-Safety-API.postman_collection.json" download>
+  **Download Postman Collection (JSON)**
+</a>
+
+## Included Requests
+
+| # | Request | Method | Endpoint |
+|---|---------|--------|----------|
+| 1 | Request Verification Code | POST | `/api/developers/keys/free` |
+| 2 | Verify and Get API Key | POST | `/api/developers/keys/free/verify` |
+| 3 | Basic Safety Check (3 drugs) | POST | `/api/drug_safety/check` |
+| 4 | Check with Patient Profile | POST | `/api/drug_safety/check` |
+| 5 | Selective Domains (DDI only) | POST | `/api/drug_safety/check` |
+| 6 | Arabic Response | POST | `/api/drug_safety/check` |
+| 7 | Pregnancy Safety (PLLR only) | POST | `/api/drug_safety/check` |
+| 8 | Get Metadata | GET | `/api/drug_safety/metadata` |
+
+## Collection Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `base_url` | `https://saferx.online` | API base URL |
+| `api_key` | *(empty)* | Your SafeRx API key — auto-saved after verification |
+
+## Quick Start
+
+1. **Import** — Open Postman → click **Import** → drag the downloaded JSON file
+2. **Get API Key** — Run request **1. Request Verification Code** with your email
+3. **Check Email** — Copy the 6-digit code from your inbox
+4. **Verify** — Run request **2. Verify and Get API Key** with your email + code
+5. **Done** — The API key is auto-saved to the collection. All other requests will use it automatically.
+
+## Setup Details
+
+### Step 1: Request a Free API Key
+
+Open **1. Request Verification Code** and change the email:
+
+```json
+{
+  "email": "your@email.com"
+}
+```
+
+Send the request. Check your email for a 6-digit verification code.
+
+### Step 2: Verify and Receive Key
+
+Open **2. Verify and Get API Key** and enter your email + code:
+
+```json
+{
+  "email": "your@email.com",
+  "code": "123456"
+}
+```
+
+Send the request. On success, the response includes your `api_key` — it's automatically saved to the collection variable by the post-response script.
+
+### Step 3: Run Safety Checks
+
+All remaining requests use `{{api_key}}` in the `X-SafeRx-API-Key` header. Just send them — no manual configuration needed.
+
+## Example Scenarios
+
+- **Basic Check:** Augmentin 1g + Marivan + Glucophage 500 — tests fuzzy matching and multi-drug interactions
+- **Patient Profile:** Glucophage + Concor for elderly diabetic — triggers population and condition alerts
+- **DDI Only:** Augmentin + Marivan with `include: ["ddi"]` — returns only interaction data
+- **Arabic:** Augmentin + Antinal with `lang: "ar"` — all descriptions in Arabic
+- **Pregnancy:** Marivan + Cataflam with `include: ["pllr"]` — Marivan triggers Black Box Warning
+
+## Rate Limits (Free Tier)
+
+- 20 requests/minute, 60 requests/day
+- Sufficient for testing all scenarios multiple times
+- [Upgrade options](/api-reference/authentication/rate-limits)

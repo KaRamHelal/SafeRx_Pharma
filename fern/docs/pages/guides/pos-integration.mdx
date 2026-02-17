@@ -1,0 +1,208 @@
+---
+title: POS Integration
+subtitle: Integrate SafeRx drug safety checks into pharmacy point-of-sale systems
+---
+
+## Overview
+
+Egypt's pharmacy market (95,000+ pharmacies) is rapidly digitizing. The Egyptian Pharmaceutical Track & Trace System (EPTTS) mandate requires serialization at point of dispensing, creating a natural integration point for drug safety checks.
+
+SafeRx provides real-time safety intelligence at the moment of dispensing — catching interactions, contraindications, and dosing issues before the medication reaches the patient.
+
+## Integration Architecture
+
+```
+Barcode Scan → POS System → SafeRx API → Safety Alert → Pharmacist Decision
+                  ↓
+            Drug Lookup (local DB or barcode)
+                  ↓
+            SafeRx /api/drug_safety/check
+                  ↓
+            Display alerts in POS UI
+```
+
+## Step 1: Drug Resolution
+
+When a pharmacist scans a barcode or types a drug name, resolve it to a SafeRx-compatible name:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import httpx
+
+    # Your POS system resolves the barcode to a drug name
+    scanned_drugs = ["Augmentin 1g", "Antinal 200mg", "Cataflam 50mg"]
+
+    # Send to SafeRx for safety analysis
+    resp = httpx.post(
+        "https://saferx.online/api/drug_safety/check",
+        headers={"X-SafeRx-API-Key": "sk_live_your_key"},
+        json={
+            "drugs": scanned_drugs,
+            "lang": "ar",  # Arabic for Egyptian pharmacies
+        },
+        timeout=10.0,
+    )
+    data = resp.json()
+    ```
+  </CodeBlock>
+  <CodeBlock title="TypeScript">
+    ```typescript
+    const scannedDrugs = ["Augmentin 1g", "Antinal 200mg", "Cataflam 50mg"];
+
+    const resp = await fetch("https://saferx.online/api/drug_safety/check", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-SafeRx-API-Key": "sk_live_your_key",
+      },
+      body: JSON.stringify({
+        drugs: scannedDrugs,
+        lang: "ar",
+      }),
+    });
+    const data = await resp.json();
+    ```
+  </CodeBlock>
+  <CodeBlock title="C#">
+    ```csharp
+    // ASP.NET / Titan POS integration pattern
+    var scannedDrugs = new[] { "Augmentin 1g", "Antinal 200mg", "Cataflam 50mg" };
+
+    var body = JsonSerializer.Serialize(new
+    {
+        drugs = scannedDrugs,
+        lang = "ar"  // Arabic for Egyptian pharmacies
+    });
+
+    var request = new HttpRequestMessage(HttpMethod.Post,
+        "https://saferx.online/api/drug_safety/check");
+    request.Headers.Add("X-SafeRx-API-Key", "sk_live_your_key");
+    request.Content = new StringContent(body, Encoding.UTF8, "application/json");
+
+    var response = await _httpClient.SendAsync(request);
+    var data = await response.Content.ReadAsStringAsync();
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Step 2: Display Safety Alerts
+
+The `alerts` array contains the highest-priority issues. Display these prominently in the POS UI:
+
+```python
+# Priority-based alert display for POS
+for alert in data["alerts"]:
+    if alert["severity"] == "CRITICAL":
+        # Block dispensing — require pharmacist override
+        show_blocking_alert(alert["message"])
+    elif alert["severity"] == "HIGH":
+        # Warning — pharmacist should review
+        show_warning(alert["message"])
+    elif alert["severity"] == "MODERATE":
+        # Informational — log for records
+        show_info(alert["message"])
+```
+
+### Alert Types
+
+| Type | Description | POS Action |
+|------|-------------|------------|
+| `ddi` | Drug-drug interaction | Show interacting pair + severity |
+| `bbw` | Black Box Warning | Block dispensing, require override |
+| `pllr` | Pregnancy/Lactation risk | Prompt for patient confirmation |
+| `dose` | Dosing concern | Show max daily dose reference |
+| `food` | Food interaction | Print patient advisory |
+
+## Step 3: Patient Profile (Optional)
+
+For enhanced safety checks, include patient demographics:
+
+```json
+{
+  "drugs": ["Augmentin 1g", "Glucophage 500mg"],
+  "patient_profile": {
+    "populations": ["geriatric"],
+    "conditions": ["diabetes"]
+  },
+  "lang": "ar"
+}
+```
+
+**Available populations:** `pediatric` (age < 18), `geriatric` (age ≥ 65), `cardiac`, `hepatic`, `renal`
+
+**Available conditions:** `diabetes`, `hypertension`, `epilepsy`, `asthma`, `copd`, `ckd`, `heart_failure`, `cirrhosis`, `bleeding_disorder`, `glaucoma`, `bph`, `gerd`, `osteoporosis`, `thyroid`
+
+This activates clinical safety checks specific to the patient's age group and conditions.
+
+## EPTTS Compliance Context
+
+Egypt's EDA Decree 804 mandates pharmaceutical serialization. When your POS system already scans barcodes for EPTTS compliance, adding a SafeRx safety check is a natural extension:
+
+1. **Scan barcode** → EPTTS verification (serialization check)
+2. **Same scan** → SafeRx safety check (drug interactions, contraindications)
+3. **Single workflow** — no extra pharmacist steps
+
+## Offline / Degraded Mode
+
+For pharmacies with unreliable internet, implement a fallback:
+
+```python
+import httpx
+
+async def check_safety(drugs: list[str], lang: str = "ar") -> dict:
+    try:
+        resp = await httpx.AsyncClient().post(
+            "https://saferx.online/api/drug_safety/check",
+            headers={"X-SafeRx-API-Key": API_KEY},
+            json={"drugs": drugs, "lang": lang},
+            timeout=5.0,  # Short timeout for POS
+        )
+        if resp.status_code == 200:
+            return resp.json()
+    except (httpx.TimeoutException, httpx.ConnectError):
+        pass
+
+    # Fallback: allow dispensing but log for later review
+    return {
+        "status": "offline",
+        "message": "Safety check unavailable. Proceeding without checks.",
+        "alerts": [],
+    }
+```
+
+## Rate Limits for POS
+
+| Tier | Requests/min | Requests/day | Recommended For |
+|------|-------------|-------------|-----------------|
+| Free | 20 | 60 | Development & testing |
+| Pro | 60 | 500 | Single pharmacy location |
+| Enterprise | 200 | 5,000 | Multi-branch / POS vendor |
+
+For POS vendors serving multiple pharmacies (e.g., Ibnsina network), contact us for Enterprise volume pricing.
+
+## Egyptian Drug Name Examples
+
+SafeRx resolves Egyptian brand names with fuzzy matching:
+
+```json
+{
+  "drugs": [
+    "اوجمنتين 1 جم",
+    "Augmentin 1g",
+    "augmentin",
+    "AUGMENTIN 1GM 14 TAB"
+  ]
+}
+```
+
+All four inputs resolve to the same product: `AUGMENTIN 1GM 14 TAB` (SRX-010-004748).
+
+Use `lang: "ar"` to receive Arabic safety descriptions in the response.
+
+## Next Steps
+
+- **[API Reference](/api-reference/drug-safety-api)** — Full endpoint documentation
+- **[Rate Limits](/api-reference/authentication/rate-limits)** — Tier details and retry strategies
+- **[Pharmacy Dispensing Guide](/guides/pharmacy-dispensing)** — End-to-end pharmacy workflow
+- **[Developer Portal](https://saferx.online/developer.html)** — Get your API key

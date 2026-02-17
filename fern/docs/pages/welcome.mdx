@@ -1,0 +1,77 @@
+---
+title: SafeRx Drug Safety API
+subtitle: One API call. Six safety domains. 28,000+ Egyptian products.
+---
+
+The SafeRx Drug Safety API provides real-time drug safety screening for Egyptian pharmaceuticals. Submit drug names, get back comprehensive safety data across six clinical domains in a single response.
+
+## What You Can Do
+
+<Cards>
+  <Card title="Adverse Effects" icon="fa-solid fa-triangle-exclamation">
+    Black Box Warnings, severe and common side effects, monitoring parameters, and dose-response classification for 28,557 products with 98.2% coverage.
+  </Card>
+  <Card title="Drug Interactions" icon="fa-solid fa-arrows-split-up-and-left">
+    337,000+ interaction pairs with severity scoring (Minor → Contraindicated), clinical descriptions, and monitoring recommendations in English and Arabic.
+  </Card>
+  <Card title="Pregnancy & Lactation" icon="fa-solid fa-baby">
+    0–7 risk scale for both pregnancy and lactation across 24,512 mapped products, with clinical rationale and Black Box Warning data.
+  </Card>
+  <Card title="Food Interactions" icon="fa-solid fa-utensils">
+    38,000+ food-drug interactions including meal timing recommendations, food conflict severity, and Egyptian-specific food considerations.
+  </Card>
+  <Card title="Clinical Considerations" icon="fa-solid fa-stethoscope">
+    Population-specific safety data (pediatric, geriatric, cardiac, hepatic, renal) and condition-drug interaction alerts for 14 comorbidities.
+  </Card>
+  <Card title="Dosing" icon="fa-solid fa-pills">
+    Dual-source dosing safety with international reference standards and regulatory label data. 19,000+ products with max daily dose calculations and combo drug handling.
+  </Card>
+</Cards>
+
+## How It Works
+
+```
+POST /api/drug_safety/check
+    │
+    ├── Drug Resolution (fuzzy matching)
+    │
+    ├── Parallel Safety Screening
+    │   ├── Adverse Effects
+    │   ├── Drug Interactions
+    │   ├── Pregnancy & Lactation
+    │   ├── Food Interactions
+    │   ├── Clinical Considerations
+    │   └── Dosing
+    │
+    ├── Alert Generation (critical items bubbled up)
+    │
+    └── Response (~40ms average)
+```
+
+## Key Numbers
+
+| Metric | Value |
+|--------|-------|
+| Products covered | 28,557 |
+| Interaction pairs | 337,000+ |
+| Side effects | 1.4M+ |
+| AE coverage | 98.2% |
+| Languages | English + Arabic |
+| Avg response time | ~40ms |
+
+## Get Started
+
+<Cards>
+  <Card title="Quickstart" icon="fa-solid fa-rocket" href="/api-reference/quickstart">
+    Make your first API call in 60 seconds.
+  </Card>
+  <Card title="API Reference" icon="fa-solid fa-code" href="/api-reference/drug-safety-api">
+    Full endpoint documentation with interactive examples.
+  </Card>
+  <Card title="Authentication" icon="fa-solid fa-key" href="/api-reference/authentication/overview">
+    Set up token auth or API keys.
+  </Card>
+  <Card title="System Status" icon="fa-solid fa-signal" href="https://saferx.instatus.com">
+    Real-time API uptime and health monitoring.
+  </Card>
+</Cards>

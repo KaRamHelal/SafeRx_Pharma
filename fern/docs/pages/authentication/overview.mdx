@@ -1,0 +1,112 @@
+---
+title: Authentication Overview
+subtitle: How to authenticate with the SafeRx Drug Safety API
+---
+
+The SafeRx Drug Safety API requires an API key on every request. Get a free key via email verification — no registration needed.
+
+## API Key Authentication (Required)
+
+Include your API key in the `X-SafeRx-API-Key` header on every request:
+
+```bash
+curl -X POST https://saferx.online/api/drug_safety/check \
+  -H "X-SafeRx-API-Key: YOUR_API_KEY" \
+  -H "User-Agent: MyApp/1.0" \
+  -H "Content-Type: application/json" \
+  -d '{"drugs": ["Augmentin 1g"]}'
+```
+
+## Get Your API Key
+
+### Free Tier (Email Verification Required)
+
+**Step 1: Request code**
+```bash
+curl -X POST https://saferx.online/api/developers/keys/free \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com"}'
+# Check your email for 6-digit code (expires in 30 min)
+```
+
+**Step 2: Verify and receive key**
+```bash
+curl -X POST https://saferx.online/api/developers/keys/free/verify \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com","code":"123456"}'
+```
+
+Response:
+```json
+{
+  "api_key": "sfx_free_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+  "tier": "free",
+  "limits": { "requests_per_minute": 20, "requests_per_day": 60 }
+}
+```
+
+- Same email always returns the same key (idempotent)
+- Email verification required (6-digit code, 30 min expiry)
+- 1 key per email
+
+### Pro / Enterprise
+
+Register at the [Developer Portal](https://saferx.online/developer) for higher-tier keys with increased limits.
+
+## API Key Tiers
+
+| Prefix | Tier | RPM | RPD | How to Get |
+|--------|------|-----|-----|------------|
+| `sfx_free_` | Free | 20 | 60 | `POST /api/developers/keys/free` → verify email |
+| `sk_test_` | Free | 20 | 60 | [Developer Portal](https://saferx.online/developer) |
+| `sk_live_` | Pro | 60 | 500 | Contact support |
+| `sk_live_` | Enterprise | 200 | 5,000 | Contact support |
+
+## Key Properties
+
+| Property | Description |
+|----------|-------------|
+| Header | `X-SafeRx-API-Key` |
+| Lifetime | Persistent (no expiry unless revoked) |
+| Tracking | Rate limits tracked by API key |
+| Caching | Lookup cached in Redis for 5 minutes |
+
+## SDK Usage
+
+With any of our SDKs, authentication is a single constructor parameter:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    from saferx import SafeRxClient
+
+    client = SafeRxClient(api_key="sfx_free_your_key_here")
+    ```
+  </CodeBlock>
+  <CodeBlock title="TypeScript">
+    ```typescript
+    import { SafeRxClient } from "saferx-pharma-sdk";
+
+    const client = new SafeRxClient({
+      apiKey: "sfx_free_your_key_here",
+    });
+    ```
+  </CodeBlock>
+  <CodeBlock title="C#">
+    ```csharp
+    using SaferxApi;
+
+    var client = new SaferxApiClient(apiKey: "sfx_free_your_key_here");
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Authentication Summary
+
+| Method | Header | Required | Notes |
+|--------|--------|----------|-------|
+| API key | `X-SafeRx-API-Key` | Yes | All tiers, persistent |
+
+<Warning>
+Requests without an API key will receive a 401 error with a hint to obtain a free key.
+</Warning>

@@ -1,0 +1,2308 @@
+openapi: 3.1.1
+info:
+  title: SafeRx Drug Safety API
+  version: "1.0.0"
+  summary: Comprehensive drug safety screening for Egyptian pharmaceuticals
+  description: |
+    One API call. Six safety domains. 28,000+ Egyptian products.
+
+    The SafeRx Drug Safety API provides real-time drug safety screening across
+    six clinical domains: adverse effects, drug interactions, pregnancy & lactation
+    safety, food interactions, clinical considerations, and dosing information.
+
+    ## Key Features
+
+    - **Unified endpoint** — screen 1–20 drugs in a single POST request
+    - **Six safety domains** checked in parallel (~40ms average response)
+    - **28,557 Egyptian products** with bilingual English/Arabic support
+    - **Smart drug resolution** — accepts trade names, generic names, or partial matches
+    - **Alert bubbling** — critical safety issues surfaced as top-level alerts
+    - **Transformation layer** — stable public field names decoupled from internal schema
+
+    ## Safety Domains
+
+    | Domain | Description | Data Points |
+    |--------|-------------|-------------|
+    | `ae` | Adverse effects, Black Box Warnings, monitoring | 1.4M+ effects, 98.2% coverage |
+    | `ddi` | Drug-drug interactions (requires 2+ drugs) | 337K interaction pairs |
+    | `pllr` | Pregnancy & lactation risk ratings | 24,512 products mapped |
+    | `food` | Meal timing & food-drug conflicts | 38K+ interactions |
+    | `clinical` | Population & condition safety alerts | 5 populations, 14 conditions |
+    | `dose` | Maximum daily dose (dual-source: WHO DDD + OpenFDA MDD) | 19,341 products, tier-based safety |
+
+    ## Getting Started
+
+    1. Request verification code: `POST /api/developers/keys/free` with your email
+    2. Check your email for 6-digit code (expires in 30 min)
+    3. Verify and receive key: `POST /api/developers/keys/free/verify` with email + code
+    4. Call `POST /api/drug_safety/check` with your API key in `X-SafeRx-API-Key` header
+
+    For detailed integration guides, visit [docs.saferx.online](https://docs.saferx.online).
+  termsOfService: https://saferx.online/terms
+  contact:
+    name: SafeRx API Support
+    email: support@saferx.online
+    url: https://saferx.online
+  license:
+    name: Proprietary
+    url: https://saferx.online/terms
+
+servers:
+  - url: https://saferx.online
+    description: Production
+
+tags:
+  - name: Drug Safety
+    description: Unified drug safety screening endpoints
+
+security:
+  - SafeRxAPIKey: []
+
+paths:
+  /api/drug_safety/check:
+    post:
+      operationId: checkDrugSafety
+      x-fern-sdk-group-name: drugSafety
+      x-fern-sdk-method-name: check
+      summary: Check drug safety
+      description: |
+        Screen one or more drugs across six safety domains in a single request.
+
+        The API resolves drug names via fuzzy matching, runs all requested safety
+        checks in parallel, and returns a unified response with alerts bubbled to
+        the top for easy triage.
+
+        **Typical response time:** ~40ms (warm cache, 3 drugs, all domains).
+      tags:
+        - Drug Safety
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DrugSafetyCheckRequest'
+            examples:
+              basic:
+                summary: Basic 3-drug check
+                value:
+                  drugs:
+                    - "Augmentin 1g"
+                    - "Glucophage 500mg"
+                    - "Marivan"
+                  lang: "en"
+              with_patient_profile:
+                summary: Personalized check with patient profile
+                value:
+                  drugs:
+                    - "Augmentin 1g"
+                    - "Glucophage 500mg"
+                    - "Marivan"
+                  patient_profile:
+                    populations:
+                      - "geriatric"
+                      - "renal"
+                    conditions:
+                      - "diabetes"
+                      - "hypertension"
+                  include:
+                    - "ae"
+                    - "ddi"
+                    - "pllr"
+                    - "clinical"
+                  lang: "en"
+              selective_domains:
+                summary: DDI-only check (fastest)
+                value:
+                  drugs:
+                    - "Augmentin 1g"
+                    - "Marivan"
+                  include:
+                    - "ddi"
+              arabic:
+                summary: Arabic language response
+                value:
+                  drugs:
+                    - "Augmentin 1g"
+                    - "Glucophage 500mg"
+                  lang: "ar"
+      responses:
+        "200":
+          description: Successful safety check
+          headers:
+            X-SafeRx-API-Version:
+              schema:
+                type: string
+                example: "1.0"
+              description: API version
+            X-RateLimit-Remaining-Minute:
+              schema:
+                type: integer
+              description: Requests remaining in the current minute window
+            X-RateLimit-Tier:
+              schema:
+                type: string
+                enum: [free, pro, enterprise]
+              description: Your current tier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DrugSafetyCheckResponse'
+              examples:
+                success:
+                  summary: Successful response with all domains
+                  value:
+                    status: "success"
+                    drugs:
+                      - input: "Augmentin 1g"
+                        resolved: true
+                        SFX_ID: "SRX-010-004748"
+                        brand_name: "AUGMENTIN 1GM 14 TAB"
+                        active_ingredient: "AMOXICILLIN + CLAVULANIC ACID"
+                        form: "Oral Tablet"
+                        manufacturer: "GLAXOSMITHKLINE"
+                        therapeutic_class: "Penicillins|Combinations"
+                        medical_specialty: "General"
+                        distributor: ""
+                        barcode: ""
+                        price_egp: 120.0
+                      - input: "Glucophage 500mg"
+                        resolved: true
+                        SFX_ID: "SRX-008-002145"
+                        brand_name: "GLUCOPHAGE 500MG 50 TAB"
+                        active_ingredient: "METFORMIN HCL"
+                        form: "Oral Tablet"
+                        manufacturer: "MERCK SERONO"
+                        therapeutic_class: "Biguanides|Monocomponent"
+                        medical_specialty: "Endocrinology"
+                        distributor: ""
+                        barcode: ""
+                        price_egp: 36.0
+                      - input: "Marivan"
+                        resolved: true
+                        SFX_ID: "SRX-012-003336"
+                        brand_name: "MARIVAN 2MG 30 TAB"
+                        active_ingredient: "WARFARIN SODIUM"
+                        form: "Oral Tablet"
+                        manufacturer: "AL-NILE PHARMA"
+                        therapeutic_class: "Anticoagulants|Coumarin"
+                        medical_specialty: "Hematology"
+                        distributor: ""
+                        barcode: ""
+                        price_egp: 18.0
+                    unresolved: []
+                    safety:
+                      side_effects:
+                        SRX-012-003336:
+                          risk_level: "HIGH"
+                          has_black_box_warning: true
+                          black_box_warning:
+                            warning_text: "WARNING: BLEEDING RISK — Warfarin can cause major or fatal bleeding."
+                            warning_text_ar: "تحذير: خطر النزيف — الوارفارين قد يسبب نزيفاً خطيراً أو مميتاً."
+                            categories:
+                              - "DEATH_RISK"
+                              - "BLEEDING_RISK"
+                            has_death_warning: true
+                            source: "FDA Black Box Warning"
+                          total_count: 85
+                          severe_total: 35
+                          severe:
+                            - effect_name: "Hemorrhage"
+                              name_ar: "نزيف"
+                              frequency: 0.05
+                              frequency_label: "Common"
+                              frequency_category: 2
+                              severity: 5
+                              severity_category: "life_threatening"
+                              source: "clinical_validation_2026"
+                          common:
+                            - effect_name: "Bruising"
+                              name_ar: "كدمات"
+                              severity: 2
+                              frequency: 0.3
+                              frequency_detail:
+                                category: "common"
+                                label: "Common (1-10%)"
+                                value: 0.3
+                              severity_label: "Mild-Moderate"
+                              clinical_advice: "Monitor for unusual bruising"
+                              requires_monitoring: true
+                              urgency: false
+                          monitoring:
+                            drug: "Warfarin"
+                            parameters:
+                              - "INR"
+                              - "PT"
+                              - "Hematocrit"
+                            schedule: "INR: weekly during initiation, then monthly"
+                            contraindications: []
+                            populations:
+                              renal:
+                                name: "WARFARIN"
+                                contraindicated: false
+                                requires_egfr_check: true
+                                requires_dialysis_check: false
+                                severity: 4
+                                severity_label: "SEVERE"
+                            daily_dose_limit: null
+                            has_black_box_warning: true
+                            data_sources: []
+                          dose_classification:
+                            reaction_type: "A"
+                            basis: "dose_dependent_class"
+                            confidence: "high"
+                      interactions:
+                        count: 1
+                        summary:
+                          contraindicated: 0
+                          major: 1
+                          moderate: 0
+                          minor: 0
+                        interactions:
+                          - drug_1_id: "SRX-010-004748"
+                            drug_2_id: "SRX-012-003336"
+                            severity: 4
+                            severity_name: "MAJOR"
+                            description: "Amoxicillin may increase the anticoagulant activities of Warfarin."
+                            description_ar: "قد يزيد الأموكسيسيللين من تأثير الوارفارين المضاد للتجلط."
+                            recommendation: "Monitor INR/PT. Watch for signs of bleeding."
+                            recommendation_ar: "مراقبة INR/PT. مراقبة علامات النزيف."
+                            source: "DrugBank"
+                      reproductive_safety:
+                        SRX-012-003336:
+                          pregnancy_risk_level: 7
+                          pregnancy_risk_name: "Absolutely Contraindicated"
+                          lactation_risk_level: 4
+                          lactation_risk_name: "Likely Unsafe"
+                          pregnancy_rationale: "Warfarin is absolutely contraindicated in pregnancy. FDA Category X. Causes warfarin embryopathy."
+                          lactation_rationale: "Warfarin is excreted in breast milk. Risk of hemorrhage in the nursing infant."
+                          pregnancy_warning:
+                            has_warning: true
+                            text: "Warfarin crosses the placenta and can cause fatal hemorrhage in the fetus."
+                            categories:
+                              - "TERATOGENIC"
+                              - "DEATH_RISK"
+                          lactation_warning:
+                            has_warning: false
+                            text: null
+                            categories: []
+                      food:
+                        SRX-012-003336:
+                          timing:
+                            category: "WITH_OR_WITHOUT_FOOD"
+                            importance: "PREFERRED"
+                            recommendation: "Can be taken with or without food. Take at the same time each day."
+                            recommendation_ar: "يمكن تناوله مع أو بدون طعام. تناوله في نفس الوقت يومياً."
+                            evidence_level: "FDA_LABEL"
+                            severity: 2
+                            rationale: ""
+                          conflicts:
+                            - food: "Vitamin K rich foods"
+                              severity: 5
+                              interaction_type: "VITAMIN_K_ANTAGONISM"
+                              recommendation: "Maintain consistent vitamin K intake"
+                          conflict_count: 8
+                      clinical:
+                        drug_specific:
+                          SRX-012-003336:
+                            conditions:
+                              diabetes:
+                                name: "WARFARIN"
+                                severity: 3
+                                severity_name: "CAUTION"
+                                reason: "Diabetes may alter warfarin metabolism"
+                                source: "openFDA Label"
+                        condition_alerts: []
+                        population_alerts: []
+                      dosing:
+                        SRX-008-002145:
+                          tier: 1
+                          max_units_per_day: 3.0
+                          max_ml_per_day: null
+                          unit_label: "tablets"
+                          flagged: false
+                          skip_reason: null
+                          caveat: null
+                          reference_dose:
+                            value: 2.0
+                            unit: "g"
+                            units_per_ddd: 4.0
+                          daily_limit:
+                            value_mg: 2550.0
+                            confidence: "high"
+                            route: "oral"
+                          components: null
+                          source: "dual_source"
+                    alerts:
+                      - severity: "CRITICAL"
+                        type: "ae_bbw"
+                        message: "Black Box Warning for MARIVAN 2MG 30 TAB"
+                        drugs_involved:
+                          - "MARIVAN 2MG 30 TAB"
+                      - severity: "CRITICAL"
+                        type: "pllr_pregnancy"
+                        message: "Pregnancy: Absolutely Contraindicated — MARIVAN 2MG 30 TAB"
+                        drugs_involved:
+                          - "MARIVAN 2MG 30 TAB"
+                      - severity: "HIGH"
+                        type: "ddi"
+                        message: "Major interaction: AUGMENTIN 1GM 14 TAB + MARIVAN 2MG 30 TAB — Amoxicillin may increase the anticoagulant activities of Warfarin."
+                        drugs_involved:
+                          - "AUGMENTIN 1GM 14 TAB"
+                          - "MARIVAN 2MG 30 TAB"
+                    meta:
+                      processing_time_ms: 41.4
+                      domains_checked:
+                        - "ae"
+                        - "ddi"
+                        - "pllr"
+                        - "food"
+                        - "clinical"
+                        - "dose"
+                      drug_count: 3
+                      resolved_count: 3
+                      unresolved_count: 0
+                      tier: "free"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missing_drugs:
+                  summary: Missing drugs field
+                  value:
+                    error: true
+                    code: "MISSING_FIELD"
+                    message: "drugs is required and must be a non-empty list"
+                    status: 400
+                invalid_json:
+                  summary: Malformed JSON body
+                  value:
+                    error: true
+                    code: "INVALID_JSON"
+                    message: "Invalid JSON body"
+                    status: 400
+                too_many_drugs:
+                  summary: Exceeded max drugs per request
+                  value:
+                    error: "Maximum 20 drugs allowed per request"
+                    tier: "free"
+                    your_count: 25
+                    hint: "Upgrade to Enterprise for up to 50 drugs/request. Contact support@saferx.online"
+                    support: "support@saferx.online"
+        "401":
+          description: Authentication failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_token:
+                  summary: Invalid or expired token
+                  value:
+                    error: true
+                    code: "INVALID_TOKEN"
+                    message: "Token expired or invalid"
+                    status: 401
+                invalid_api_key:
+                  summary: Invalid API key
+                  value:
+                    error: "Invalid API key"
+                    support: "support@saferx.online"
+        "403":
+          description: Access denied (suspicious activity block)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockedResponse'
+              examples:
+                blocked:
+                  summary: Temporarily blocked
+                  value:
+                    error: "Access denied"
+                    reason: "suspicious_activity"
+                    message: "Your access has been temporarily suspended due to unusual request patterns."
+                    support: "support@saferx.online"
+        "429":
+          description: Rate limit exceeded
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Seconds to wait before retrying
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitResponse'
+              examples:
+                per_minute:
+                  summary: Per-minute limit exceeded
+                  value:
+                    error: "Rate limit exceeded"
+                    limit_per_minute: 20
+                    requests_this_minute: 21
+                    tier: "free"
+                    hint: "Upgrade to Pro for higher limits. Contact support@saferx.online"
+                    support: "support@saferx.online"
+                daily_limit:
+                  summary: Daily limit exceeded
+                  value:
+                    error: "You have exceeded your daily limit"
+                    daily_limit: 60
+                    requests_today: 61
+                    tier: "free"
+                    hint: "Upgrade to Pro for 500 requests/day. Contact support@saferx.online"
+                    support: "support@saferx.online"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                internal:
+                  summary: Internal server error
+                  value:
+                    error: true
+                    code: "INTERNAL_ERROR"
+                    message: "An internal error occurred"
+                    status: 500
+
+  /api/drug_safety/metadata:
+    get:
+      operationId: getDrugSafetyMetadata
+      x-fern-sdk-group-name: drugSafety
+      x-fern-sdk-method-name: getMetadata
+      summary: Get API metadata
+      description: |
+        Returns available populations, conditions, database versions, risk level
+        scales, and current tier limits.
+
+        Use this endpoint to:
+        - Populate dropdown menus with valid population and condition values
+        - Check database versions and coverage statistics
+        - Verify your tier and rate limits
+        - Cache metadata locally (changes infrequently — safe to cache for 24 hours)
+      tags:
+        - Drug Safety
+      responses:
+        "200":
+          description: Metadata response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetadataResponse'
+              examples:
+                success:
+                  summary: Full metadata response
+                  value:
+                    status: "success"
+                    max_drugs_per_request: 20
+                    available_domains:
+                      - "ae"
+                      - "ddi"
+                      - "pllr"
+                      - "food"
+                      - "clinical"
+                      - "dose"
+                    patient_profile_options:
+                      populations:
+                        - "pediatric"
+                        - "geriatric"
+                        - "cardiac"
+                        - "hepatic"
+                        - "renal"
+                      conditions:
+                        - "diabetes"
+                        - "hypertension"
+                        - "epilepsy"
+                        - "heart_failure"
+                        - "asthma"
+                        - "liver_disease"
+                        - "kidney_disease"
+                        - "thyroid"
+                        - "depression"
+                        - "blood_disorders"
+                        - "ischemic_heart"
+                        - "arrhythmia"
+                        - "gout"
+                        - "osteoporosis"
+                    risk_scales:
+                      pllr_pregnancy:
+                        "0": "Unknown"
+                        "1": "Safe"
+                        "2": "Likely Safe"
+                        "3": "Possibly Unsafe"
+                        "4": "Likely Unsafe"
+                        "5": "Unsafe"
+                        "6": "Contraindicated"
+                        "7": "Absolutely Contraindicated"
+                      pllr_lactation:
+                        "0": "Unknown"
+                        "1": "Safe"
+                        "2": "Likely Safe"
+                        "3": "Possibly Unsafe"
+                        "4": "Likely Unsafe"
+                        "5": "Unsafe"
+                        "6": "Contraindicated"
+                        "7": "Absolutely Contraindicated"
+                      ae_risk_levels:
+                        - "LOW"
+                        - "MODERATE"
+                        - "HIGH"
+                      ddi_severity:
+                        "1": "Unknown"
+                        "2": "Minor"
+                        "3": "Moderate"
+                        "4": "Major"
+                        "5": "Contraindicated"
+                    database_versions:
+                      ae: "V19"
+                      ddi: "V7"
+                      clinical: "7.3.1"
+                      pllr: "V2.3"
+                      food: "V5"
+                      dose: "V3.2"
+                    database_stats:
+                      ae_products: 28557
+                      ae_coverage_percent: 98.2
+                      ddi_total_pairs: 337000
+                      clinical_conditions: 14
+                      clinical_populations: 5
+                    supported_languages:
+                      - "en"
+                      - "ar"
+                    tier: "free"
+        "401":
+          description: Authentication failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_token:
+                  summary: Invalid or expired token
+                  value:
+                    error: true
+                    code: "INVALID_TOKEN"
+                    message: "Token expired or invalid"
+                    status: 401
+                invalid_api_key:
+                  summary: Invalid API key
+                  value:
+                    error: "Invalid API key"
+                    support: "support@saferx.online"
+        "429":
+          description: Rate limit exceeded
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Seconds to wait before retrying
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitResponse'
+              examples:
+                per_minute:
+                  summary: Per-minute limit exceeded
+                  value:
+                    error: "Rate limit exceeded"
+                    limit_per_minute: 20
+                    requests_this_minute: 21
+                    tier: "free"
+                    hint: "Upgrade to Pro for higher limits. Contact support@saferx.online"
+                    support: "support@saferx.online"
+
+  /api/drug_safety/health:
+    get:
+      operationId: getDrugSafetyHealth
+      summary: Health check
+      description: |
+        Returns health status of the Drug Safety API subsystem including
+        database connectivity, safety module availability, and Redis status.
+
+        No authentication required. Designed for monitoring services.
+      tags:
+        - Drug Safety
+      security: []
+      responses:
+        "200":
+          description: Health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: ["healthy", "degraded"]
+                  subsystem:
+                    type: string
+                    example: "drug_safety"
+                  checks:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        status:
+                          type: string
+                          enum: ["healthy", "degraded", "unhealthy"]
+                  latency_ms:
+                    type: number
+                    example: 12.3
+              examples:
+                healthy:
+                  summary: All systems healthy
+                  value:
+                    status: "healthy"
+                    subsystem: "drug_safety"
+                    checks:
+                      database:
+                        status: "healthy"
+                        product_count: 28557
+                      adverse_effects:
+                        status: "healthy"
+                        products: 28113
+                      interactions:
+                        status: "healthy"
+                        pairs: 337000
+                      clinical:
+                        status: "healthy"
+                      redis:
+                        status: "healthy"
+                    latency_ms: 12.3
+
+  /api/developers/keys/free:
+    post:
+      operationId: createFreeApiKey
+      x-fern-sdk-group-name: developers
+      x-fern-sdk-method-name: createFreeKey
+      summary: Request free API key verification code
+      description: |
+        Step 1 of 2: Request a verification code to get a free API key.
+
+        - Sends a 6-digit code to your email (expires in 30 minutes)
+        - Max 5 codes per email per hour (anti-spam)
+        - If email already has a verified key, returns it immediately
+        - Use POST /api/developers/keys/free/verify with the code to receive your key
+      tags:
+        - Developers
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Your email address
+                  example: "developer@example.com"
+      responses:
+        "200":
+          description: Verification code sent or existing key returned
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    description: New user - code sent
+                    properties:
+                      message:
+                        type: string
+                        example: "Verification code sent to your email"
+                      email:
+                        type: string
+                        example: "developer@example.com"
+                  - type: object
+                    description: Existing verified user - key returned
+                    properties:
+                      api_key:
+                        type: string
+                        example: "sfx_free_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+                      tier:
+                        type: string
+                        example: "free"
+                      limits:
+                        type: object
+                        properties:
+                          requests_per_minute:
+                            type: integer
+                            example: 20
+                          requests_per_day:
+                            type: integer
+                            example: 60
+                      note:
+                        type: string
+                        example: "Existing key returned (1 key per email)"
+        "429":
+          description: Too many verification requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Too many verification requests. Please try again later."
+        "500":
+          description: Failed to send verification email
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Failed to send verification email"
+
+  /api/developers/keys/free/verify:
+    post:
+      operationId: verifyFreeApiKey
+      x-fern-sdk-group-name: developers
+      x-fern-sdk-method-name: verifyFreeKey
+      summary: Verify email and receive free API key
+      description: |
+        Step 2 of 2: Verify your email with the 6-digit code and receive your API key.
+
+        - Code expires after 30 minutes
+        - Max 5 wrong attempts per code (then must request new code)
+        - On success: issues sfx_free_ key (persistent, 1 per email)
+        - Free tier: 20 requests/minute, 60 requests/day
+      tags:
+        - Developers
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, code]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: The email you used in step 1
+                  example: "developer@example.com"
+                code:
+                  type: string
+                  pattern: '^\d{6}$'
+                  description: 6-digit verification code from email
+                  example: "123456"
+      responses:
+        "200":
+          description: Email verified, API key issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  api_key:
+                    type: string
+                    description: Your persistent free-tier API key
+                    example: "sfx_free_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+                  tier:
+                    type: string
+                    example: "free"
+                  limits:
+                    type: object
+                    properties:
+                      requests_per_minute:
+                        type: integer
+                        example: 20
+                      requests_per_day:
+                        type: integer
+                        example: 60
+        "400":
+          description: Invalid code or no pending verification
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid verification code"
+        "403":
+          description: Key deactivated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  support:
+                    type: string
+                    example: "support@saferx.online"
+
+components:
+  securitySchemes:
+    SafeRxAPIKey:
+      type: apiKey
+      in: header
+      name: X-SafeRx-API-Key
+      description: |
+        API key for all tiers. Required for every request.
+
+        | Prefix | Tier | How to get |
+        |--------|------|------------|
+        | `sfx_free_` | Free (20 rpm, 60 rpd) | `POST /api/developers/keys/free` → verify email → `POST /api/developers/keys/free/verify` |
+        | `sk_test_` | Free (20 rpm, 60 rpd) | Developer Portal |
+        | `sk_live_` | Pro/Enterprise (60-200 rpm) | Contact support |
+
+  schemas:
+    # =========================================================================
+    # Request Schemas
+    # =========================================================================
+
+    DrugSafetyCheckRequest:
+      type: object
+      required:
+        - drugs
+      properties:
+        drugs:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          maxItems: 50
+          description: |
+            Drug names to screen. Accepts trade names (e.g., "Augmentin 1g"),
+            generic names (e.g., "amoxicillin"), or partial matches.
+            Fuzzy matching resolves names to SafeRx product IDs.
+
+            - **Free/Pro tier:** max 20 drugs per request
+            - **Enterprise tier:** max 50 drugs per request
+          example:
+            - "Augmentin 1g"
+            - "Glucophage 500mg"
+            - "Marivan"
+        patient_profile:
+          $ref: '#/components/schemas/PatientProfile'
+        include:
+          type: array
+          items:
+            $ref: '#/components/schemas/DomainCode'
+          description: |
+            Safety domains to check. Omit to run all six domains.
+            Including fewer domains reduces response size and may improve latency.
+          example:
+            - "ae"
+            - "ddi"
+            - "pllr"
+        lang:
+          type: string
+          enum:
+            - "en"
+            - "ar"
+          default: "en"
+          description: |
+            Response language. Controls bilingual fields such as rationale text,
+            drug name translations, and clinical advice.
+
+    PatientProfile:
+      type: object
+      description: |
+        Patient context for personalized safety screening. When provided,
+        the `clinical` domain returns population-specific warnings and
+        condition-drug interaction alerts tailored to this patient.
+      properties:
+        populations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Population'
+          description: Patient populations (e.g., geriatric, renal impairment)
+          example:
+            - "geriatric"
+            - "renal"
+        conditions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Condition'
+          description: Patient comorbidities (e.g., diabetes, hypertension)
+          example:
+            - "diabetes"
+            - "hypertension"
+
+    Population:
+      type: string
+      enum:
+        - "pediatric"
+        - "geriatric"
+        - "cardiac"
+        - "hepatic"
+        - "renal"
+      description: |
+        Special patient population.
+        - `pediatric` — children and adolescents
+        - `geriatric` — elderly patients (65+)
+        - `cardiac` — patients with cardiac conditions
+        - `hepatic` — patients with liver impairment
+        - `renal` — patients with kidney impairment
+
+    Condition:
+      type: string
+      enum:
+        - "diabetes"
+        - "hypertension"
+        - "epilepsy"
+        - "heart_failure"
+        - "asthma"
+        - "liver_disease"
+        - "kidney_disease"
+        - "thyroid"
+        - "depression"
+        - "blood_disorders"
+        - "ischemic_heart"
+        - "arrhythmia"
+        - "gout"
+        - "osteoporosis"
+      description: |
+        Patient comorbidity. Used by the `clinical` domain to identify
+        drugs that are contraindicated or require caution for patients
+        with these conditions.
+
+    DomainCode:
+      type: string
+      enum:
+        - "ae"
+        - "ddi"
+        - "pllr"
+        - "food"
+        - "clinical"
+        - "dose"
+      description: |
+        Safety domain identifier.
+        - `ae` — Adverse effects, Black Box Warnings, monitoring parameters
+        - `ddi` — Drug-drug interactions (requires 2+ drugs)
+        - `pllr` — Pregnancy & lactation risk ratings
+        - `food` — Meal timing & food-drug conflicts
+        - `clinical` — Population & condition safety (enhanced with `patient_profile`)
+        - `dose` — Maximum daily dose (V3: dual-source, 19K+ products, tier-based safety)
+
+    # =========================================================================
+    # Response Schemas
+    # =========================================================================
+
+    DrugSafetyCheckResponse:
+      type: object
+      required:
+        - status
+        - drugs
+        - unresolved
+        - safety
+        - alerts
+        - meta
+      properties:
+        status:
+          type: string
+          enum:
+            - "success"
+          description: Always `"success"` for 200 responses
+        drugs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResolvedDrug'
+          description: Successfully resolved drugs with full product details
+        unresolved:
+          type: array
+          items:
+            type: string
+          description: |
+            Drug names that could not be resolved to a SafeRx product.
+            These are not errors — they simply did not match any product
+            with sufficient confidence (similarity score >= 0.5).
+          example:
+            - "tylenol extra"
+        safety:
+          $ref: '#/components/schemas/SafetyData'
+        alerts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Alert'
+          description: |
+            High-severity safety issues bubbled up from all domains, sorted
+            by severity (CRITICAL first). Use this array for quick triage —
+            it contains the most actionable items from the full safety data.
+        meta:
+          $ref: '#/components/schemas/Meta'
+
+    ResolvedDrug:
+      type: object
+      required:
+        - input
+        - resolved
+        - SFX_ID
+        - brand_name
+        - active_ingredient
+        - form
+      properties:
+        input:
+          type: string
+          description: The original drug name as submitted in the request
+          example: "Augmentin 1g"
+        resolved:
+          type: boolean
+          description: Always `true` for drugs in this array
+          example: true
+        SFX_ID:
+          type: string
+          description: |
+            SafeRx product identifier. Primary key used across all safety
+            domains. Format: `SRX-{category}-{sequence}`.
+          example: "SRX-010-004748"
+        brand_name:
+          type: string
+          description: Registered trade name with strength and pack size
+          example: "AUGMENTIN 1GM 14 TAB"
+        active_ingredient:
+          type: string
+          description: Active pharmaceutical ingredient(s), pipe-separated for combinations
+          example: "AMOXICILLIN + CLAVULANIC ACID"
+        form:
+          type: string
+          description: Pharmaceutical dosage form
+          example: "Oral Tablet"
+        manufacturer:
+          type: string
+          description: Marketing authorization holder
+          example: "GLAXOSMITHKLINE"
+        therapeutic_class:
+          type: string
+          description: ATC-based therapeutic classification, pipe-separated hierarchy
+          example: "Penicillins|Combinations"
+        medical_specialty:
+          type: string
+          description: Primary prescribing specialty
+          example: "General"
+        distributor:
+          type: string
+          description: Distribution company (may be empty)
+          example: ""
+        barcode:
+          type: string
+          description: Product barcode (may be empty)
+          example: ""
+        price_egp:
+          type: number
+          format: float
+          description: Current price in Egyptian Pounds (EGP)
+          example: 120.0
+
+    # =========================================================================
+    # Safety Domain Schemas
+    # =========================================================================
+
+    SafetyData:
+      type: object
+      description: |
+        Safety screening results organized by domain. Each domain key maps
+        to domain-specific data. Domains not requested via `include` will
+        be absent from this object.
+      properties:
+        side_effects:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/SideEffectsData'
+          description: |
+            Adverse effects data keyed by SFX_ID. Includes risk level,
+            Black Box Warnings, severe/common effects, monitoring, and
+            dose classification.
+        interactions:
+          $ref: '#/components/schemas/InteractionsData'
+        reproductive_safety:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ReproductiveSafetyData'
+          description: Pregnancy & lactation risk data keyed by SFX_ID
+        food:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/FoodData'
+          description: Food-drug interaction data keyed by SFX_ID
+        clinical:
+          $ref: '#/components/schemas/ClinicalData'
+        dosing:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/DosingData'
+          description: Maximum daily dose data keyed by SFX_ID
+
+    # --- Side Effects (ae) ---
+
+    SideEffectsData:
+      type: object
+      properties:
+        risk_level:
+          type: string
+          enum:
+            - "LOW"
+            - "MODERATE"
+            - "HIGH"
+          description: |
+            Overall adverse effect risk level.
+            - `HIGH` — has a Black Box Warning
+            - `MODERATE` — more than 5 severe effects
+            - `LOW` — 5 or fewer severe effects, no BBW
+          example: "HIGH"
+        has_black_box_warning:
+          type: boolean
+          description: Whether this drug has an FDA Black Box Warning
+          example: true
+        black_box_warning:
+          oneOf:
+            - $ref: '#/components/schemas/BlackBoxWarning'
+            - type: "null"
+          description: Black Box Warning details, or null if none exists
+        total_count:
+          type: integer
+          description: Total number of known adverse effects
+          example: 85
+        severe_total:
+          type: integer
+          description: Number of severe adverse effects
+          example: 35
+        severe:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdverseEffect'
+          description: Top 5 most severe adverse effects
+        common:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdverseEffect'
+          description: Top 5 most common adverse effects
+        monitoring:
+          $ref: '#/components/schemas/Monitoring'
+        dose_classification:
+          $ref: '#/components/schemas/DoseClassification'
+
+    BlackBoxWarning:
+      type: object
+      properties:
+        warning_text:
+          type: string
+          description: Full BBW text in English
+          example: "WARNING: BLEEDING RISK — Warfarin can cause major or fatal bleeding."
+        warning_text_ar:
+          type: string
+          description: Full BBW text in Arabic
+          example: "تحذير: خطر النزيف — الوارفارين قد يسبب نزيفاً خطيراً أو مميتاً."
+        categories:
+          type: array
+          items:
+            type: string
+          description: |
+            BBW category tags (e.g., DEATH_RISK, BLEEDING_RISK, CARDIAC_RISK,
+            HEPATOTOXICITY, SUICIDALITY, TERATOGENIC)
+          example:
+            - "DEATH_RISK"
+            - "BLEEDING_RISK"
+        has_death_warning:
+          type: boolean
+          description: Whether this BBW includes a mortality risk
+          example: true
+        source:
+          type: string
+          description: Source of the BBW data
+          example: "FDA Black Box Warning"
+
+    AdverseEffect:
+      type: object
+      properties:
+        effect_name:
+          type: string
+          description: Adverse effect name in English
+          example: "Hemorrhage"
+        name_ar:
+          type: string
+          description: Effect name in Arabic
+          example: "نزيف"
+        frequency:
+          type: number
+          format: float
+          description: Frequency as a decimal (0.0 to 1.0)
+          example: 0.05
+        frequency_label:
+          type: string
+          description: Human-readable frequency tier
+          example: "Common"
+        frequency_category:
+          type: integer
+          description: Numeric frequency tier (1=very rare, 5=very common)
+          example: 2
+        frequency_detail:
+          type: object
+          description: Detailed frequency breakdown
+          properties:
+            category:
+              type: string
+              example: "common"
+            label:
+              type: string
+              example: "Common (1-10%)"
+            value:
+              type: number
+              format: float
+              example: 0.05
+        severity:
+          type: integer
+          description: Severity score (1=mild, 5=life-threatening)
+          example: 5
+        severity_label:
+          type: string
+          description: Human-readable severity label
+          example: "Life-Threatening"
+        severity_category:
+          type: string
+          description: |
+            Severity category name (mild, moderate, serious,
+            severe, life_threatening)
+          example: "life_threatening"
+        source:
+          type: string
+          description: Data source for this effect
+          example: "clinical_validation_2026"
+        clinical_advice:
+          type: string
+          description: Brief clinical guidance
+          example: "Monitor for unusual bruising"
+        requires_monitoring:
+          type: boolean
+          description: Whether monitoring is recommended
+          example: true
+        urgency:
+          type: boolean
+          description: Whether this effect requires urgent attention
+          example: false
+        basis:
+          type: string
+          description: Classification basis for this effect
+          example: "dose_dependent"
+
+    Monitoring:
+      type: object
+      description: Recommended monitoring parameters for this drug
+      properties:
+        drug:
+          type: string
+          description: Drug name for context
+          example: "Warfarin"
+        parameters:
+          type: array
+          items:
+            type: string
+          description: Lab tests and clinical parameters to monitor
+          example:
+            - "INR"
+            - "PT"
+            - "Hematocrit"
+        schedule:
+          type: string
+          description: Recommended monitoring frequency
+          example: "INR: weekly during initiation, then monthly"
+        contraindications:
+          type: array
+          items:
+            type: string
+          description: Contraindication notes
+        populations:
+          type: object
+          description: Population-specific monitoring considerations
+          additionalProperties:
+            $ref: '#/components/schemas/PopulationMonitoring'
+        daily_dose_limit:
+          oneOf:
+            - $ref: '#/components/schemas/DailyLimit'
+            - type: "null"
+          description: Maximum daily dose information, if available
+        has_black_box_warning:
+          type: boolean
+          description: Whether this drug has a BBW (duplicated for convenience)
+        data_sources:
+          type: array
+          items:
+            type: string
+          description: Data sources used for monitoring recommendations
+
+    PopulationMonitoring:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Drug name
+          example: "WARFARIN"
+        contraindicated:
+          type: boolean
+          description: Whether the drug is contraindicated in this population
+          example: false
+        requires_egfr_check:
+          type: boolean
+          description: Whether eGFR monitoring is needed (renal population)
+          example: true
+        requires_dialysis_check:
+          type: boolean
+          description: Whether dialysis considerations apply (renal population)
+          example: false
+        liver_function_grades:
+          type: object
+          description: Child-Pugh grade contraindication status (hepatic population)
+          properties:
+            A:
+              type: boolean
+            B:
+              type: boolean
+            C:
+              type: boolean
+        severity:
+          type: integer
+          description: Severity in this population (1-5)
+          example: 4
+        severity_label:
+          type: string
+          description: Severity label in this population
+          example: "SEVERE"
+
+    DoseClassification:
+      type: object
+      description: |
+        WHO DDD-based dose-response classification.
+        Type A reactions are dose-dependent and predictable.
+        Type B reactions are idiosyncratic and unpredictable.
+      properties:
+        reaction_type:
+          type: string
+          enum:
+            - "A"
+            - "B"
+          description: |
+            Primary reaction type.
+            - `A` — Dose-dependent (augmented). Predictable from pharmacology.
+            - `B` — Idiosyncratic (bizarre). Unpredictable, not dose-related.
+          example: "A"
+        basis:
+          type: string
+          description: Classification rationale
+          example: "dose_dependent_class"
+        has_idiosyncratic:
+          type: boolean
+          description: Whether any idiosyncratic (Type B) reactions exist
+          example: false
+        idiosyncratic_effects:
+          type: array
+          items:
+            type: string
+          description: List of known idiosyncratic effects
+        confidence:
+          type: string
+          enum:
+            - "high"
+            - "medium"
+            - "low"
+          description: Confidence in the classification
+          example: "high"
+
+    # --- Drug Interactions (ddi) ---
+
+    InteractionsData:
+      type: object
+      description: |
+        Drug-drug interaction results. Requires 2 or more resolved drugs.
+        If only 1 drug is resolved, returns count=0 with empty interactions array.
+      properties:
+        count:
+          type: integer
+          description: Total number of interactions found
+          example: 1
+        summary:
+          $ref: '#/components/schemas/InteractionSummary'
+        interactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Interaction'
+
+    InteractionSummary:
+      type: object
+      description: Interaction count by severity level for quick triage
+      properties:
+        contraindicated:
+          type: integer
+          description: Number of contraindicated (severity 5) interactions
+          example: 0
+        major:
+          type: integer
+          description: Number of major (severity 4) interactions
+          example: 1
+        moderate:
+          type: integer
+          description: Number of moderate (severity 3) interactions
+          example: 0
+        minor:
+          type: integer
+          description: Number of minor (severity 2) interactions
+          example: 0
+
+    Interaction:
+      type: object
+      properties:
+        drug_1_id:
+          type: string
+          description: SFX_ID of the first drug in the interaction pair
+          example: "SRX-010-004748"
+        drug_2_id:
+          type: string
+          description: SFX_ID of the second drug in the interaction pair
+          example: "SRX-012-003336"
+        severity:
+          type: integer
+          minimum: 2
+          maximum: 5
+          description: |
+            Interaction severity level.
+            - `2` — Minor: minimal clinical significance
+            - `3` — Moderate: may require monitoring or dose adjustment
+            - `4` — Major: avoid combination if possible, close monitoring required
+            - `5` — Contraindicated: do not use together
+          example: 4
+        severity_name:
+          type: string
+          enum:
+            - "MINOR"
+            - "MODERATE"
+            - "MAJOR"
+            - "CONTRAINDICATED"
+          description: Human-readable severity label
+          example: "MAJOR"
+        description:
+          type: string
+          description: Interaction mechanism or clinical description (English)
+          example: "Amoxicillin may increase the anticoagulant activities of Warfarin."
+        description_ar:
+          type: string
+          description: Interaction description in Arabic
+          example: "قد يزيد الأموكسيسيللين من تأثير الوارفارين المضاد للتجلط."
+        recommendation:
+          type: string
+          description: Clinical recommendation for managing this interaction (English)
+          example: "Monitor INR/PT. Watch for signs of bleeding."
+        recommendation_ar:
+          type: string
+          description: Clinical recommendation in Arabic
+          example: "مراقبة INR/PT. مراقبة علامات النزيف."
+        source:
+          type: string
+          description: Data source
+          example: "DrugBank"
+
+    # --- Reproductive Safety (pllr) ---
+
+    ReproductiveSafetyData:
+      type: object
+      description: Pregnancy and lactation safety data for a single drug
+      properties:
+        pregnancy_risk_level:
+          type: integer
+          minimum: 0
+          maximum: 7
+          description: |
+            Pregnancy risk score on the SafeRx 0-7 scale.
+            - `0` — Unknown
+            - `1` — Safe
+            - `2` — Likely Safe
+            - `3` — Possibly Unsafe
+            - `4` — Likely Unsafe
+            - `5` — Unsafe
+            - `6` — Contraindicated
+            - `7` — Absolutely Contraindicated
+          example: 7
+        pregnancy_risk_name:
+          type: string
+          description: Human-readable pregnancy risk label
+          example: "Absolutely Contraindicated"
+        lactation_risk_level:
+          type: integer
+          minimum: 0
+          maximum: 7
+          description: Lactation risk score (same 0-7 scale as pregnancy)
+          example: 4
+        lactation_risk_name:
+          type: string
+          description: Human-readable lactation risk label
+          example: "Likely Unsafe"
+        pregnancy_rationale:
+          type: string
+          description: Clinical rationale for the pregnancy risk rating (language depends on `lang` parameter)
+          example: "Warfarin is absolutely contraindicated in pregnancy. FDA Category X."
+        lactation_rationale:
+          type: string
+          description: Clinical rationale for the lactation risk rating
+          example: "Warfarin is excreted in breast milk."
+        pregnancy_warning:
+          $ref: '#/components/schemas/ReproductiveWarning'
+        lactation_warning:
+          $ref: '#/components/schemas/ReproductiveWarning'
+
+    ReproductiveWarning:
+      type: object
+      description: Pregnancy or lactation specific warning
+      properties:
+        has_warning:
+          type: boolean
+          description: Whether a specific warning exists
+          example: true
+        text:
+          oneOf:
+            - type: string
+            - type: "null"
+          description: Warning text (language depends on `lang` parameter)
+          example: "Warfarin crosses the placenta and can cause fatal hemorrhage in the fetus."
+        categories:
+          type: array
+          items:
+            type: string
+          description: Warning categories
+          example:
+            - "TERATOGENIC"
+            - "DEATH_RISK"
+
+    # --- Food Interactions ---
+
+    FoodData:
+      type: object
+      description: Food-drug interaction data for a single drug
+      properties:
+        timing:
+          $ref: '#/components/schemas/MealTiming'
+        conflicts:
+          type: array
+          items:
+            $ref: '#/components/schemas/FoodConflict'
+          description: Specific food-drug conflicts
+        conflict_count:
+          type: integer
+          description: Total number of food conflicts (may exceed items in `conflicts` array)
+          example: 8
+
+    MealTiming:
+      type: object
+      description: Meal timing recommendation
+      properties:
+        category:
+          type: string
+          description: |
+            Timing category code.
+            Common values: `WITH_FOOD`, `EMPTY_STOMACH`, `WITH_OR_WITHOUT_FOOD`,
+            `NO_RESTRICTION`, `BEFORE_MEALS`, `AFTER_MEALS`
+          example: "WITH_OR_WITHOUT_FOOD"
+        importance:
+          type: string
+          description: |
+            How important is adherence to this timing.
+            Values: `MUST`, `PREFERRED`, `OPTIONAL`, `NO_RESTRICTION`
+          example: "PREFERRED"
+        recommendation:
+          type: string
+          description: Full recommendation text (English)
+          example: "Can be taken with or without food. Take at the same time each day."
+        recommendation_ar:
+          type: string
+          description: Full recommendation text (Arabic)
+          example: "يمكن تناوله مع أو بدون طعام. تناوله في نفس الوقت يومياً."
+        evidence_level:
+          type: string
+          description: Evidence source for this recommendation
+          example: "FDA_LABEL"
+        severity:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Severity of non-adherence consequences (1-5)
+          example: 2
+        rationale:
+          type: string
+          description: Clinical rationale for the timing recommendation
+          example: ""
+
+    FoodConflict:
+      type: object
+      description: A specific food-drug interaction
+      properties:
+        food:
+          type: string
+          description: Food item or food category involved
+          example: "Vitamin K rich foods"
+        severity:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Interaction severity (1-5)
+          example: 5
+        interaction_type:
+          type: string
+          description: Pharmacological interaction mechanism
+          example: "VITAMIN_K_ANTAGONISM"
+        recommendation:
+          type: string
+          description: Dietary recommendation
+          example: "Maintain consistent vitamin K intake"
+
+    # --- Clinical Considerations ---
+
+    ClinicalData:
+      type: object
+      description: |
+        Clinical safety considerations combining per-drug population/condition
+        data with cross-drug clinical alerts. Enhanced when `patient_profile`
+        is provided in the request.
+      properties:
+        drug_specific:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/DrugClinicalData'
+          description: Per-drug clinical data keyed by SFX_ID
+        condition_alerts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClinicalAlert'
+          description: Cross-drug condition-related alerts (requires `patient_profile.conditions`)
+        population_alerts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClinicalAlert'
+          description: Cross-drug population-related alerts (requires `patient_profile.populations`)
+
+    DrugClinicalData:
+      type: object
+      properties:
+        populations:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ClinicalConcern'
+          description: Population-specific data keyed by population name
+        conditions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ClinicalConcern'
+          description: Condition-specific data keyed by condition name
+
+    ClinicalConcern:
+      type: object
+      description: Clinical concern for a specific population or condition
+      properties:
+        name:
+          type: string
+          description: Drug name
+          example: "WARFARIN"
+        severity:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Concern severity (1=minor, 5=contraindicated)
+          example: 3
+        severity_name:
+          type: string
+          description: Human-readable severity label
+          example: "CAUTION"
+        reason:
+          type: string
+          description: Clinical rationale
+          example: "Diabetes may alter warfarin metabolism"
+        source:
+          type: string
+          description: Data source
+          example: "openFDA Label"
+
+    ClinicalAlert:
+      type: object
+      description: Clinical safety alert from cross-drug analysis
+      properties:
+        drug_id:
+          type: string
+          description: SFX_ID of the drug involved
+          example: "SRX-012-003336"
+        drug:
+          type: string
+          description: Drug name (English)
+          example: "WARFARIN"
+        drug_ar:
+          type: string
+          description: Drug name (Arabic)
+          example: ""
+        condition:
+          type: string
+          description: Condition name (for condition alerts)
+          example: "diabetes"
+        condition_ar:
+          type: string
+          description: Condition name in Arabic
+          example: "مرض السكري"
+        population:
+          type: string
+          description: Population name (for population alerts)
+          example: "geriatric"
+        population_ar:
+          type: string
+          description: Population name in Arabic
+          example: "كبار السن"
+        severity:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Alert severity
+          example: 3
+        severity_label:
+          type: string
+          description: Severity label (English)
+          example: "CAUTION"
+        severity_label_ar:
+          type: string
+          description: Severity label (Arabic)
+          example: "احذر"
+        contraindicated:
+          type: boolean
+          description: Whether the drug is contraindicated for this population/condition
+          example: false
+        requires_dose_adjustment:
+          type: boolean
+          description: Whether dose adjustment is needed
+          example: false
+        monitoring_required:
+          type: boolean
+          description: Whether additional monitoring is needed
+          example: true
+        reason:
+          type: string
+          description: Clinical rationale (English)
+          example: "Requires dose adjustment in older adults"
+        reason_ar:
+          type: string
+          description: Clinical rationale (Arabic)
+          example: "يتطلب تعديل الجرعة لكبار السن"
+        source:
+          type: string
+          description: Data source
+          example: "OpenFDA Label"
+        special_notes:
+          type: object
+          description: Additional clinical notes
+          properties:
+            geriatric_high_risk:
+              type: boolean
+              description: Whether this drug is flagged as high-risk for elderly patients
+              example: false
+
+    # --- Dosing ---
+
+    DosingData:
+      type: object
+      description: |
+        Maximum daily dose data from Dose V3 — dual-source system combining
+        WHO Defined Daily Dose (DDD) and OpenFDA Maximum Daily Dose (MDD).
+        Covers 19,341 products (67.7% of database) with tier-based safety calculations.
+      properties:
+        tier:
+          type: integer
+          enum: [1, 2]
+          description: |
+            Data quality tier.
+            - `1` — Full reference data (WHO DDD + OpenFDA MDD available)
+            - `2` — Regulatory label data only
+          example: 1
+        max_units_per_day:
+          oneOf:
+            - type: number
+              format: float
+            - type: "null"
+          description: Maximum safe units (tablets, capsules) per day
+          example: 3.0
+        max_ml_per_day:
+          oneOf:
+            - type: number
+              format: float
+            - type: "null"
+          description: Maximum safe volume per day for liquid forms
+          example: null
+        unit_label:
+          type: string
+          description: Unit type (tablets, capsules, ml, etc.)
+          example: "tablets"
+        flagged:
+          type: boolean
+          description: Whether dose calculation has caveats requiring attention
+          example: false
+        skip_reason:
+          oneOf:
+            - type: string
+            - type: "null"
+          description: Reason if dose calculation was skipped (e.g., topical, inhaled)
+          example: null
+        caveat:
+          oneOf:
+            - type: string
+            - type: "null"
+          description: Important caveat about the dose calculation
+          example: null
+        reference_dose:
+          oneOf:
+            - $ref: '#/components/schemas/ReferenceDose'
+            - type: "null"
+          description: WHO DDD reference dose data
+        daily_limit:
+          oneOf:
+            - $ref: '#/components/schemas/DailyLimit'
+            - type: "null"
+          description: OpenFDA maximum daily dose data
+        components:
+          oneOf:
+            - type: array
+              items:
+                oneOf:
+                  - $ref: '#/components/schemas/DoseComponent'
+                  - type: "null"
+            - type: "null"
+          description: Per-ingredient dose data for combination drugs
+        source:
+          type: string
+          enum:
+            - "reference_standard"
+            - "regulatory_label"
+            - "dual_source"
+          description: |
+            Data source for this dose calculation.
+            - `reference_standard` — WHO DDD only
+            - `regulatory_label` — OpenFDA MDD only
+            - `dual_source` — Both WHO DDD and OpenFDA MDD available
+          example: "dual_source"
+
+    ReferenceDose:
+      type: object
+      description: WHO Defined Daily Dose (DDD) reference data
+      properties:
+        value:
+          type: number
+          format: float
+          description: DDD value
+          example: 0.85
+        unit:
+          type: string
+          description: DDD unit (g, mg, etc.)
+          example: "g"
+        units_per_ddd:
+          type: number
+          format: float
+          description: Number of dosage units per DDD
+          example: 1.0
+
+    DailyLimit:
+      type: object
+      description: OpenFDA Maximum Daily Dose data
+      properties:
+        value_mg:
+          type: number
+          format: float
+          description: Maximum daily dose in milligrams
+          example: 2550.0
+        confidence:
+          type: string
+          enum: ["high", "medium", "low"]
+          description: Confidence level of the dose calculation
+          example: "high"
+        route:
+          type: string
+          description: Administration route
+          example: "oral"
+
+    DoseComponent:
+      type: object
+      description: Per-ingredient dose data for combination drugs
+      properties:
+        value_mg:
+          type: number
+          format: float
+          description: Maximum daily dose for this ingredient in mg
+          example: 2625.0
+        original_value:
+          type: number
+          format: float
+          example: 2625.0
+        original_unit:
+          type: string
+          example: "mg"
+        route:
+          type: string
+          example: "oral"
+        confidence:
+          type: string
+          enum: ["high", "medium", "low"]
+          example: "high"
+        confidence_reason:
+          type: string
+          example: "Clear dosing regimens with maximum daily dose calculable"
+        usual_range:
+          type: string
+          description: Typical daily dose range
+          example: "500-2625 mg/day"
+        max_single_dose_mg:
+          type: number
+          format: float
+          example: 875.0
+        weight_based:
+          type: boolean
+          description: Whether dosing is weight-based
+          example: true
+        weight_dose:
+          type: string
+          description: Weight-based dosing if applicable
+          example: "45 mg/kg/day"
+        indication_specific:
+          type: boolean
+          description: Whether max dose varies by indication
+          example: true
+        indication_note:
+          type: string
+          example: "Higher doses for severe infections"
+
+    # --- Alerts ---
+
+    Alert:
+      type: object
+      description: |
+        High-severity safety alert bubbled up from domain-level data.
+        Alerts are generated when safety thresholds are exceeded.
+      required:
+        - severity
+        - type
+        - message
+        - drugs_involved
+      properties:
+        severity:
+          type: string
+          enum:
+            - "CRITICAL"
+            - "HIGH"
+            - "MODERATE"
+            - "LOW"
+          description: |
+            Alert severity level.
+            - `CRITICAL` — Immediate action required (e.g., BBW, contraindicated DDI, pregnancy risk 7)
+            - `HIGH` — Significant risk requiring pharmacist review (e.g., major DDI, pregnancy risk 6)
+            - `MODERATE` — Worth noting, may require monitoring
+            - `LOW` — Informational
+          example: "CRITICAL"
+        type:
+          type: string
+          enum:
+            - "ae_bbw"
+            - "ddi"
+            - "pllr_pregnancy"
+            - "pllr_lactation"
+            - "clinical_condition"
+            - "clinical_population"
+          description: |
+            Alert source domain and trigger.
+            - `ae_bbw` — Drug has a Black Box Warning
+            - `ddi` — Major (severity 4) or contraindicated (severity 5) interaction
+            - `pllr_pregnancy` — Pregnancy risk >= 6 (Contraindicated or Absolutely Contraindicated)
+            - `pllr_lactation` — Lactation risk >= 6
+            - `clinical_condition` — Clinical condition severity >= 4
+            - `clinical_population` — Clinical population severity >= 4
+          example: "ae_bbw"
+        message:
+          type: string
+          description: Human-readable alert message
+          example: "Black Box Warning for MARIVAN 2MG 30 TAB"
+        drugs_involved:
+          type: array
+          items:
+            type: string
+          description: Drug names involved in this alert
+          example:
+            - "MARIVAN 2MG 30 TAB"
+
+    # --- Meta ---
+
+    Meta:
+      type: object
+      description: Request metadata and performance information
+      properties:
+        processing_time_ms:
+          type: number
+          format: float
+          description: Server-side processing time in milliseconds
+          example: 41.4
+        domains_checked:
+          type: array
+          items:
+            $ref: '#/components/schemas/DomainCode'
+          description: Domains that were actually checked
+          example:
+            - "ae"
+            - "ddi"
+            - "pllr"
+            - "food"
+            - "clinical"
+            - "dose"
+        drug_count:
+          type: integer
+          description: Number of drugs submitted
+          example: 3
+        resolved_count:
+          type: integer
+          description: Number of drugs successfully resolved
+          example: 3
+        unresolved_count:
+          type: integer
+          description: Number of drugs that could not be resolved
+          example: 0
+        tier:
+          type: string
+          enum:
+            - "free"
+            - "pro"
+            - "enterprise"
+          description: Caller's current tier
+          example: "free"
+
+    # =========================================================================
+    # Metadata Response
+    # =========================================================================
+
+    MetadataResponse:
+      type: object
+      required:
+        - status
+        - available_domains
+        - patient_profile_options
+        - risk_scales
+      properties:
+        status:
+          type: string
+          enum:
+            - "success"
+        max_drugs_per_request:
+          type: integer
+          description: Maximum drugs allowed per request for your tier
+          example: 20
+        available_domains:
+          type: array
+          items:
+            $ref: '#/components/schemas/DomainCode'
+          description: All available safety domains
+        patient_profile_options:
+          type: object
+          description: Valid values for the `patient_profile` field
+          properties:
+            populations:
+              type: array
+              items:
+                $ref: '#/components/schemas/Population'
+            conditions:
+              type: array
+              items:
+                $ref: '#/components/schemas/Condition'
+        risk_scales:
+          type: object
+          description: Risk/severity scales used across domains
+          properties:
+            pllr_pregnancy:
+              type: object
+              additionalProperties:
+                type: string
+              description: "Pregnancy risk scale: integer key → label"
+            pllr_lactation:
+              type: object
+              additionalProperties:
+                type: string
+              description: "Lactation risk scale: integer key → label"
+            ae_risk_levels:
+              type: array
+              items:
+                type: string
+              description: Adverse effect risk levels
+            ddi_severity:
+              type: object
+              additionalProperties:
+                type: string
+              description: "DDI severity scale: integer key → label"
+        database_versions:
+          type: object
+          description: Current database versions
+          properties:
+            ae:
+              type: string
+              example: "V19"
+            ddi:
+              type: string
+              example: "V7"
+            clinical:
+              type: string
+              example: "7.3.1"
+            pllr:
+              type: string
+              example: "V2.3"
+            food:
+              type: string
+              example: "V5"
+            dose:
+              type: string
+              example: "V3.2"
+        database_stats:
+          type: object
+          description: Database coverage statistics
+          properties:
+            ae_products:
+              type: integer
+              description: Products with adverse effect data
+              example: 28557
+            ae_coverage_percent:
+              type: number
+              format: float
+              description: Percentage of products with AE coverage
+              example: 98.2
+            ddi_total_pairs:
+              type: integer
+              description: Total drug-drug interaction pairs
+              example: 337000
+            clinical_conditions:
+              type: integer
+              description: Number of supported conditions
+              example: 14
+            clinical_populations:
+              type: integer
+              description: Number of supported populations
+              example: 5
+            dose_products:
+              type: integer
+              description: Products with dose data
+              example: 19341
+            dose_coverage_percent:
+              type: number
+              format: float
+              description: Percentage of products with dose coverage
+              example: 67.7
+            dose_with_calculation:
+              type: integer
+              description: Products with max units/day calculation
+              example: 17500
+        supported_languages:
+          type: array
+          items:
+            type: string
+          description: Supported response languages
+          example:
+            - "en"
+            - "ar"
+        tier:
+          type: string
+          enum:
+            - "free"
+            - "pro"
+            - "enterprise"
+          description: Caller's current tier
+          example: "free"
+
+    # =========================================================================
+    # Error Schemas
+    # =========================================================================
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          oneOf:
+            - type: boolean
+            - type: string
+          description: Error indicator or error message
+        code:
+          type: string
+          description: Machine-readable error code
+          example: "MISSING_FIELD"
+        message:
+          type: string
+          description: Human-readable error description
+          example: "drugs is required and must be a non-empty list"
+        status:
+          type: integer
+          description: HTTP status code
+          example: 400
+        tier:
+          type: string
+          description: API tier of the caller (present on limit errors)
+          example: "free"
+        your_count:
+          type: integer
+          description: Number of items submitted (present on count limit errors)
+          example: 25
+        hint:
+          type: string
+          description: Upgrade guidance
+          example: "Upgrade to Pro for higher limits."
+        support:
+          type: string
+          format: email
+          description: Support email for assistance
+          example: "support@saferx.online"
+
+    BlockedResponse:
+      type: object
+      description: Response when access is temporarily suspended
+      properties:
+        error:
+          type: string
+          example: "Access denied"
+        reason:
+          type: string
+          example: "suspicious_activity"
+        message:
+          type: string
+          example: "Your access has been temporarily suspended due to unusual request patterns."
+        support:
+          type: string
+          format: email
+          example: "support@saferx.online"
+
+    RateLimitResponse:
+      type: object
+      description: Response when rate limit is exceeded
+      properties:
+        error:
+          type: string
+          example: "Rate limit exceeded"
+        limit_per_minute:
+          type: integer
+          description: Your per-minute limit
+          example: 20
+        requests_this_minute:
+          type: integer
+          description: Requests made in the current minute
+          example: 21
+        daily_limit:
+          type: integer
+          description: Your daily limit (present on daily limit errors)
+          example: 60
+        requests_today:
+          type: integer
+          description: Requests made today (present on daily limit errors)
+          example: 61
+        tier:
+          type: string
+          enum:
+            - "free"
+            - "pro"
+            - "enterprise"
+          example: "free"
+        hint:
+          type: string
+          description: Upgrade guidance
+          example: "Upgrade to Pro for higher limits. Contact support@saferx.online"
+        support:
+          type: string
+          format: email
+          example: "support@saferx.online"

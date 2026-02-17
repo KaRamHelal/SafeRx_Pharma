@@ -1,0 +1,290 @@
+{
+  "info": {
+    "name": "SafeRx Drug Safety API",
+    "description": "Complete collection for the SafeRx Drug Safety API. Covers free API key registration (2-step email verification), safety checks with various configurations, and metadata discovery.\n\nGet started: Run \"Request Verification Code\" first, then \"Verify and Get API Key\" with the code from your email.\n\nFull docs: https://docs.saferx.online",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "saferx"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://saferx.online",
+      "type": "string"
+    },
+    {
+      "key": "api_key",
+      "value": "",
+      "type": "string",
+      "description": "Your SafeRx API key (sfx_free_... or sk_...)"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "description": "Get a free API key via 2-step email verification.",
+      "item": [
+        {
+          "name": "1. Request Verification Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "User-Agent",
+                "value": "PostmanSafeRx/1.0"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"your@email.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/developers/keys/free",
+              "host": ["{{base_url}}"],
+              "path": ["api", "developers", "keys", "free"]
+            },
+            "description": "Sends a 6-digit verification code to your email. You have 30 minutes to verify. Max 5 attempts per code, 5 codes per hour per email."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Verify and Get API Key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.api_key) {",
+                  "        pm.collectionVariables.set('api_key', jsonData.api_key);",
+                  "        console.log('API key saved to collection variable: ' + jsonData.api_key);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "User-Agent",
+                "value": "PostmanSafeRx/1.0"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"your@email.com\",\n  \"code\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/developers/keys/free/verify",
+              "host": ["{{base_url}}"],
+              "path": ["api", "developers", "keys", "free", "verify"]
+            },
+            "description": "Submit the 6-digit code from your email. On success, returns your API key (sfx_free_...). The key is automatically saved to the collection's api_key variable."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Drug Safety Checks",
+      "description": "Screen drugs for safety issues across 6 domains.",
+      "item": [
+        {
+          "name": "Basic Safety Check",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-SafeRx-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "User-Agent",
+                "value": "PostmanSafeRx/1.0"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"drugs\": [\"Augmentin 1g\", \"Marivan\", \"Glucophage 500\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/drug_safety/check",
+              "host": ["{{base_url}}"],
+              "path": ["api", "drug_safety", "check"]
+            },
+            "description": "Screen 3 drugs across all 6 safety domains. Uses fuzzy matching — trade names, generic names, and misspellings all work."
+          },
+          "response": []
+        },
+        {
+          "name": "Check with Patient Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-SafeRx-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "User-Agent",
+                "value": "PostmanSafeRx/1.0"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"drugs\": [\"Glucophage 500mg\", \"Concor 10mg\"],\n  \"patient_profile\": {\n    \"populations\": [\"geriatric\"],\n    \"conditions\": [\"diabetes\", \"hypertension\"]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/drug_safety/check",
+              "host": ["{{base_url}}"],
+              "path": ["api", "drug_safety", "check"]
+            },
+            "description": "Elderly diabetic patient on Glucophage + Concor. Activates population-specific (geriatric) and condition-specific (diabetes, hypertension) clinical safety checks."
+          },
+          "response": []
+        },
+        {
+          "name": "Selective Domains (DDI Only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-SafeRx-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "User-Agent",
+                "value": "PostmanSafeRx/1.0"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"drugs\": [\"Augmentin 1g\", \"Marivan\"],\n  \"include\": [\"ddi\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/drug_safety/check",
+              "host": ["{{base_url}}"],
+              "path": ["api", "drug_safety", "check"]
+            },
+            "description": "Check only drug-drug interactions. Use the include parameter to select specific domains: ae, ddi, pllr, food, clinical, dose."
+          },
+          "response": []
+        },
+        {
+          "name": "Arabic Response",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-SafeRx-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "User-Agent",
+                "value": "PostmanSafeRx/1.0"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"drugs\": [\"Augmentin 1g\", \"Antinal 200mg\"],\n  \"lang\": \"ar\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/drug_safety/check",
+              "host": ["{{base_url}}"],
+              "path": ["api", "drug_safety", "check"]
+            },
+            "description": "Same safety check but with Arabic response text. All safety descriptions, alert messages, and clinical guidance returned in Arabic."
+          },
+          "response": []
+        },
+        {
+          "name": "Pregnancy Safety (PLLR Only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-SafeRx-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "User-Agent",
+                "value": "PostmanSafeRx/1.0"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"drugs\": [\"Marivan\", \"Cataflam 50mg\"],\n  \"include\": [\"pllr\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/drug_safety/check",
+              "host": ["{{base_url}}"],
+              "path": ["api", "drug_safety", "check"]
+            },
+            "description": "Check pregnancy and lactation safety only. Marivan (warfarin) should trigger a Black Box Warning for pregnancy."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Metadata",
+      "description": "Discover available populations, conditions, and database versions.",
+      "item": [
+        {
+          "name": "Get Metadata",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-SafeRx-API-Key",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "User-Agent",
+                "value": "PostmanSafeRx/1.0"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/drug_safety/metadata",
+              "host": ["{{base_url}}"],
+              "path": ["api", "drug_safety", "metadata"]
+            },
+            "description": "Returns available populations (5), conditions (14), risk scales, safety domain descriptions, and database version info. Useful for building dynamic UIs — cache for 24 hours."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

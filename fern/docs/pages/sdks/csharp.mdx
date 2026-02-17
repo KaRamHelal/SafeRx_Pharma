@@ -1,0 +1,159 @@
+---
+title: "C#"
+subtitle: ".NET SDK for the SafeRx Drug Safety API"
+---
+
+## Installation
+
+```bash
+dotnet add package SafeRx --version 0.0.5
+```
+
+**Requirements:** .NET 8.0+, .NET Framework 4.6.2+, or .NET Standard 2.0+
+
+## Quick Start
+
+```csharp
+using SaferxApi;
+
+// Create the client with your API key
+var client = new SaferxApiClient(
+    apiKey: "sfx_free_your_key_here"  // Get one: POST /api/developers/keys/free
+);
+
+// Run a drug safety check
+var response = await client.DrugSafety.CheckAsync(
+    new DrugSafetyCheckRequest
+    {
+        Drugs = new List<string> { "Augmentin 1g", "Glucophage 500mg", "Marivan" },
+        Include = new List<DomainCode>
+        {
+            DomainCode.Ae, DomainCode.Ddi, DomainCode.Pllr,
+            DomainCode.Food, DomainCode.Clinical, DomainCode.Dose
+        },
+        Lang = DrugSafetyCheckRequestLang.En,
+    }
+);
+
+Console.WriteLine($"Status: {response.Status}");
+Console.WriteLine($"Drugs resolved: {response.Drugs.Count()}");
+```
+
+## Get Your API Key
+
+```bash
+# Step 1: Request verification code
+curl -X POST https://saferx.online/api/developers/keys/free \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com"}'
+# Check your email for 6-digit code
+
+# Step 2: Verify and receive key
+curl -X POST https://saferx.online/api/developers/keys/free/verify \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com","code":"123456"}'
+```
+
+Or register at the [Developer Portal](https://saferx.online/developer) for a portal-managed key.
+
+## Patient Profile
+
+Include patient populations and conditions for personalized clinical guidance:
+
+```csharp
+var response = await client.DrugSafety.CheckAsync(
+    new DrugSafetyCheckRequest
+    {
+        Drugs = new List<string> { "Augmentin 1g", "Marivan" },
+        PatientProfile = new PatientProfile
+        {
+            Populations = new List<Population> { Population.Geriatric, Population.Renal },
+            Conditions = new List<Condition> { Condition.Diabetes, Condition.Hypertension },
+        },
+        Include = new List<DomainCode> { DomainCode.Clinical, DomainCode.Dose },
+        Lang = DrugSafetyCheckRequestLang.En,
+    }
+);
+```
+
+Available populations: `Pediatric`, `Geriatric`, `Cardiac`, `Hepatic`, `Renal`
+
+## Error Handling
+
+The SDK throws typed exceptions for API errors:
+
+```csharp
+try
+{
+    var response = await client.DrugSafety.CheckAsync(
+        new DrugSafetyCheckRequest
+        {
+            Drugs = new List<string> { "Augmentin 1g" },
+        }
+    );
+}
+catch (TooManyRequestsError e)
+{
+    // Per-minute rate limit
+    Console.WriteLine($"Rate limited: {e.Body?.LimitPerMinute} rpm, used {e.Body?.RequestsThisMinute}");
+    Console.WriteLine($"Tier: {e.Body?.Tier}");
+
+    // Daily limit (only present on daily limit errors)
+    if (e.Body?.DailyLimit != null)
+    {
+        Console.WriteLine($"Daily limit: {e.Body?.DailyLimit} rpd, used {e.Body?.RequestsToday}");
+    }
+}
+catch (UnauthorizedError e)
+{
+    Console.WriteLine($"Auth error: {e.Body?.Message}");
+}
+catch (BadRequestError e)
+{
+    Console.WriteLine($"Bad request: {e.Body?.Message}");
+}
+```
+
+## Response Field Names
+
+| Field | C# Type | Description |
+|-------|---------|-------------|
+| `response.Status` | `DrugSafetyCheckResponseStatus` | `"success"` or `"partial"` |
+| `response.Drugs` | `IEnumerable<ResolvedDrug>` | Matched drugs with `BrandName`, `ActiveIngredient`, `SfxId` |
+| `response.Safety` | `SafetyData` | All safety domain results |
+| `response.Safety.SideEffects` | `Dictionary<string, SideEffectsData>?` | Keyed by SFX_ID |
+| `response.Safety.Interactions` | `InteractionsData?` | DDI pairs and summaries |
+| `response.Safety.ReproductiveSafety` | `Dictionary<string, ReproductiveSafetyData>?` | PLLR data |
+| `response.Safety.Food` | `Dictionary<string, FoodData>?` | Food-drug conflicts |
+| `response.Safety.Clinical` | `ClinicalData?` | Population/condition alerts |
+| `response.Safety.Dosing` | `Dictionary<string, DosingData>?` | Max daily dose data |
+| `response.Alerts` | `IEnumerable<Alert>` | High-priority alerts with `Severity`, `Type`, `Message` |
+| `response.Meta` | `Meta` | `ProcessingTimeMs`, `Tier`, `DrugCount`, `ResolvedCount` |
+
+<Warning>
+C# property names use **PascalCase** (standard .NET convention) while JSON serialization uses **snake_case** to match the API spec. The SDK handles this mapping automatically.
+</Warning>
+
+## API Key Tiers
+
+| Prefix | Tier | Limits | How to get |
+|--------|------|--------|------------|
+| `sfx_free_` | Free | 20 rpm, 60 rpd | `POST /api/developers/keys/free` |
+| `sk_test_` | Free | 20 rpm, 60 rpd | [Developer Portal](https://saferx.online/developer) |
+| `sk_live_` | Pro/Enterprise | 60-200 rpm | Contact support@saferx.online |
+
+## Status
+
+| Feature | Status |
+|---------|--------|
+| NuGet package ([SafeRx](https://www.nuget.org/packages/SafeRx)) | Available (v0.0.5) |
+| Typed models | Available |
+| Auto-retry (429, 5xx) | Available |
+| Async/await | Available |
+
+## Resources
+
+- [NuGet Package](https://www.nuget.org/packages/SafeRx)
+- [API Reference](https://docs.saferx.online/api-reference)
+- [Quickstart](/api-reference/quickstart)
+- [Developer Portal](/api-reference/authentication/developer-portal) — Get your API key

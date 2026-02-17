@@ -1,0 +1,163 @@
+---
+title: Rate Limits
+subtitle: Request limits, throttling, and retry strategies by tier
+---
+
+## Tier Limits
+
+| Limit | Free | Professional | Enterprise |
+|-------|------|--------------|------------|
+| Per minute | 20 | 60 | Custom |
+| Per day | 60 | 500 | Custom |
+| Max drugs / request | 20 | 20 | 50 |
+| Max unique drugs / day | 200 | Unlimited | Unlimited |
+| Auth method | Session token | API key | API key |
+| Tracked by | IP address | API key | API key |
+| SLA | Best-effort | 99.9% uptime | 99.99% + BAA |
+| Support | Email | Priority email | Dedicated + Slack |
+
+## Rate Limit Headers
+
+Responses include rate limit headers for clients subject to rate limiting:
+
+| Header | Description |
+|--------|-------------|
+| `X-RateLimit-Remaining-Minute` | Requests remaining in the current minute window |
+| `X-RateLimit-Tier` | Your current tier (`free`, `pro`, `enterprise`) |
+| `Retry-After` | Seconds to wait (only on 429 responses) |
+
+<Note>
+`X-RateLimit-Remaining-Minute` and `X-RateLimit-Tier` are only included for non-whitelisted IPs. If your IP is whitelisted (e.g., internal services), these headers may not be present. Do not rely on their presence for application logic — use them for observability only.
+</Note>
+
+## 429 Responses
+
+### Per-Minute Limit Exceeded
+
+```json
+{
+  "error": "Rate limit exceeded",
+  "limit_per_minute": 20,
+  "requests_this_minute": 21,
+  "tier": "free",
+  "hint": "Upgrade to Pro for higher limits. Contact support@saferx.online",
+  "support": "support@saferx.online"
+}
+```
+
+### Daily Limit Exceeded
+
+```json
+{
+  "error": "You have exceeded your daily limit",
+  "daily_limit": 60,
+  "requests_today": 61,
+  "tier": "free",
+  "hint": "Upgrade to Pro for 500 requests/day. Contact support@saferx.online",
+  "support": "support@saferx.online"
+}
+```
+
+## Retry Strategy
+
+Use exponential backoff with jitter when you receive a 429 response:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import httpx
+    import time
+    import random
+
+    def call_with_retry(url, headers, body, max_retries=3):
+        for attempt in range(max_retries):
+            resp = httpx.post(url, headers=headers, json=body)
+
+            if resp.status_code == 429:
+                retry_after = int(resp.headers.get("Retry-After", 60))
+                jitter = random.uniform(0, retry_after * 0.1)
+                wait = retry_after + jitter
+                print(f"Rate limited. Waiting {wait:.1f}s (attempt {attempt + 1})")
+                time.sleep(wait)
+                continue
+
+            return resp
+
+        raise Exception("Max retries exceeded")
+    ```
+  </CodeBlock>
+  <CodeBlock title="TypeScript">
+    ```typescript
+    async function callWithRetry(
+      url: string,
+      headers: Record<string, string>,
+      body: object,
+      maxRetries = 3,
+    ): Promise<Response> {
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: { ...headers, "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+
+        if (resp.status === 429) {
+          const retryAfter = parseInt(resp.headers.get("Retry-After") ?? "60");
+          const jitter = Math.random() * retryAfter * 0.1;
+          const wait = retryAfter + jitter;
+          console.log(`Rate limited. Waiting ${wait.toFixed(1)}s (attempt ${attempt + 1})`);
+          await new Promise((r) => setTimeout(r, wait * 1000));
+          continue;
+        }
+
+        return resp;
+      }
+
+      throw new Error("Max retries exceeded");
+    }
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Suspicious Behavior Detection
+
+The API includes anti-scraping protection that may temporarily block access. These checks are tier-aware:
+
+| Check | Free | Pro | Enterprise |
+|-------|------|-----|------------|
+| Rapid-fire requests (&lt;1s apart) | Blocked 24h | Skipped | Skipped |
+| Always max drugs (3+ consecutive) | Blocked 24h | Skipped | Skipped |
+| Alphabetically sorted drug lists (3+ requests) | Blocked 24h | Blocked 1h | Skipped |
+| Empty/missing User-Agent | Blocked 24h | Blocked 24h | Blocked 24h |
+| Same drug list 10x in 2 minutes | Blocked 24h | Blocked 1h | Skipped |
+| >200 unique drug names / day | Blocked 24h | Skipped | Skipped |
+
+### 403 Block Response
+
+```json
+{
+  "error": "Access denied",
+  "reason": "suspicious_activity",
+  "message": "Your access has been temporarily suspended due to unusual request patterns.",
+  "support": "support@saferx.online"
+}
+```
+
+### Avoiding Blocks
+
+- Always include a `User-Agent` header
+- Space requests at least 1 second apart (Free tier)
+- Avoid sending the same drug list repeatedly — cache results client-side
+- Do not enumerate the drug database alphabetically
+
+If you are blocked and believe it is in error, contact support@saferx.online.
+
+## Daily Limit Reset
+
+Daily limits use a rolling 24-hour window, not calendar day. The window starts from your first request of the period.
+
+## Upgrading
+
+Contact support@saferx.online to upgrade your tier:
+- **Professional** — 500 requests/day, API key auth, relaxed anti-scraping
+- **Enterprise** — Custom limits, dedicated support, no auto-blocking

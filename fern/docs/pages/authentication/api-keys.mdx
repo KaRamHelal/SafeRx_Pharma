@@ -1,0 +1,131 @@
+---
+title: API Keys
+subtitle: Authentication for all tiers of the SafeRx Drug Safety API
+---
+
+## Overview
+
+API keys are the primary authentication method for the SafeRx Drug Safety API. Every request requires an API key in the `X-SafeRx-API-Key` header.
+
+## Key Tiers
+
+| Prefix | Tier | RPM | RPD | Max Drugs | How to Get |
+|--------|------|-----|-----|-----------|------------|
+| `sfx_free_` | Free | 20 | 60 | 20 | `POST /api/developers/keys/free` |
+| `sk_test_` | Free | 20 | 60 | 20 | [Developer Portal](https://saferx.online/developer) |
+| `sk_live_` | Pro | 60 | 500 | 20 | Contact support |
+| `sk_live_` | Enterprise | 200 | 5,000 | 50 | Contact support |
+
+## Get a Free Key
+
+Free-tier API keys require email verification (2-step process):
+
+### Step 1: Request Verification Code
+
+```bash
+curl -X POST https://saferx.online/api/developers/keys/free \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com"}'
+```
+
+Response:
+```json
+{
+  "message": "Verification code sent to your email",
+  "email": "you@example.com"
+}
+```
+
+Check your email for a 6-digit code (expires in 30 minutes).
+
+### Step 2: Verify and Receive Key
+
+```bash
+curl -X POST https://saferx.online/api/developers/keys/free/verify \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com","code":"123456"}'
+```
+
+Response:
+```json
+{
+  "api_key": "sfx_free_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+  "tier": "free",
+  "limits": { "requests_per_minute": 20, "requests_per_day": 60 }
+}
+```
+
+**Key Features:**
+- **Idempotent:** Same email always gets same key (if already verified, step 1 returns it immediately)
+- **1 key per email** — no duplicates
+- **Email verification required** — prevents abuse and ensures valid contact info
+- **Rate limited:** Max 5 verification codes per email per hour
+
+## Usage
+
+Include your API key in the `X-SafeRx-API-Key` header:
+
+```bash
+curl -X POST https://saferx.online/api/drug_safety/check \
+  -H "X-SafeRx-API-Key: sfx_free_your_key_here" \
+  -H "User-Agent: MyApp/1.0" \
+  -H "Content-Type: application/json" \
+  -d '{"drugs": ["Augmentin 1g", "Marivan"]}'
+```
+
+## Key Properties
+
+| Property | Description |
+|----------|-------------|
+| Header | `X-SafeRx-API-Key` |
+| Lifetime | Persistent (no expiry unless revoked) |
+| Scope | Free keys: global. Paid keys: per-environment |
+| Tracking | Rate limits tracked by API key (not IP) |
+| Caching | Lookup cached in Redis for 5 minutes |
+
+## Developer Portal (Production Keys)
+
+For higher-tier keys, register at the [Developer Portal](https://saferx.online/developer):
+
+1. Register with email + password + organization name
+2. Verify your email (6-digit code)
+3. Receive a free-tier key (`sk_test_`) automatically
+4. Request a production key (`sk_live_`) with use-case description
+
+### Key Rotation
+
+Via the Developer Portal dashboard:
+1. Click "Rotate" on your key
+2. A new key is generated instantly
+3. Update your application to use the new key
+4. The old key is invalidated immediately
+
+### Revocation
+
+Revoked keys return 401 immediately. Redis cache clears within 5 minutes.
+
+## Multi-Server Deployments
+
+API keys enable multi-server deployments under a single identity:
+- Rate limits tracked by API key, not IP address
+- Multiple servers can share one key
+- Usage aggregated across all servers
+
+## Error Responses
+
+### No API Key (401)
+```json
+{
+  "error": "API key required",
+  "hint": "Get a free key at POST /api/developers/keys/free",
+  "docs": "https://docs.saferx.online/api-reference/authentication/api-keys"
+}
+```
+
+### Invalid API Key (401)
+```json
+{
+  "error": "Invalid API key",
+  "hint": "Get a free key at POST /api/developers/keys/free"
+}
+```

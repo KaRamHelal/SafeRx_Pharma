@@ -1,0 +1,215 @@
+---
+title: Quickstart
+subtitle: Make your first drug safety check in 60 seconds
+---
+
+## Step 1: Get Your API Key
+
+### Step 1a: Request Verification Code
+
+<CodeBlocks>
+  <CodeBlock title="cURL">
+    ```bash
+    curl -X POST https://saferx.online/api/developers/keys/free \
+      -H "Content-Type: application/json" \
+      -d '{"email":"you@example.com"}'
+    ```
+  </CodeBlock>
+  <CodeBlock title="Python">
+    ```python
+    import httpx
+
+    resp = httpx.post(
+        "https://saferx.online/api/developers/keys/free",
+        json={"email": "you@example.com"},
+    )
+    print(resp.json()["message"])  # "Verification code sent to your email"
+    ```
+  </CodeBlock>
+  <CodeBlock title="TypeScript">
+    ```typescript
+    const resp = await fetch("https://saferx.online/api/developers/keys/free", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "you@example.com" }),
+    });
+    const { message } = await resp.json();
+    console.log(message); // "Verification code sent to your email"
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+**Check your email** for a 6-digit verification code. It expires in 30 minutes.
+
+### Step 1b: Verify and Receive Your Key
+
+<CodeBlocks>
+  <CodeBlock title="cURL">
+    ```bash
+    curl -X POST https://saferx.online/api/developers/keys/free/verify \
+      -H "Content-Type: application/json" \
+      -d '{"email":"you@example.com","code":"123456"}'
+    ```
+  </CodeBlock>
+  <CodeBlock title="Python">
+    ```python
+    resp = httpx.post(
+        "https://saferx.online/api/developers/keys/free/verify",
+        json={"email": "you@example.com", "code": "123456"},  # Code from email
+    )
+    api_key = resp.json()["api_key"]  # sfx_free_...
+    ```
+  </CodeBlock>
+  <CodeBlock title="TypeScript">
+    ```typescript
+    const resp = await fetch("https://saferx.online/api/developers/keys/free/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "you@example.com", code: "123456" }),
+    });
+    const { api_key } = await resp.json(); // sfx_free_...
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+**Save your API key** — it's persistent and tied to your email. Same email always returns the same key.
+
+<Callout intent="info">
+**Already have a key?** If your email is already verified, step 1a will return your existing key immediately (no verification needed).
+</Callout>
+
+## Step 2: Check Drug Safety
+
+<CodeBlocks>
+  <CodeBlock title="cURL">
+    ```bash
+    curl -X POST https://saferx.online/api/drug_safety/check \
+      -H "Content-Type: application/json" \
+      -H "X-SafeRx-API-Key: YOUR_API_KEY" \
+      -H "User-Agent: MyApp/1.0" \
+      -d '{
+        "drugs": ["Augmentin 1g", "Glucophage 500mg", "Marivan"],
+        "lang": "en"
+      }'
+    ```
+  </CodeBlock>
+  <CodeBlock title="Python">
+    ```python
+    import httpx
+
+    resp = httpx.post(
+        "https://saferx.online/api/drug_safety/check",
+        headers={
+            "X-SafeRx-API-Key": api_key,
+            "User-Agent": "MyApp/1.0",
+        },
+        json={
+            "drugs": ["Augmentin 1g", "Glucophage 500mg", "Marivan"],
+            "lang": "en",
+        },
+    )
+    data = resp.json()
+    ```
+  </CodeBlock>
+  <CodeBlock title="Python SDK">
+    ```python
+    from saferx import SafeRxClient
+
+    client = SafeRxClient(api_key=api_key)
+    result = client.drug_safety.check(
+        drugs=["Augmentin 1g", "Glucophage 500mg", "Marivan"],
+        lang="en",
+    )
+    ```
+  </CodeBlock>
+  <CodeBlock title="TypeScript">
+    ```typescript
+    const resp = await fetch("https://saferx.online/api/drug_safety/check", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-SafeRx-API-Key": api_key,
+        "User-Agent": "MyApp/1.0",
+      },
+      body: JSON.stringify({
+        drugs: ["Augmentin 1g", "Glucophage 500mg", "Marivan"],
+        lang: "en",
+      }),
+    });
+    const data = await resp.json();
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Step 3: Parse the Response
+
+The response contains five top-level sections:
+
+```json
+{
+  "status": "success",
+  "drugs": [...],          // Resolved drug details (SFX_ID, name, form, price)
+  "unresolved": [...],     // Drug names that couldn't be matched
+  "safety": {
+    "side_effects": {...},         // Adverse effects by SFX_ID
+    "interactions": {...},         // Drug-drug interactions
+    "reproductive_safety": {...},  // Pregnancy & lactation by SFX_ID
+    "food": {...},                 // Food interactions by SFX_ID
+    "clinical": {...},             // Population & condition data
+    "dosing": {...}                // Dosing safety (dual-source) by SFX_ID
+  },
+  "alerts": [...],         // Critical items (check these FIRST)
+  "meta": {...}            // Processing time, tier, counts
+}
+```
+
+**Start with `alerts`** — these are the highest-priority safety issues:
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    # Check critical alerts first
+    for alert in data["alerts"]:
+        if alert["severity"] == "CRITICAL":
+            print(f"CRITICAL: {alert['message']}")
+        elif alert["severity"] == "HIGH":
+            print(f"WARNING: {alert['message']}")
+
+    # Example output:
+    # CRITICAL: Black Box Warning for MARIVAN 2MG 30 TAB
+    # CRITICAL: Pregnancy: Absolutely Contraindicated — MARIVAN 2MG 30 TAB
+    # WARNING: Major interaction: AUGMENTIN 1GM 14 TAB + MARIVAN 2MG 30 TAB
+    ```
+  </CodeBlock>
+  <CodeBlock title="TypeScript">
+    ```typescript
+    // Check critical alerts first
+    for (const alert of data.alerts) {
+      if (alert.severity === "CRITICAL") {
+        console.log(`CRITICAL: ${alert.message}`);
+      } else if (alert.severity === "HIGH") {
+        console.log(`WARNING: ${alert.message}`);
+      }
+    }
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## Arabic Support
+
+Set `lang: "ar"` to receive Arabic safety descriptions. You can also submit drug names in Arabic:
+
+```json
+{
+  "drugs": ["اوجمنتين 1 جم", "جلوكوفاج 500"],
+  "lang": "ar"
+}
+```
+
+## What's Next
+
+- **[Authentication](/api-reference/authentication/overview)** — API key tiers, rate limits
+- **[Rate Limits](/api-reference/authentication/rate-limits)** — Tier limits, retry strategies
+- **[API Reference](/api-reference/drug-safety-api)** — Full schema docs for every field
+- **[SDKs](/sdks/overview)** — Python, TypeScript, C# client libraries
+- **[Pharmacy Guide](/guides/pharmacy-dispensing)** — End-to-end integration tutorial

@@ -1,0 +1,281 @@
+---
+title: AI Agent Integration
+subtitle: Building medication safety agents with LLM tool use
+---
+
+## Overview
+
+This guide walks through building an AI agent that answers drug safety questions using the SafeRx API as a tool. The agent can handle queries like "Is it safe to take Augmentin with Warfarin?" or "Can a pregnant woman take Glucophage?"
+
+## Architecture
+
+```
+User Question
+     │
+  LLM (with tool definition)
+     │
+  Tool Call: check_drug_safety
+     │
+  SafeRx API → Structured Response
+     │
+  LLM → Natural Language Answer
+```
+
+## OpenAI Implementation
+
+```python
+import openai
+import httpx
+import json
+
+# SafeRx API client
+SAFERX_API_KEY = "sfx_free_your_key_here"  # Get one: POST /api/developers/keys/free → verify email
+SAFERX_URL = "https://saferx.online"
+
+# Tool definition
+TOOLS = [{
+    "type": "function",
+    "function": {
+        "name": "check_drug_safety",
+        "description": (
+            "Check drug safety across adverse effects, interactions, "
+            "pregnancy/lactation, food interactions, clinical considerations, "
+            "and dosing for Egyptian pharmaceuticals."
+        ),
+        "parameters": {
+            "type": "object",
+            "required": ["drugs"],
+            "properties": {
+                "drugs": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Drug names (trade or generic)"
+                },
+                "patient_profile": {
+                    "type": "object",
+                    "properties": {
+                        "populations": {
+                            "type": "array",
+                            "items": {"type": "string"}
+                        },
+                        "conditions": {
+                            "type": "array",
+                            "items": {"type": "string"}
+                        }
+                    }
+                },
+                "include": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Domains: ae, ddi, pllr, food, clinical, dose"
+                }
+            }
+        }
+    }
+}]
+
+
+def execute_safety_check(args: dict) -> dict:
+    """Call the SafeRx API."""
+    resp = httpx.post(
+        f"{SAFERX_URL}/api/drug_safety/check",
+        headers={
+            "X-SafeRx-API-Key": SAFERX_API_KEY,
+            "User-Agent": "SafetyAgent/1.0",
+        },
+        json=args,
+        timeout=30.0,
+    )
+    return resp.json()
+
+
+def run_agent(user_message: str) -> str:
+    """Run the safety agent with a user question."""
+    client = openai.OpenAI()
+
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are a medication safety assistant. Use the check_drug_safety "
+                "tool to answer questions about drug safety. Always include a "
+                "disclaimer that this is informational and not medical advice. "
+                "Present critical alerts prominently."
+            ),
+        },
+        {"role": "user", "content": user_message},
+    ]
+
+    # First LLM call — may invoke tool
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=messages,
+        tools=TOOLS,
+    )
+
+    msg = response.choices[0].message
+
+    # If the LLM wants to call a tool
+    if msg.tool_calls:
+        for tool_call in msg.tool_calls:
+            args = json.loads(tool_call.function.arguments)
+            result = execute_safety_check(args)
+
+            messages.append(msg.model_dump())
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "content": json.dumps(result),
+            })
+
+        # Second LLM call — synthesize answer
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=messages,
+        )
+        return response.choices[0].message.content
+
+    return msg.content
+
+
+# Example usage
+answer = run_agent("Is it safe to take Augmentin with Warfarin?")
+print(answer)
+```
+
+## Google Gemini Implementation
+
+```python
+import google.generativeai as genai
+import json
+
+genai.configure(api_key="your_gemini_key")
+
+model = genai.GenerativeModel(
+    "gemini-2.5-flash",
+    system_instruction=(
+        "You are a medication safety assistant. Always disclaim "
+        "that this is not medical advice."
+    ),
+    tools=[{
+        "function_declarations": [{
+            "name": "check_drug_safety",
+            "description": (
+                "Check drug safety across adverse effects, interactions, "
+                "pregnancy/lactation, food interactions, clinical considerations, "
+                "and dosing for Egyptian pharmaceuticals."
+            ),
+            "parameters": {
+                "type": "object",
+                "required": ["drugs"],
+                "properties": {
+                    "drugs": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                    },
+                    "patient_profile": {
+                        "type": "object",
+                        "properties": {
+                            "populations": {"type": "array", "items": {"type": "string"}},
+                            "conditions": {"type": "array", "items": {"type": "string"}},
+                        },
+                    },
+                    "include": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                    },
+                },
+            },
+        }],
+    }],
+)
+
+chat = model.start_chat()
+response = chat.send_message("Can a pregnant woman take Glucophage?")
+
+# Handle function call response...
+for part in response.parts:
+    if fn := part.function_call:
+        result = execute_safety_check(dict(fn.args))
+        response = chat.send_message(
+            genai.protos.Content(parts=[
+                genai.protos.Part(function_response=genai.protos.FunctionResponse(
+                    name="check_drug_safety",
+                    response={"result": result},
+                ))
+            ])
+        )
+        print(response.text)
+```
+
+## Response Parsing for AI
+
+### Summarize for Patients
+
+```python
+def summarize_for_patient(data: dict) -> str:
+    """Convert API response to patient-friendly summary."""
+    parts = []
+
+    # Alerts (most important)
+    for alert in data.get("alerts", []):
+        if alert["severity"] == "CRITICAL":
+            parts.append(f"IMPORTANT: {alert['message']}")
+        elif alert["severity"] == "HIGH":
+            parts.append(f"Warning: {alert['message']}")
+
+    # Pregnancy info
+    for sfx_id, pllr in data.get("safety", {}).get("reproductive_safety", {}).items():
+        risk = pllr.get("pregnancy_risk_level", 0)
+        if risk >= 5:
+            parts.append(
+                f"Pregnancy risk: {pllr['pregnancy_risk_name']}. "
+                f"{pllr.get('pregnancy_rationale', '')}"
+            )
+
+    # Food timing
+    for sfx_id, food in data.get("safety", {}).get("food", {}).items():
+        timing = food.get("timing", {})
+        if timing.get("recommendation"):
+            parts.append(f"Meal timing: {timing['recommendation']}")
+
+    if not parts:
+        parts.append("No critical safety concerns identified for these medications.")
+
+    parts.append(
+        "\nThis information is for reference only and does not constitute "
+        "medical advice. Consult your pharmacist or doctor."
+    )
+
+    return "\n\n".join(parts)
+```
+
+## Safety Considerations
+
+When building patient-facing AI agents:
+
+1. **Always include disclaimers** — "This is not medical advice"
+2. **Defer to professionals** — For CRITICAL alerts, recommend consulting a pharmacist
+3. **Don't interpret severity** — Present the data; let healthcare providers make decisions
+4. **Log interactions** — Maintain an audit trail of safety checks performed
+5. **Handle API failures gracefully** — Never say "no safety issues" if the API is unavailable
+
+## Token Efficiency
+
+To minimize token usage in LLM conversations:
+
+```python
+# Only request relevant domains
+args = {
+    "drugs": ["Augmentin 1g", "Marivan"],
+    "include": ["ddi"],  # Only DDI for an interaction question
+}
+
+# For pregnancy questions
+args = {
+    "drugs": ["Glucophage 500mg"],
+    "include": ["pllr"],  # Only PLLR for pregnancy questions
+}
+```
+
+Selective domain inclusion can reduce response size by 80%+, saving significant tokens in multi-turn conversations.

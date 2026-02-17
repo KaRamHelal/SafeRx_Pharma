@@ -1,0 +1,235 @@
+---
+title: Hospital EHR Integration
+subtitle: Integrating drug safety screening into Electronic Health Record systems
+---
+
+## Overview
+
+This guide covers integrating the SafeRx Drug Safety API into hospital EHR and CPOE (Computerized Physician Order Entry) systems. The API screens medications at order entry time and provides real-time safety alerts.
+
+## Integration Points
+
+Drug safety screening fits naturally at three points in the hospital workflow:
+
+```
+Order Entry ──► Order Verification ──► Dispensing ──► Administration
+     │                 │                    │
+  Prescriber      Pharmacist           Nurse
+  screens at      reviews all         final check
+  point of care   flagged orders
+```
+
+### 1. Order Entry (CPOE)
+
+Screen drugs when the prescriber enters a new order:
+
+```python
+class CPOESafetyScreener:
+    """Integrates with CPOE at order entry."""
+
+    def __init__(self, api_key: str):
+        self.api_key = api_key  # Get one: POST /api/developers/keys/free → verify email
+        self.base_url = "https://saferx.online"
+
+    def screen_order(self, medications: list[str], patient: dict) -> dict:
+        """Screen a new medication order against the patient's current meds."""
+
+        # Combine new meds with current medication list
+        all_drugs = medications  # new order items
+        # Add current medications from the EHR
+        all_drugs += patient.get("current_medications", [])
+
+        # Map EHR patient data to SafeRx patient profile
+        profile = self._map_patient_profile(patient)
+
+        resp = httpx.post(
+            f"{self.base_url}/api/drug_safety/check",
+            headers={
+                "X-SafeRx-API-Key": self.api_key,
+                "User-Agent": "HospitalEHR/1.0",
+            },
+            json={
+                "drugs": all_drugs,
+                "patient_profile": profile,
+                "lang": "en",
+            },
+            timeout=30.0,
+        )
+        return resp.json()
+
+    def _map_patient_profile(self, patient: dict) -> dict:
+        """Map EHR patient demographics to SafeRx patient profile."""
+        populations = []
+        conditions = []
+
+        # Age-based population
+        age = patient.get("age", 0)
+        if age < 18:
+            populations.append("pediatric")
+        elif age >= 65:
+            populations.append("geriatric")
+
+        # Lab values to populations
+        if patient.get("egfr") and patient["egfr"] < 60:
+            populations.append("renal")
+        if patient.get("child_pugh_score"):
+            populations.append("hepatic")
+
+        # ICD-10 to condition mapping
+        icd_map = {
+            "E11": "diabetes",      # Type 2 DM
+            "E10": "diabetes",      # Type 1 DM
+            "I10": "hypertension",
+            "G40": "epilepsy",
+            "I50": "heart_failure",
+            "J45": "asthma",
+            "K70": "liver_disease",
+            "N18": "kidney_disease",
+        }
+        for dx in patient.get("diagnoses_icd10", []):
+            prefix = dx[:3]
+            if prefix in icd_map:
+                conditions.append(icd_map[prefix])
+
+        return {
+            "populations": list(set(populations)),
+            "conditions": list(set(conditions)),
+        }
+```
+
+### 2. Order Verification (Pharmacist Review)
+
+For orders flagged during entry, provide detailed safety data:
+
+```python
+def pharmacist_review(screening_result: dict) -> dict:
+    """Structure safety data for pharmacist review queue."""
+    alerts = screening_result.get("alerts", [])
+
+    return {
+        "requires_review": any(
+            a["severity"] in ("CRITICAL", "HIGH") for a in alerts
+        ),
+        "critical_alerts": [
+            a for a in alerts if a["severity"] == "CRITICAL"
+        ],
+        "high_alerts": [
+            a for a in alerts if a["severity"] == "HIGH"
+        ],
+        "interactions": screening_result["safety"].get("interactions", {}),
+        "bbw_drugs": [
+            sfx_id
+            for sfx_id, ae in screening_result["safety"]
+            .get("side_effects", {})
+            .items()
+            if ae.get("has_black_box_warning")
+        ],
+    }
+```
+
+## FHIR Mapping
+
+### MedicationRequest to SafeRx
+
+Map FHIR MedicationRequest resources to SafeRx drug names:
+
+```python
+def fhir_medication_to_drug_name(med_request: dict) -> str:
+    """Extract drug name from FHIR MedicationRequest."""
+    # Try coded medication first
+    coding = (
+        med_request.get("medicationCodeableConcept", {})
+        .get("coding", [{}])[0]
+    )
+    if coding.get("display"):
+        return coding["display"]
+
+    # Fall back to text
+    text = med_request.get("medicationCodeableConcept", {}).get("text", "")
+    return text
+```
+
+### Patient to SafeRx Profile
+
+```python
+def fhir_patient_to_profile(patient: dict, conditions: list) -> dict:
+    """Map FHIR Patient + Condition resources to SafeRx profile."""
+    populations = []
+
+    # Age from birthDate
+    birth_date = patient.get("birthDate", "")
+    if birth_date:
+        from datetime import date
+        birth = date.fromisoformat(birth_date)
+        age = (date.today() - birth).days // 365
+        if age < 18:
+            populations.append("pediatric")
+        elif age >= 65:
+            populations.append("geriatric")
+
+    # Map FHIR Condition codes to SafeRx conditions
+    saferx_conditions = []
+    snomed_map = {
+        "73211009": "diabetes",       # Diabetes mellitus
+        "38341003": "hypertension",   # Hypertensive disorder
+        "84757009": "epilepsy",       # Epilepsy
+        "42343007": "heart_failure",  # Congestive heart failure
+        "195967001": "asthma",        # Asthma
+    }
+    for condition in conditions:
+        code = condition.get("code", {}).get("coding", [{}])[0].get("code", "")
+        if code in snomed_map:
+            saferx_conditions.append(snomed_map[code])
+
+    return {
+        "populations": populations,
+        "conditions": saferx_conditions,
+    }
+```
+
+## HL7 v2 Integration
+
+For legacy systems using HL7 v2 messages:
+
+```
+ORM^O01 (Pharmacy Order)
+  └── RXO segment → extract drug name
+  └── PID segment → extract demographics
+  └── DG1 segments → extract diagnoses
+```
+
+Parse the ORM message, extract drug names from RXO-1, map PID demographics to populations, and DG1 codes to conditions.
+
+## Alert Routing
+
+| Alert Severity | EHR Action | Display |
+|----------------|------------|---------|
+| `CRITICAL` | Hard stop — order cannot proceed | Red interruptive modal |
+| `HIGH` | Soft stop — requires pharmacist override | Orange alert banner |
+| `MODERATE` | Informational — display in chart | Yellow inline notification |
+| `LOW` | Log only | Audit trail entry |
+
+## Performance Considerations
+
+- **Timeout:** Set a 10-second timeout for CPOE integration (prescriber is waiting)
+- **Caching:** Cache metadata for 24 hours, safety results for the duration of the patient encounter
+- **Fallback:** If the API is unavailable, allow the order to proceed with a "safety check unavailable" note
+- **Batch:** When reviewing a full medication list, send all drugs in one request (up to 20)
+
+## Arabic Support
+
+For Egyptian hospitals requiring Arabic UI:
+
+```python
+resp = httpx.post(
+    f"{base_url}/api/drug_safety/check",
+    json={
+        "drugs": drug_list,
+        "patient_profile": profile,
+        "lang": "ar",  # Arabic rationale and descriptions
+    },
+    headers=headers,
+)
+```
+
+Fields with Arabic translations: drug names, interaction descriptions, recommendations, severity labels, clinical rationale.

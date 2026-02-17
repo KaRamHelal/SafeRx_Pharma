@@ -1,0 +1,70 @@
+---
+title: SDKs Overview
+subtitle: Official client libraries for the SafeRx Drug Safety API
+---
+
+## Available SDKs
+
+| Language | Package | Install | Status |
+|----------|---------|---------|--------|
+| Python | [saferx-pharma](https://pypi.org/project/saferx-pharma/) | `pip install saferx-pharma` | Available (v0.0.9) |
+| TypeScript | [saferx-pharma-sdk](https://www.npmjs.com/package/saferx-pharma-sdk) | `npm install saferx-pharma-sdk` | Available (v0.0.10) |
+| C# | [SafeRx](https://www.nuget.org/packages/SafeRx) | `dotnet add package SafeRx` | Available (v0.0.5) |
+| Java | `online.saferx:saferx-java` (Maven) | — | Planned |
+| Go | `github.com/KaRamHelal/saferx-go` | — | Planned |
+| Swift | `github.com/KaRamHelal/saferx-swift` | — | Planned |
+
+## SDK Features
+
+All SDKs include:
+- Typed models for all request and response objects
+- Auto-retry with exponential backoff on 429 and 5xx responses
+- Async/await support where applicable
+- Full database access on all tiers
+
+## Authentication
+
+All SDKs require one credential:
+- **API Key** (`X-SafeRx-API-Key` header) — identifies your application and tier
+
+Get a free API key via email verification:
+```bash
+# Step 1: Request verification code
+curl -X POST https://saferx.online/api/developers/keys/free \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com"}'
+# Check your email for 6-digit code
+
+# Step 2: Verify and receive key
+curl -X POST https://saferx.online/api/developers/keys/free/verify \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com","code":"123456"}'
+```
+
+Or register at the [Developer Portal](https://saferx.online/developer) for a portal-managed key.
+
+## API Key Tiers
+
+| Prefix | Tier | Limits | How to get |
+|--------|------|--------|------------|
+| `sfx_free_` | Free | 20 rpm, 60 rpd | `POST /api/developers/keys/free` → verify email |
+| `sk_test_` | Free | 20 rpm, 60 rpd | [Developer Portal](https://saferx.online/developer) |
+| `sk_live_` | Pro/Enterprise | 60-200 rpm | Contact support@saferx.online |
+
+## Field Name Convention
+
+| SDK | Convention | Example |
+|-----|-----------|---------|
+| Python | snake_case (Pydantic) | `drug.brand_name`, `drug.sfx_id` |
+| TypeScript | snake_case (matches spec) | `drug.brand_name`, `drug.SFX_ID` |
+| C# | PascalCase (.NET convention) | `drug.BrandName`, `drug.SfxId` |
+| cURL / HTTP | snake_case (JSON) | `"brand_name"`, `"SFX_ID"` |
+
+<Warning>
+The TypeScript SDK does **not** convert field names to camelCase. All field names match the OpenAPI spec exactly using snake_case.
+</Warning>
+
+## Direct HTTP Integration
+
+If an SDK isn't available for your language, integrate directly using HTTP.
+The API uses standard JSON over HTTPS — see the [Quickstart](/api-reference/quickstart) for examples in cURL, Python, TypeScript, and Java.

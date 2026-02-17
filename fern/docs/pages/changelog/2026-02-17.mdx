@@ -1,0 +1,70 @@
+# February 17, 2026
+
+## MCP Server v1.0.0
+
+**Published:** [`@saferx_pharma/mcp-server`](https://www.npmjs.com/package/@saferx_pharma/mcp-server) on npm
+
+The SafeRx MCP Server enables AI assistants (Claude Desktop, Claude Code, Cursor) to check Egyptian drug safety data in real-time using the Model Context Protocol.
+
+**Tools:**
+
+- `check_drug_safety` — Screen 1-20 drugs across 6 safety domains (adverse effects, interactions, pregnancy/lactation, food, clinical, dosing)
+- `get_drug_metadata` — Discover available populations, conditions, risk scales, and database versions
+
+**Quick Start:**
+
+```bash
+npx @saferx_pharma/mcp-server
+```
+
+Requires `SAFERX_API_KEY` environment variable. [Get a free key](/api-reference/authentication/api-keys).
+
+---
+
+## C# SDK v0.0.5
+
+**Fixed:**
+
+- **Critical:** Fixed `ObjectDisposedException` in HTTP retry logic
+  - Bug: Fern SDK v2.20.5 doesn't properly clone `StringContent` in retry logic
+  - When retry disposes cloned request, it also disposed the shared content reference
+  - Fix: Manually patch `RawClient.cs` to properly clone `StringContent` instances
+  - Automation: Added `scripts/fix_csharp_sdk_bug.py` to reapply after SDK regeneration
+
+- **Critical:** Fixed JSON deserialization error for `price_egp` field
+  - Backend API was returning empty strings (`""`) instead of JSON `null` for missing prices
+  - C# SDK expects `float?` (nullable float), which can't deserialize empty strings
+  - Fix: Updated backend API to return `null` for missing/empty prices
+  - Affects: CONCOR 10mg and other products without price data
+
+**Impact:**
+
+- C# SDK now works correctly with full production database (28,557 drugs)
+- All 3 test scenarios pass without errors
+
+**Upgrade:**
+
+```bash
+dotnet add package SafeRx --version 0.0.5
+```
+
+**Testing:**
+
+All C# ERP integration tests passing:
+- ✅ Scenario 1: Basic invoice (3 drugs, 2 resolved)
+- ✅ Scenario 2: Elderly patient (Glucophage + Concor) — was failing before
+- ✅ Scenario 3: Pregnant patient (Black Box Warning detection)
+
+---
+
+## Backend API
+
+**Fixed:**
+
+- `POST /api/drug_safety/check` now returns `null` for missing `price_egp` values (was returning `""`)
+- Strongly-typed SDK clients (C#, Java, etc.) no longer fail on JSON deserialization
+
+**No Breaking Changes:**
+
+- Python and TypeScript SDKs unaffected (they handle both `null` and `""` gracefully)
+- API response structure unchanged

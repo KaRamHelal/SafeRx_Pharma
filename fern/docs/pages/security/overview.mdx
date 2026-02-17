@@ -1,0 +1,59 @@
+---
+title: Security Overview
+subtitle: How SafeRx protects your data and ensures API integrity
+---
+
+## Architecture
+
+The SafeRx Drug Safety API runs on a hardened infrastructure stack:
+
+- **TLS 1.2+** on all connections — no plaintext HTTP
+- **Docker isolation** — API and database run in separate containers
+- **Nginx reverse proxy** — request filtering, rate limiting, and DDoS mitigation
+- **Redis-backed rate limiting** — per-minute and per-day windows
+- **Anti-scraping heuristics** — 6 behavioral checks with automatic blocking
+
+## Authentication Layers
+
+| Layer | Mechanism | Purpose |
+|-------|-----------|---------|
+| API key | `X-SafeRx-API-Key` | Identifies the caller and determines tier |
+| Anti-scraping | Automatic | 6 behavioral heuristics block abuse |
+| Rate limiting | Redis-backed | Per-minute and per-day windows per key |
+| User-Agent check | Automatic | Blocks automated scraping tools |
+
+## Data Handling
+
+### What We Receive
+
+- Drug names (trade or generic)
+- Patient population/condition context (no PII)
+- Request metadata (IP, User-Agent, timestamp)
+
+### What We Do NOT Receive or Store
+
+- Patient names, IDs, or demographic data
+- Prescription numbers or medical record numbers
+- Any personally identifiable information (PII)
+
+### Identifier Stripping
+
+The transformation layer strips all internal database identifiers before returning responses. No internal IDs (database keys, external reference codes) are ever exposed to API consumers.
+
+## Audit Trail
+
+Request metadata is logged to Redis with a 24-hour TTL for abuse detection:
+
+- Timestamp, IP address, User-Agent
+- Drug count and domain requests
+- Tier and API key presence (not the key itself)
+
+After 24 hours, audit data is automatically purged.
+
+## Anti-Scraping Protection
+
+Six heuristic checks detect and block automated data extraction attempts. See [Rate Limits](/api-reference/authentication/rate-limits) for details on which checks apply to each tier.
+
+## Vulnerability Reporting
+
+If you discover a security vulnerability, contact security@saferx.online. We respond within 24 hours.

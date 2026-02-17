@@ -1,0 +1,134 @@
+---
+title: TypeScript SDK
+subtitle: Official TypeScript/JavaScript client for the SafeRx Drug Safety API
+---
+
+## Installation
+
+```bash
+npm install saferx-pharma-sdk
+# or
+yarn add saferx-pharma-sdk
+```
+
+<Note>
+The TypeScript SDK uses **snake_case** field names matching the OpenAPI spec exactly.
+There is no camelCase conversion — use `brand_name`, not `brandName`.
+</Note>
+
+## Quick Start
+
+```typescript
+import { SafeRxClient } from "saferx-pharma-sdk";
+
+// Create the client with your API key
+const client = new SafeRxClient({
+  apiKey: "sfx_free_your_key_here",  // Get one: POST /api/developers/keys/free
+});
+
+// Check drug safety
+const result = await client.drugSafety.check({
+  drugs: ["Augmentin 1g", "Glucophage 500mg", "Marivan"],
+  include: ["ae", "ddi", "pllr", "food", "clinical", "dose"],
+  patient_profile: {
+    populations: ["geriatric"],
+    conditions: ["diabetes"],
+  },
+  lang: "en",
+});
+
+// Access resolved drugs (snake_case fields)
+for (const drug of result.drugs) {
+  console.log(`${drug.brand_name} (${drug.active_ingredient})`);
+  console.log(`  SFX_ID: ${drug.SFX_ID}, Price: ${drug.price_egp} EGP`);
+}
+
+// Check safety data
+if (result.safety?.side_effects) {
+  for (const [sfxId, se] of Object.entries(result.safety.side_effects)) {
+    console.log(`Side Effects [${sfxId}]: risk=${se.risk_level}, BBW=${se.has_black_box_warning}`);
+  }
+}
+
+if (result.safety?.interactions) {
+  console.log(`Interactions: ${result.safety.interactions.count}`);
+}
+```
+
+## Get Your API Key
+
+```bash
+# Step 1: Request verification code
+curl -X POST https://saferx.online/api/developers/keys/free \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com"}'
+# Check your email for 6-digit code
+
+# Step 2: Verify and receive key
+curl -X POST https://saferx.online/api/developers/keys/free/verify \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com","code":"123456"}'
+```
+
+Or register at the [Developer Portal](https://saferx.online/developer) for a portal-managed key.
+
+## Other Methods
+
+```typescript
+// Get API metadata (database stats, supported domains)
+const metadata = await client.drugSafety.getMetadata();
+console.log(`Tier: ${metadata.tier}`);
+console.log(`DB stats: ${JSON.stringify(metadata.database_stats)}`);
+
+// Health check (no auth required)
+const health = await client.drugSafety.getDrugSafetyHealth();
+console.log(health.status); // "healthy"
+
+// Get a free API key programmatically
+const key = await client.developers.createFreeKey({ email: "you@example.com" });
+console.log(key.api_key); // sfx_free_...
+```
+
+## Response Field Names
+
+All response fields use **snake_case**, matching the OpenAPI spec:
+
+| Field | Type | Example |
+|-------|------|---------|
+| `brand_name` | string | `"AUGMENTIN 1GM 14 TAB"` |
+| `SFX_ID` | string | `"SFX_00295"` |
+| `active_ingredient` | string | `"Amoxicillin + Clavulanic Acid"` |
+| `price_egp` | number | `108.0` |
+| `side_effects` | object | Keyed by SFX_ID |
+| `reproductive_safety` | object | Keyed by SFX_ID |
+| `interactions` | object | `{ count, summary, interactions }` |
+| `condition_alerts` | array | Clinical condition alerts |
+| `population_alerts` | array | Clinical population alerts |
+
+## Configuration
+
+```typescript
+const client = new SafeRxClient({
+  apiKey: "sfx_free_your_key_here",
+  environment: "https://saferx.online",
+  timeout: 30_000,
+  maxRetries: 3,
+});
+```
+
+## API Key Tiers
+
+| Prefix | Tier | Limits | How to get |
+|--------|------|--------|------------|
+| `sfx_free_` | Free | 20 rpm, 60 rpd | `POST /api/developers/keys/free` |
+| `sk_test_` | Free | 20 rpm, 60 rpd | [Developer Portal](https://saferx.online/developer) |
+| `sk_live_` | Pro/Enterprise | 60-200 rpm | Contact support@saferx.online |
+
+## Node.js and Browser
+
+The SDK works in both Node.js (18+) and modern browsers. In browser environments, ensure CORS is configured for your domain.
+
+## Requirements
+
+- Node.js 18+ or modern browser
+- TypeScript 4.7+ (for type support)

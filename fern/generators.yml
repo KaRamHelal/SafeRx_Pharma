@@ -1,0 +1,46 @@
+groups:
+  python-sdk:
+    generators:
+      - name: fernapi/fern-python-sdk
+        version: 4.57.2
+        output:
+          location: pypi
+          package-name: saferx-pharma
+          token: ${PYPI_TOKEN}
+        config:
+          client_class_name: SafeRxClient
+
+  ts-sdk:
+    generators:
+      - name: fernapi/fern-typescript-sdk
+        version: 3.48.2
+        output:
+          location: npm
+          package-name: saferx-pharma-sdk
+          token: ${NPM_TOKEN}
+        config:
+          namespaceExport: SafeRx
+
+  java-sdk:
+    generators:
+      - name: fernapi/fern-java-sdk
+        version: 0.x
+        output:
+          location: maven
+          coordinate: online.saferx:saferx-java
+          username: ${MAVEN_USERNAME}
+          password: ${MAVEN_PASSWORD}
+
+  go-sdk:
+    generators:
+      - name: fernapi/fern-go-sdk
+        version: 0.x
+        github:
+          repository: KaRamHelal/saferx-go
+
+  swift-sdk:
+    generators:
+      - name: fernapi/fern-swift-sdk
+        version: 0.x
+        github:
+          repository: KaRamHelal/saferx-swift

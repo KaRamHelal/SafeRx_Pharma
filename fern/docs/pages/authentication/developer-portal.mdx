@@ -1,0 +1,122 @@
+---
+title: Developer Portal
+subtitle: Self-service registration, key management, and usage tracking
+---
+
+## Overview
+
+The [SafeRx Developer Portal](https://saferx.online/developer.html) provides self-service access to the Drug Safety API. Register, verify your email, and receive a free API key in minutes.
+
+## Registration Flow
+
+```
+Register → Email Verification → Free Key → Build & Test → Request Production Key
+```
+
+### 1. Register
+
+```bash
+curl -X POST https://saferx.online/api/developers/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "dev@yourcompany.com",
+    "password": "your_secure_password",
+    "org_name": "Your Company"
+  }'
+```
+
+A 6-digit verification code is sent to your email.
+
+### 2. Verify Email
+
+```bash
+curl -X POST https://saferx.online/api/developers/verify \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "dev@yourcompany.com",
+    "code": "123456"
+  }'
+```
+
+On success, you receive:
+- A **free-tier API key** (`sk_test_...`)
+- A **JWT token** for portal access (24h expiry)
+
+### 3. Login
+
+```bash
+curl -X POST https://saferx.online/api/developers/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "dev@yourcompany.com",
+    "password": "your_secure_password"
+  }'
+```
+
+Returns a JWT token. Use it in the `Authorization: Bearer <token>` header for all authenticated endpoints.
+
+## Key Management
+
+### List Keys
+
+```bash
+curl https://saferx.online/api/developers/keys \
+  -H "Authorization: Bearer YOUR_JWT"
+```
+
+### Rotate a Key
+
+Generate a new key value for an existing key (the old value stops working immediately):
+
+```bash
+curl -X POST https://saferx.online/api/developers/keys/{key_id}/rotate \
+  -H "Authorization: Bearer YOUR_JWT"
+```
+
+### Revoke a Key
+
+```bash
+curl -X DELETE https://saferx.online/api/developers/keys/{key_id} \
+  -H "Authorization: Bearer YOUR_JWT"
+```
+
+## Key Types
+
+| Prefix | Tier | How to Get |
+|--------|------|------------|
+| `sk_test_` | Free | Automatic on email verification |
+| `sk_live_` | Pro / Enterprise | Request via portal (admin review) |
+
+Free-tier keys have rate limits of 20 req/min and 60 req/day, with access to the full database (28,557 products).
+
+## Usage Statistics
+
+```bash
+curl https://saferx.online/api/developers/usage \
+  -H "Authorization: Bearer YOUR_JWT"
+```
+
+Returns per-key request counts for the current day.
+
+## Request Production Access
+
+Submit a use case description and our team will review within 1-2 business days:
+
+```bash
+curl -X POST https://saferx.online/api/developers/keys/production \
+  -H "Authorization: Bearer YOUR_JWT" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "use_case": "POS integration for 50 pharmacy branches in Cairo. Expected 2,000 requests/day."
+  }'
+```
+
+## Portal UI
+
+Visit [saferx.online/developer.html](https://saferx.online/developer.html) for a web-based dashboard with:
+
+- Registration and login forms
+- API key management (view, rotate, revoke)
+- Usage statistics
+- Quick-start code snippets
+- Production key request form

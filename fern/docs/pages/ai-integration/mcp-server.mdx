@@ -1,0 +1,51 @@
+---
+title: MCP Server
+subtitle: Model Context Protocol server for Claude Desktop, Claude Code, and Cursor
+---
+
+## Overview
+
+The SafeRx MCP Server wraps the Drug Safety API as a Model Context Protocol server, enabling direct integration with AI tools that support MCP.
+
+## Tools
+
+| Tool | Description |
+|------|-------------|
+| `check_drug_safety` | Screen drugs across all safety domains |
+| `get_drug_metadata` | Get available populations, conditions, and database versions |
+
+## Installation
+
+```bash
+SAFERX_API_KEY=sfx_free_... npx @saferx_pharma/mcp-server
+```
+
+An API key is required. [Get a free key](/api-reference/authentication/api-keys) to get started.
+
+## Configuration
+
+Add to your Claude Desktop config (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "saferx": {
+      "command": "npx",
+      "args": ["-y", "@saferx_pharma/mcp-server"],
+      "env": {
+        "SAFERX_API_KEY": "sfx_free_..."
+      }
+    }
+  }
+}
+```
+
+## Architecture
+
+The MCP server is a thin HTTP wrapper:
+
+```
+AI Client (Claude/Cursor) → MCP Protocol → SafeRx MCP Server → HTTPS → SafeRx API
+```
+
+All authentication, rate limiting, and security is handled by the API layer. The MCP server simply translates MCP tool calls into HTTP requests.

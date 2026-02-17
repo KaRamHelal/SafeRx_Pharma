@@ -1,0 +1,115 @@
+instances:
+  - url: saferx.docs.buildwithfern.com
+    custom-domain: docs.saferx.online
+
+title: SafeRx API Documentation
+
+logo:
+  light: docs/assets/saferx-logo.svg
+  dark: docs/assets/saferx-logo-dark.svg
+  href: https://saferx.online
+
+colors:
+  accent-primary:
+    light: "#0066CC"
+    dark: "#4D9FFF"
+  background:
+    light: "#FFFFFF"
+    dark: "#0D1117"
+
+layout:
+  searchbar-placement: header
+  tabs-placement: header
+
+tabs:
+  api-reference:
+    display-name: API Reference
+    icon: fa-solid fa-code
+  guides:
+    display-name: Guides
+    icon: fa-solid fa-book
+  sdks:
+    display-name: SDKs
+    icon: fa-solid fa-cube
+
+navigation:
+  - tab: api-reference
+    layout:
+      - section: Getting Started
+        contents:
+          - page: Welcome
+            path: docs/pages/welcome.mdx
+          - page: Quickstart
+            path: docs/pages/quickstart.mdx
+      - section: Authentication
+        contents:
+          - page: Overview
+            path: docs/pages/authentication/overview.mdx
+          - page: API Keys
+            path: docs/pages/authentication/api-keys.mdx
+          - page: Rate Limits
+            path: docs/pages/authentication/rate-limits.mdx
+          - page: Developer Portal
+            path: docs/pages/authentication/developer-portal.mdx
+      - api: Drug Safety API
+        api-name: drug-safety
+        audiences:
+          - external
+
+  - tab: guides
+    layout:
+      - section: Integration Guides
+        contents:
+          - page: Pharmacy Dispensing
+            path: docs/pages/guides/pharmacy-dispensing.mdx
+          - page: Hospital EHR
+            path: docs/pages/guides/hospital-ehr.mdx
+          - page: AI Agent
+            path: docs/pages/guides/ai-agent.mdx
+          - page: Mobile Health
+            path: docs/pages/guides/mobile-health.mdx
+          - page: POS Integration
+            path: docs/pages/guides/pos-integration.mdx
+      - section: AI Integration
+        contents:
+          - page: Overview
+            path: docs/pages/ai-integration/overview.mdx
+          - page: LLM Tool Use
+            path: docs/pages/ai-integration/llm-tool-use.mdx
+          - page: MCP Server
+            path: docs/pages/ai-integration/mcp-server.mdx
+          - page: Structured Output
+            path: docs/pages/ai-integration/structured-output.mdx
+      - section: Security & Compliance
+        contents:
+          - page: Security Overview
+            path: docs/pages/security/overview.mdx
+          - page: Compliance
+            path: docs/pages/security/compliance.mdx
+          - page: Terms of Service
+            path: docs/pages/security/terms-of-service.mdx
+      - section: Examples
+        contents:
+          - page: Code Examples
+            path: docs/pages/examples/overview.mdx
+          - page: Postman Collection
+            path: docs/pages/examples/postman.mdx
+      - section: Changelog
+        contents:
+          - page: "2026-02-17"
+            path: docs/pages/changelog/2026-02-17.mdx
+          - page: "2026-02-14"
+            path: docs/pages/changelog/2026-02-14.mdx
+
+  - tab: sdks
+    layout:
+      - section: Client Libraries
+        contents:
+          - page: Overview
+            path: docs/pages/sdks/overview.mdx
+          - page: Python
+            path: docs/pages/sdks/python.mdx
+          - page: TypeScript
+            path: docs/pages/sdks/typescript.mdx
+          - page: "C#"
+            path: docs/pages/sdks/csharp.mdx

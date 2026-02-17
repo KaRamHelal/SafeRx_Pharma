@@ -1,0 +1,48 @@
+---
+title: Compliance
+subtitle: Data residency, regulatory context, and compliance information
+---
+
+## Data Residency
+
+| Aspect | Detail |
+|--------|--------|
+| Server location | Hetzner, Germany (EU) |
+| Data processing | Germany |
+| CDN | None (direct connection) |
+| Backups | Same datacenter |
+
+## Data Handling Summary
+
+| Data Type | Collected | Stored | Retention |
+|-----------|-----------|--------|-----------|
+| Drug names | Yes | Audit log only | 24 hours |
+| Patient populations/conditions | Yes | Not stored | Request duration only |
+| IP address | Yes | Audit log | 24 hours |
+| User-Agent | Yes | Audit log | 24 hours |
+| Patient PII | **Never** | **Never** | N/A |
+| Prescription IDs | **Never** | **Never** | N/A |
+
+## Medical Disclaimer
+
+The SafeRx Drug Safety API provides drug safety information compiled from published pharmaceutical sources. It is intended as a clinical decision support tool.
+
+**The API does not constitute medical advice.** Safety data should be reviewed by a licensed pharmacist or physician before clinical decisions are made. SafeRx is not a substitute for professional clinical judgment.
+
+## Egyptian Regulatory Context
+
+SafeRx drug data covers products registered with the Egyptian Drug Authority (EDA). Product information including registered trade names, active ingredients, manufacturers, and pricing reflects the Egyptian pharmaceutical market.
+
+## Business Associate Agreement (BAA)
+
+Enterprise tier clients requiring a BAA for healthcare compliance can request one by contacting support@saferx.online.
+
+## Data Accuracy
+
+Drug safety data is compiled from:
+- Regulatory drug labels and safety warnings
+- Published drug interaction databases
+- International dose reference standards
+- Clinical literature and validation studies
+
+Data accuracy is maintained through regular database updates and clinical validation. However, SafeRx provides data on a "best-effort" basis — always verify critical safety decisions against primary sources.

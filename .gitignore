@@ -1,0 +1,13 @@
+node_modules/
+dist/
+*.log
+.npmrc
+.env
+package-lock.json
+
+# Fern generated output
+fern/generated/
+
+# OS files
+.DS_Store
+Thumbs.db

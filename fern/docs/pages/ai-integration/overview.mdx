@@ -1,0 +1,74 @@
+---
+title: AI Integration
+subtitle: Use the SafeRx Drug Safety API with LLMs, AI agents, and MCP servers
+---
+
+## Overview
+
+The SafeRx Drug Safety API is designed for AI integration from the ground up. The structured JSON response format, deterministic behavior, and comprehensive safety data make it an ideal tool for LLM-powered applications.
+
+## Integration Patterns
+
+### 1. LLM Tool Use (Function Calling)
+
+Define the drug safety check as a tool/function that your LLM can invoke. Works with OpenAI, Anthropic Claude, Google Gemini, and any framework supporting structured tool definitions.
+
+See [LLM Tool Use](/guides/ai-integration/llm-tool-use) for ready-to-use schemas.
+
+### 2. MCP Server
+
+A Model Context Protocol server that wraps the SafeRx API, enabling direct integration with Claude Desktop, Claude Code, Cursor, and other MCP-compatible clients.
+
+See [MCP Server](/guides/ai-integration/mcp-server) for installation and configuration.
+
+### 3. Structured Output Parsing
+
+Guidelines for extracting and summarizing safety data for different audiences (patients vs. healthcare professionals) and optimizing token usage.
+
+See [Structured Output](/guides/ai-integration/structured-output) for patterns and examples.
+
+## Quick Example
+
+A minimal Python agent that checks drug safety using OpenAI function calling:
+
+```python
+import openai
+import httpx
+
+# Define the tool
+tools = [{
+    "type": "function",
+    "function": {
+        "name": "check_drug_safety",
+        "description": "Check drug safety across 6 domains for Egyptian pharmaceuticals",
+        "parameters": {
+            "type": "object",
+            "required": ["drugs"],
+            "properties": {
+                "drugs": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Drug names to check (trade or generic)"
+                },
+                "lang": {
+                    "type": "string",
+                    "enum": ["en", "ar"],
+                    "description": "Response language"
+                }
+            }
+        }
+    }
+}]
+
+# When the LLM calls the tool, execute against the API
+def execute_tool(args):
+    resp = httpx.post(
+        "https://saferx.online/api/drug_safety/check",
+        headers={
+            "X-SafeRx-API-Key": "sfx_free_your_key_here",  # Get one: POST /api/developers/keys/free → verify email
+            "User-Agent": "MyAgent/1.0",
+        },
+        json=args,
+    )
+    return resp.json()
+```

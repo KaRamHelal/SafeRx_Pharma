@@ -1,0 +1,12 @@
+api:
+  specs:
+    - openapi: openapi/openapi.yaml
+
+groups:
+  csharp-sdk:
+    generators:
+      - name: fernapi/fern-csharp-sdk
+        version: 2.20.5
+        output:
+          location: local-file-system
+          path: ../../generated/csharp-sdk

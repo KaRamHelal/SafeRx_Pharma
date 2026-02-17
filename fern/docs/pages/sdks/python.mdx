@@ -1,0 +1,136 @@
+---
+title: Python SDK
+subtitle: Official Python client for the SafeRx Drug Safety API
+---
+
+## Installation
+
+```bash
+pip install saferx-pharma
+```
+
+## Quick Start
+
+```python
+from saferx import SafeRxClient
+
+# Create the client with your API key
+client = SafeRxClient(
+    api_key="sfx_free_your_key_here",  # Get one: POST /api/developers/keys/free
+)
+
+# Check drug safety
+result = client.drug_safety.check(
+    drugs=["Augmentin 1g", "Glucophage 500mg", "Marivan"],
+    include=["ae", "ddi", "pllr", "food", "clinical", "dose"],
+    patient_profile={
+        "populations": ["geriatric"],
+        "conditions": ["diabetes"],
+    },
+    lang="en",
+)
+
+# Access resolved drugs (typed Pydantic models)
+for drug in result.drugs:
+    print(f"{drug.brand_name} ({drug.active_ingredient})")
+    print(f"  SFX_ID: {drug.sfx_id}, Price: {drug.price_egp} EGP")
+
+# Check safety data
+if result.safety and result.safety.side_effects:
+    for sfx_id, se in result.safety.side_effects.items():
+        print(f"Side Effects [{sfx_id}]: risk={se.risk_level}, BBW={se.has_black_box_warning}")
+        if se.severe:
+            for s in se.severe[:3]:
+                print(f"  - {s.effect_name}")
+
+if result.safety and result.safety.interactions:
+    print(f"Interactions: {result.safety.interactions.count}")
+```
+
+## Get Your API Key
+
+```bash
+# Step 1: Request verification code
+curl -X POST https://saferx.online/api/developers/keys/free \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com"}'
+# Check your email for 6-digit code
+
+# Step 2: Verify and receive key
+curl -X POST https://saferx.online/api/developers/keys/free/verify \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com","code":"123456"}'
+```
+
+Or register at the [Developer Portal](https://saferx.online/developer) for a portal-managed key.
+
+## Async Support
+
+```python
+from saferx import AsyncSafeRxClient
+
+client = AsyncSafeRxClient(
+    api_key="sfx_free_your_key_here",
+)
+
+result = await client.drug_safety.check(
+    drugs=["Augmentin 1g", "Marivan"],
+    include=["ae", "ddi"],
+)
+```
+
+## Other Methods
+
+```python
+# Get API metadata (database stats, supported domains)
+metadata = client.drug_safety.get_metadata()
+print(f"Tier: {metadata.tier}")
+print(f"DB stats: {metadata.database_stats}")
+
+# Health check (no auth required)
+health = client.drug_safety.get_drug_safety_health()
+print(health.status)  # "healthy"
+
+# Get a free API key programmatically
+key = client.developers.create_free_key(email="you@example.com")
+print(key.api_key)  # sfx_free_...
+```
+
+## Response Field Names
+
+The Python SDK uses **snake_case** attribute names with typed Pydantic models:
+
+| Attribute | Type | Example |
+|-----------|------|---------|
+| `brand_name` | str | `"AUGMENTIN 1GM 14 TAB"` |
+| `sfx_id` | str | `"SFX_00295"` |
+| `active_ingredient` | str | `"Amoxicillin + Clavulanic Acid"` |
+| `price_egp` | float | `108.0` |
+| `side_effects` | Dict[str, SideEffectsData] | Keyed by SFX_ID |
+| `reproductive_safety` | Dict[str, ReproductiveSafetyData] | Keyed by SFX_ID |
+| `interactions` | InteractionsData | `{ count, summary, interactions }` |
+| `condition_alerts` | List[ClinicalAlert] | Clinical condition alerts |
+| `population_alerts` | List[ClinicalAlert] | Clinical population alerts |
+
+## Configuration
+
+```python
+client = SafeRxClient(
+    api_key="sfx_free_your_key_here",
+    base_url="https://saferx.online",
+    timeout=30.0,
+)
+```
+
+## API Key Tiers
+
+| Prefix | Tier | Limits | How to get |
+|--------|------|--------|------------|
+| `sfx_free_` | Free | 20 rpm, 60 rpd | `POST /api/developers/keys/free` |
+| `sk_test_` | Free | 20 rpm, 60 rpd | [Developer Portal](https://saferx.online/developer) |
+| `sk_live_` | Pro/Enterprise | 60-200 rpm | Contact support@saferx.online |
+
+## Requirements
+
+- Python 3.8+
+- `httpx`, `pydantic` (installed automatically)

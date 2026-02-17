@@ -1,0 +1,43 @@
+{
+  "name": "@saferx_pharma/mcp-server",
+  "version": "1.0.0",
+  "description": "SafeRx Drug Safety API — Model Context Protocol Server",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "saferx-mcp": "dist/index.js"
+  },
+  "files": ["dist/", "README.md"],
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch"
+  },
+  "keywords": [
+    "mcp",
+    "saferx",
+    "drug-safety",
+    "pharmacy",
+    "healthcare",
+    "model-context-protocol"
+  ],
+  "author": "SafeRx <support@saferx.online>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KaRamHelal/SafeRx_OCR",
+    "directory": "mcp-server"
+  },
+  "homepage": "https://docs.saferx.online/ai-integration/mcp-server",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

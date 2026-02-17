@@ -1,0 +1,248 @@
+---
+title: Pharmacy Dispensing Integration
+subtitle: End-to-end guide for integrating drug safety screening into pharmacy software
+---
+
+## Overview
+
+This guide walks through integrating the SafeRx Drug Safety API into a pharmacy dispensing workflow. By the end, you'll have a complete integration that screens prescriptions before dispensing and presents safety alerts to the pharmacist.
+
+## Architecture
+
+```
+Prescription Entry → Drug Name Resolution → Safety Screening → Alert Triage → Dispensing Decision
+       │                    │                      │                │               │
+   Pharmacist          SafeRx API            All 6 domains    Pharmacist UI     Pharmacist
+   enters Rx           fuzzy match           in parallel       CRITICAL/HIGH     approves/rejects
+```
+
+## Integration Flow
+
+### 1. Capture the Prescription
+
+When a pharmacist enters a prescription, collect the drug names and patient context:
+
+```python
+prescription = {
+    "drugs": ["Augmentin 1g", "Glucophage 500mg", "Marivan"],
+    "patient_profile": {
+        "populations": ["geriatric"],
+        "conditions": ["diabetes", "hypertension"],
+    },
+}
+```
+
+### 2. Screen via the API
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import httpx
+
+    class PharmacySafetyScreener:
+        def __init__(self, base_url="https://saferx.online", api_key=None):
+            self.base_url = base_url
+            self.api_key = api_key  # Get one: POST /api/developers/keys/free → verify email
+            self.client = httpx.Client(timeout=30.0)
+
+        def screen(self, drugs, patient_profile=None, lang="en"):
+            body = {"drugs": drugs, "lang": lang}
+            if patient_profile:
+                body["patient_profile"] = patient_profile
+
+            resp = self.client.post(
+                f"{self.base_url}/api/drug_safety/check",
+                headers={
+                    "X-SafeRx-API-Key": self.api_key,
+                    "User-Agent": "PharmacySystem/1.0",
+                    "Content-Type": "application/json",
+                },
+                json=body,
+            )
+            resp.raise_for_status()
+            return resp.json()
+
+        def triage(self, result):
+            """Classify the screening result into an action."""
+            alerts = result.get("alerts", [])
+
+            critical = [a for a in alerts if a["severity"] == "CRITICAL"]
+            high = [a for a in alerts if a["severity"] == "HIGH"]
+
+            if critical:
+                return "BLOCK", critical  # Hard stop — requires override
+            elif high:
+                return "WARN", high       # Pharmacist must acknowledge
+            else:
+                return "PASS", []         # Safe to dispense
+    ```
+  </CodeBlock>
+  <CodeBlock title="TypeScript">
+    ```typescript
+    interface ScreeningResult {
+      action: "BLOCK" | "WARN" | "PASS";
+      alerts: Array<{ severity: string; message: string }>;
+    }
+
+    class PharmacySafetyScreener {
+      constructor(
+        private baseUrl = "https://saferx.online",
+        private apiKey: string,  // Get one: POST /api/developers/keys/free → verify email
+      ) {}
+
+      async screen(drugs: string[], patientProfile?: object): Promise<any> {
+        const resp = await fetch(`${this.baseUrl}/api/drug_safety/check`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-SafeRx-API-Key": this.apiKey,
+            "User-Agent": "PharmacySystem/1.0",
+          },
+          body: JSON.stringify({ drugs, patient_profile: patientProfile }),
+        });
+        return resp.json();
+      }
+
+      triage(result: any): ScreeningResult {
+        const alerts = result.alerts ?? [];
+        const critical = alerts.filter((a: any) => a.severity === "CRITICAL");
+        const high = alerts.filter((a: any) => a.severity === "HIGH");
+
+        if (critical.length > 0) return { action: "BLOCK", alerts: critical };
+        if (high.length > 0) return { action: "WARN", alerts: high };
+        return { action: "PASS", alerts: [] };
+      }
+    }
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+### 3. Severity-to-Action Mapping
+
+| Alert Severity | Dispensing Action | UI Behavior |
+|----------------|-------------------|-------------|
+| `CRITICAL` | Block dispensing | Red banner, requires pharmacist override with reason |
+| `HIGH` | Warn pharmacist | Orange modal, pharmacist must acknowledge |
+| `MODERATE` | Informational | Yellow inline note |
+| `LOW` | Optional display | Gray text, collapsed by default |
+
+### 4. Display Domain Details
+
+After the pharmacist reviews alerts, show full domain data for context:
+
+```python
+result = screener.screen(drugs, patient_profile)
+
+# Show BBW for all drugs
+for drug in result["drugs"]:
+    sfx_id = drug["SFX_ID"]
+    ae = result["safety"].get("side_effects", {}).get(sfx_id, {})
+    if ae.get("has_black_box_warning"):
+        bbw = ae["black_box_warning"]
+        print(f"BLACK BOX: {drug['brand_name']}")
+        print(f"  {bbw['warning_text']}")
+
+# Show interactions
+interactions = result["safety"].get("interactions", {})
+for ix in interactions.get("interactions", []):
+    print(f"DDI [{ix['severity_name']}]: {ix['description']}")
+    print(f"  Recommendation: {ix['recommendation']}")
+```
+
+## Patient Profile Mapping
+
+When your ERP system collects patient demographics, map them to SafeRx enums for enhanced safety screening:
+
+### Age to Population
+
+| ERP Patient Age | SafeRx Enum | Clinical Checks |
+|-----------------|-------------|-----------------|
+| < 18 years | `pediatric` | Pediatric dosing, contraindications |
+| ≥ 65 years | `geriatric` | Geriatric concerns, fall risk, anticholinergic burden |
+
+### Medical Conditions
+
+| ERP Condition | SafeRx Enum | ICD-10 Codes |
+|---------------|-------------|--------------|
+| Diabetes (Type 1 or 2) | `diabetes` | E10.x, E11.x |
+| Hypertension | `hypertension` | I10.x, I11.x |
+| Epilepsy | `epilepsy` | G40.x |
+
+### Organ Function Impairment
+
+| ERP Field | SafeRx Enum | Criteria |
+|-----------|-------------|----------|
+| eGFR < 60 mL/min | `renal` | CKD Stage 3+ |
+| Liver cirrhosis | `hepatic` | Child-Pugh B or C |
+| Heart failure | `cardiac` | NYHA Class II+ |
+
+### Example Mapping (Python)
+
+```python
+def map_patient_to_profile(erp_patient):
+    populations = []
+    conditions = []
+
+    # Age-based populations
+    if erp_patient.age < 18:
+        populations.append("pediatric")
+    elif erp_patient.age >= 65:
+        populations.append("geriatric")
+
+    # Organ impairment
+    if erp_patient.egfr < 60:
+        populations.append("renal")
+    if erp_patient.liver_disease:
+        populations.append("hepatic")
+    if erp_patient.heart_failure:
+        populations.append("cardiac")
+
+    # Medical conditions
+    if "diabetes" in erp_patient.diagnoses or "E11" in erp_patient.icd10_codes:
+        conditions.append("diabetes")
+    if "hypertension" in erp_patient.diagnoses or "I10" in erp_patient.icd10_codes:
+        conditions.append("hypertension")
+    if "epilepsy" in erp_patient.diagnoses or "G40" in erp_patient.icd10_codes:
+        conditions.append("epilepsy")
+
+    return {
+        "populations": populations if populations else None,
+        "conditions": conditions if conditions else None,
+    }
+```
+
+## Caching Strategy
+
+- **Drug metadata** — cache for 24 hours (rarely changes)
+- **Safety results** — cache for the duration of the dispensing session (same prescription)
+- **Do not cache across sessions** — drug data may be updated
+
+## Error Handling
+
+```python
+try:
+    result = screener.screen(drugs)
+except httpx.HTTPStatusError as e:
+    if e.response.status_code == 429:
+        # Rate limited — show cached results or queue for retry
+        pass
+    elif e.response.status_code == 401:
+        # Token expired — re-authenticate
+        pass
+    else:
+        # Log and proceed with manual screening
+        pass
+```
+
+## Timeout Handling
+
+Set a 30-second timeout. If the API is unavailable, fall back to manual pharmacist review:
+
+```python
+try:
+    result = screener.screen(drugs)
+except httpx.TimeoutException:
+    # API timeout — proceed with manual review
+    log_event("api_timeout", drugs=drugs)
+    return "MANUAL_REVIEW"
+```

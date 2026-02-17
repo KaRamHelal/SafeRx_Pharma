@@ -1,0 +1,34 @@
+---
+title: v1.0.0 — Initial Release
+date: 2026-02-14
+---
+
+## Changed (2026-02-16)
+
+- **`name` → `effect_name`** in adverse effect objects — the `name` field in `severe` and `common` effect arrays is now `effect_name`. This applies to B2B responses, OpenAPI specs, and SDK-generated types. No backward-compatibility alias is provided since no external B2B clients are in production.
+
+## Added
+
+- **Unified Drug Safety Check** (`POST /api/drug_safety/check`) — screen 1-20 drugs across 6 safety domains in a single request
+- **API Metadata** (`GET /api/drug_safety/metadata`) — discover available populations, conditions, risk scales, and database versions
+- **Six safety domains:**
+  - Adverse effects with Black Box Warnings, monitoring, and dose classification
+  - Drug-drug interactions (337K+ pairs) with severity scoring
+  - Pregnancy & lactation risk ratings (0-7 scale, 24,512 products)
+  - Food-drug interactions (38K+ interactions) with meal timing
+  - Clinical considerations for 5 populations and 14 conditions
+  - Dosing safety (dual-source, 19K+ products)
+- **Smart drug resolution** — fuzzy name matching for 28,557 Egyptian pharmaceutical products
+- **Alert bubbling** — critical safety issues surfaced as top-level alerts sorted by severity
+- **Bilingual support** — English and Arabic for rationale text, drug names, and clinical advice
+- **Transformation layer** — stable public field names decoupled from internal schema
+- **3-tier rate limiting** — Free (20/min, 60/day), Professional (60/min, 500/day), Enterprise (custom)
+- **Anti-scraping protection** — 6 heuristic checks with tier-aware enforcement
+- **Request integrity** — API key authentication with User-Agent validation
+
+## Security
+
+- Recursive identifier stripping — no internal database IDs in API responses
+- 24-hour audit log retention with automatic purge
+- Redis-cached API key lookup (5-minute TTL)
+- API key validation with tier-based access control

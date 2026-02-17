@@ -1,0 +1,187 @@
+---
+title: Mobile Health App Integration
+subtitle: Building medication safety features into mobile health applications
+---
+
+## Overview
+
+This guide covers integrating the SafeRx Drug Safety API into mobile health applications — medication trackers, pill reminder apps, and patient health companions. The focus is on caching strategies, offline behavior, and patient-friendly presentation.
+
+## Architecture
+
+```
+Mobile App
+  ├── Medication List (local storage)
+  ├── Safety Data Cache (SQLite/Realm)
+  └── SafeRx API Client
+       ├── API Key (stored securely)
+       ├── Request Queue (offline)
+       └── Background Refresh
+```
+
+## Kotlin (Android) Example
+
+```kotlin
+class SafeRxClient(
+    private val baseUrl: String = "https://saferx.online",
+    private val apiKey: String,  // Get one: POST /api/developers/keys/free → verify email
+) {
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .build()
+
+    suspend fun checkSafety(
+        drugs: List<String>,
+        lang: String = "en",
+    ): JSONObject {
+        val body = JSONObject().apply {
+            put("drugs", JSONArray(drugs))
+            put("lang", lang)
+        }
+
+        val request = Request.Builder()
+            .url("$baseUrl/api/drug_safety/check")
+            .post(body.toString().toRequestBody("application/json".toMediaType()))
+            .header("X-SafeRx-API-Key", apiKey)
+            .header("User-Agent", "SafeRxMobile/1.0")
+            .build()
+
+        return withContext(Dispatchers.IO) {
+            val response = client.newCall(request).execute()
+            JSONObject(response.body!!.string())
+        }
+    }
+}
+```
+
+## Swift (iOS) Example
+
+```swift
+class SafeRxClient {
+    private let baseURL = "https://saferx.online"
+    private let apiKey: String  // Get one: POST /api/developers/keys/free
+
+    init(apiKey: String) {
+        self.apiKey = apiKey
+    }
+
+    func checkSafety(drugs: [String], lang: String = "en") async throws -> [String: Any] {
+        var request = URLRequest(url: URL(string: "\(baseURL)/api/drug_safety/check")!)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(apiKey, forHTTPHeaderField: "X-SafeRx-API-Key")
+        request.setValue("SafeRxMobile/1.0", forHTTPHeaderField: "User-Agent")
+
+        let body: [String: Any] = ["drugs": drugs, "lang": lang]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, _) = try await URLSession.shared.data(for: request)
+        return try JSONSerialization.jsonObject(with: data) as! [String: Any]
+    }
+}
+```
+
+## Caching Strategy
+
+### What to Cache
+
+| Data | Cache Duration | Storage |
+|------|---------------|---------|
+| API metadata | 24 hours | SharedPreferences / UserDefaults |
+| Safety results (per drug set) | Current session | SQLite / Realm |
+| Drug resolution (name → SFX_ID) | 7 days | SQLite |
+| API key | Permanently | Secure storage (Keystore / Keychain) |
+
+### Cache Key Design
+
+```
+safety:{sorted_drug_ids}:{lang}:{profile_hash}
+```
+
+Sort drug IDs alphabetically and hash the patient profile to create a stable cache key.
+
+### Background Refresh
+
+When the user adds or removes a medication, trigger a background safety re-check:
+
+```kotlin
+// Android - WorkManager
+val workRequest = OneTimeWorkRequestBuilder<SafetyRefreshWorker>()
+    .setInputData(workDataOf("drugs" to drugList.toTypedArray()))
+    .setConstraints(
+        Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+    )
+    .build()
+
+WorkManager.getInstance(context).enqueue(workRequest)
+```
+
+## Offline Behavior
+
+When the device is offline:
+
+1. **Show cached results** if available for the current medication list
+2. **Queue the check** for when connectivity returns
+3. **Display a banner**: "Safety data may be outdated. Last checked: [timestamp]"
+4. **Never show "safe"** if the check hasn't been performed
+
+## Patient-Friendly Presentation
+
+### Severity Mapping
+
+| API Severity | Patient Display | Color | Icon |
+|-------------|----------------|-------|------|
+| `CRITICAL` | "Requires immediate attention" | Red | Shield with X |
+| `HIGH` | "Talk to your pharmacist" | Orange | Warning triangle |
+| `MODERATE` | "Good to know" | Yellow | Info circle |
+| `LOW` | (Hidden by default) | — | — |
+
+### Simplifying Clinical Data
+
+```kotlin
+fun formatForPatient(alert: JSONObject): String {
+    return when (alert.getString("type")) {
+        "ae_bbw" -> "This medication has a special safety warning from health authorities."
+        "ddi" -> "These medications may interact with each other. Ask your pharmacist."
+        "pllr_pregnancy" -> "This medication may not be safe during pregnancy."
+        "pllr_lactation" -> "This medication may not be safe while breastfeeding."
+        else -> alert.getString("message")
+    }
+}
+```
+
+### Food Timing Reminders
+
+Use the `food.timing` data to enhance pill reminder notifications:
+
+```kotlin
+fun getMealTimingReminder(timing: JSONObject): String {
+    return when (timing.getString("category")) {
+        "WITH_FOOD" -> "Take this medication with a meal"
+        "EMPTY_STOMACH" -> "Take this medication on an empty stomach (1 hour before or 2 hours after eating)"
+        "BEFORE_MEALS" -> "Take this medication before meals"
+        else -> "This medication can be taken with or without food"
+    }
+}
+```
+
+## Push Notifications
+
+Trigger push notifications for safety events:
+
+- New drug added → run safety check → if CRITICAL/HIGH alerts → push notification
+- Database update (new interaction discovered) → re-check saved medication lists
+
+## Bilingual Support
+
+For Egyptian apps supporting Arabic:
+
+```kotlin
+val lang = if (Locale.getDefault().language == "ar") "ar" else "en"
+val result = client.checkSafety(drugs, lang = lang)
+```
+
+Arabic fields include: drug names, interaction descriptions, recommendations, severity labels, and clinical rationale.

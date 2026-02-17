@@ -1,0 +1,59 @@
+---
+title: Structured Output
+subtitle: Parsing and summarizing drug safety data for AI applications
+---
+
+## Response Parsing Strategy
+
+### For Patient-Facing AI
+
+When building a patient-facing chatbot, extract and simplify:
+
+1. **Alerts first** — present `alerts[]` in plain language
+2. **Interactions** — summarize severity and recommendation
+3. **Food timing** — translate `timing.category` to patient instructions
+4. **Pregnancy/lactation** — clear risk communication with rationale
+
+### For Professional Systems
+
+When building clinical decision support:
+
+1. **Full alert triage** — pass the complete `alerts[]` array
+2. **Monitoring parameters** — extract from `side_effects.{id}.monitoring`
+3. **Severity scoring** — use numeric severity values for automated workflows
+4. **Population-specific data** — filter `clinical.drug_specific` by patient populations
+
+## Token Optimization
+
+To reduce token usage in AI pipelines, use the `include` parameter:
+
+```json
+{
+  "drugs": ["Augmentin 1g", "Marivan"],
+  "include": ["ddi", "pllr"]
+}
+```
+
+This returns only drug interactions and pregnancy/lactation data, significantly reducing response size.
+
+## Example: Summarize for a Patient
+
+```python
+def summarize_for_patient(response):
+    summary = []
+
+    # Critical alerts
+    for alert in response.get("alerts", []):
+        if alert["severity"] in ("CRITICAL", "HIGH"):
+            summary.append(f"Important: {alert['message']}")
+
+    # Food timing
+    for drug_id, food in response.get("safety", {}).get("food", {}).items():
+        timing = food.get("timing", {})
+        if timing.get("importance") == "MUST":
+            summary.append(
+                f"Meal timing: {timing.get('recommendation', '')}"
+            )
+
+    return "\n".join(summary) if summary else "No critical safety concerns found."
+```

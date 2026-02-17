@@ -1,0 +1,151 @@
+---
+title: Code Examples
+subtitle: Ready-to-run examples for common integration scenarios
+---
+
+## 1. Authentication Setup
+
+All examples use API key authentication via the `X-SafeRx-API-Key` header. Get a free key via email verification:
+
+```bash
+# Step 1: Request verification code
+curl -X POST https://saferx.online/api/developers/keys/free \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com"}'
+# Check your email for 6-digit code
+
+# Step 2: Verify and receive key
+curl -X POST https://saferx.online/api/developers/keys/free/verify \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com","code":"123456"}'
+```
+
+<CodeBlocks>
+  <CodeBlock title="Python">
+    ```python
+    import httpx
+
+    API_KEY = "sfx_free_your_key_here"  # Get one: POST /api/developers/keys/free → verify email
+    HEADERS = {
+        "X-SafeRx-API-Key": API_KEY,
+        "User-Agent": "MyApp/1.0",
+        "Content-Type": "application/json",
+    }
+    ```
+  </CodeBlock>
+  <CodeBlock title="TypeScript">
+    ```typescript
+    const API_KEY = "sfx_free_your_key_here"; // Get one: POST /api/developers/keys/free → verify email
+    const HEADERS = {
+      "X-SafeRx-API-Key": API_KEY,
+      "User-Agent": "MyApp/1.0",
+      "Content-Type": "application/json",
+    };
+    ```
+  </CodeBlock>
+</CodeBlocks>
+
+## 2. Basic Safety Check
+
+```python
+resp = httpx.post(
+    "https://saferx.online/api/drug_safety/check",
+    headers=HEADERS,
+    json={"drugs": ["Augmentin 1g", "Glucophage 500mg", "Marivan"]},
+)
+result = resp.json()
+print(f"Resolved: {result['meta']['resolved_count']}/{result['meta']['drug_count']}")
+```
+
+## 3. Patient Profile with Populations and Conditions
+
+```python
+resp = httpx.post(
+    "https://saferx.online/api/drug_safety/check",
+    headers=HEADERS,
+    json={
+        "drugs": ["Augmentin 1g", "Glucophage 500mg"],
+        "patient_profile": {
+            "populations": ["geriatric", "renal"],
+            "conditions": ["diabetes", "hypertension"],
+        },
+    },
+)
+```
+
+## 4. Selective Domain Inclusion
+
+```python
+# DDI-only check (fastest, smallest response)
+resp = httpx.post(
+    "https://saferx.online/api/drug_safety/check",
+    headers=HEADERS,
+    json={
+        "drugs": ["Augmentin 1g", "Marivan"],
+        "include": ["ddi"],
+    },
+)
+```
+
+## 5. Error Handling with Retry
+
+```python
+import random
+import time
+
+def safe_check(drugs, max_retries=3):
+    for attempt in range(max_retries):
+        resp = httpx.post(
+            "https://saferx.online/api/drug_safety/check",
+            headers=HEADERS,
+            json={"drugs": drugs},
+        )
+        if resp.status_code == 200:
+            return resp.json()
+        if resp.status_code == 401:
+            raise Exception("Invalid API key — check your X-SafeRx-API-Key header")
+        if resp.status_code == 429:
+            wait = int(resp.headers.get("Retry-After", 60))
+            time.sleep(wait + random.uniform(0, 5))
+            continue
+        resp.raise_for_status()
+    raise Exception("Max retries exceeded")
+```
+
+## 6. Arabic Language Response
+
+```python
+resp = httpx.post(
+    "https://saferx.online/api/drug_safety/check",
+    headers=HEADERS,
+    json={
+        "drugs": ["Augmentin 1g", "Marivan"],
+        "lang": "ar",
+    },
+)
+result = resp.json()
+# Rationale fields will be in Arabic
+for sfx_id, pllr in result["safety"].get("reproductive_safety", {}).items():
+    print(pllr["pregnancy_rationale"])  # Arabic text
+```
+
+## 7. Parsing and Displaying Alerts
+
+```python
+result = safe_check(["Augmentin 1g", "Marivan"])
+
+# Group by severity
+from collections import defaultdict
+by_severity = defaultdict(list)
+for alert in result["alerts"]:
+    by_severity[alert["severity"]].append(alert)
+
+# Display
+for severity in ["CRITICAL", "HIGH", "MODERATE", "LOW"]:
+    alerts = by_severity.get(severity, [])
+    if alerts:
+        print(f"\n--- {severity} ({len(alerts)}) ---")
+        for a in alerts:
+            print(f"  [{a['type']}] {a['message']}")
+            print(f"    Drugs: {', '.join(a['drugs_involved'])}")
+```

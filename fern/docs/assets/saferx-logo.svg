@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none">
+  <rect x="0" y="4" width="32" height="32" rx="6" fill="#0066CC"/>
+  <path d="M16 12 L10 20 L16 20 L16 28 L22 20 L16 20 Z" fill="white"/>
+  <text x="40" y="28" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="700" fill="#1a1a2e">
+    Safe<tspan fill="#0066CC">Rx</tspan>
+  </text>
+</svg>
