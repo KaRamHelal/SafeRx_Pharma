@@ -32,9 +32,10 @@ info:
 
     ## Getting Started
 
-    1. Get your API key via `POST /api/developers/keys/free` (free) or the [Developer Portal](https://saferx.online/developer)
-    2. Call `POST /api/drug_safety/check` with your drug list and API key in the `X-SafeRx-API-Key` header
-    3. Parse the structured response — alerts first, then domain details
+    1. Request verification code: `POST /api/developers/keys/free` with your email
+    2. Check your email for 6-digit code (expires in 30 min)
+    3. Verify and receive key: `POST /api/developers/keys/free/verify` with email + code
+    4. Call `POST /api/drug_safety/check` with your API key in `X-SafeRx-API-Key` header
 
     For detailed integration guides, visit [docs.saferx.online](https://docs.saferx.online).
   termsOfService: https://saferx.online/terms
@@ -513,20 +514,20 @@ paths:
                         - "hepatic"
                         - "renal"
                       conditions:
-                        - "diabetes"
-                        - "hypertension"
-                        - "epilepsy"
-                        - "heart_failure"
-                        - "asthma"
-                        - "liver_disease"
-                        - "kidney_disease"
-                        - "thyroid"
-                        - "depression"
-                        - "blood_disorders"
-                        - "ischemic_heart"
                         - "arrhythmia"
-                        - "gout"
-                        - "osteoporosis"
+                        - "asthma"
+                        - "bph"
+                        - "coronary"
+                        - "depression"
+                        - "diabetes"
+                        - "epilepsy"
+                        - "gi_bleeding"
+                        - "glaucoma"
+                        - "heart_failure"
+                        - "hypertension"
+                        - "hyperthyroidism"
+                        - "hypothyroidism"
+                        - "parkinsons"
                     risk_scales:
                       pllr_pregnancy:
                         "0": "Unknown"
@@ -551,14 +552,14 @@ paths:
                         - "MODERATE"
                         - "HIGH"
                       ddi_severity:
-                        "1": "Unknown"
-                        "2": "Minor"
-                        "3": "Moderate"
-                        "4": "Major"
-                        "5": "Contraindicated"
+                        "0": "Unknown"
+                        "1": "Minor"
+                        "2": "Moderate"
+                        "3": "Major"
+                        "4": "Contraindicated"
                     database_versions:
                       ae: "V19"
-                      ddi: "V7"
+                      ddi: "V8"
                       clinical: "7.3.1"
                       pllr: "V2.3"
                       food: "V5"
@@ -667,14 +668,14 @@ paths:
       operationId: createFreeApiKey
       x-fern-sdk-group-name: developers
       x-fern-sdk-method-name: createFreeKey
-      summary: Get a free API key
+      summary: Request free API key verification code
       description: |
-        Get a free-tier API key with just an email address. No registration required.
+        Step 1 of 2: Request a verification code to get a free API key.
 
-        - **Idempotent:** same email always returns the same key
-        - **Limit:** 1 key per email
-        - **Key format:** `sfx_free_<40 hex chars>`
-        - **Free tier limits:** 20 requests/minute, 60 requests/day
+        - Sends a 6-digit code to your email (expires in 30 minutes)
+        - Max 5 codes per email per hour (anti-spam)
+        - If email already has a verified key, returns it immediately
+        - Use POST /api/developers/keys/free/verify with the code to receive your key
       tags:
         - Developers
       security: []
@@ -693,7 +694,99 @@ paths:
                   example: "developer@example.com"
       responses:
         "200":
-          description: API key (new or existing)
+          description: Verification code sent or existing key returned
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    description: New user - code sent
+                    properties:
+                      message:
+                        type: string
+                        example: "Verification code sent to your email"
+                      email:
+                        type: string
+                        example: "developer@example.com"
+                  - type: object
+                    description: Existing verified user - key returned
+                    properties:
+                      api_key:
+                        type: string
+                        example: "sfx_free_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+                      tier:
+                        type: string
+                        example: "free"
+                      limits:
+                        type: object
+                        properties:
+                          requests_per_minute:
+                            type: integer
+                            example: 20
+                          requests_per_day:
+                            type: integer
+                            example: 60
+                      note:
+                        type: string
+                        example: "Existing key returned (1 key per email)"
+        "429":
+          description: Too many verification requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Too many verification requests. Please try again later."
+        "500":
+          description: Failed to send verification email
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Failed to send verification email"
+
+  /api/developers/keys/free/verify:
+    post:
+      operationId: verifyFreeApiKey
+      x-fern-sdk-group-name: developers
+      x-fern-sdk-method-name: verifyFreeKey
+      summary: Verify email and receive free API key
+      description: |
+        Step 2 of 2: Verify your email with the 6-digit code and receive your API key.
+
+        - Code expires after 30 minutes
+        - Max 5 wrong attempts per code (then must request new code)
+        - On success: issues sfx_free_ key (persistent, 1 per email)
+        - Free tier: 20 requests/minute, 60 requests/day
+      tags:
+        - Developers
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, code]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: The email you used in step 1
+                  example: "developer@example.com"
+                code:
+                  type: string
+                  pattern: '^\d{6}$'
+                  description: 6-digit verification code from email
+                  example: "123456"
+      responses:
+        "200":
+          description: Email verified, API key issued
           content:
             application/json:
               schema:
@@ -701,11 +794,11 @@ paths:
                 properties:
                   api_key:
                     type: string
-                    description: Your free-tier API key
+                    description: Your persistent free-tier API key
                     example: "sfx_free_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
                   tier:
                     type: string
-                    enum: [free]
+                    example: "free"
                   limits:
                     type: object
                     properties:
@@ -715,9 +808,16 @@ paths:
                       requests_per_day:
                         type: integer
                         example: 60
-                  note:
+        "400":
+          description: Invalid code or no pending verification
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
                     type: string
-                    description: Present when returning existing key
+                    example: "Invalid verification code"
         "403":
           description: Key deactivated
           content:
@@ -729,6 +829,7 @@ paths:
                     type: string
                   support:
                     type: string
+                    example: "support@saferx.online"
 
 components:
   securitySchemes:
@@ -741,7 +842,7 @@ components:
 
         | Prefix | Tier | How to get |
         |--------|------|------------|
-        | `sfx_free_` | Free (20 rpm, 60 rpd) | `POST /api/developers/keys/free` |
+        | `sfx_free_` | Free (20 rpm, 60 rpd) | `POST /api/developers/keys/free` → verify email → `POST /api/developers/keys/free/verify` |
         | `sk_test_` | Free (20 rpm, 60 rpd) | Developer Portal |
         | `sk_live_` | Pro/Enterprise (60-200 rpm) | Contact support |
 
@@ -838,20 +939,20 @@ components:
     Condition:
       type: string
       enum:
-        - "diabetes"
-        - "hypertension"
-        - "epilepsy"
-        - "heart_failure"
-        - "asthma"
-        - "liver_disease"
-        - "kidney_disease"
-        - "thyroid"
-        - "depression"
-        - "blood_disorders"
-        - "ischemic_heart"
         - "arrhythmia"
-        - "gout"
-        - "osteoporosis"
+        - "asthma"
+        - "bph"
+        - "coronary"
+        - "depression"
+        - "diabetes"
+        - "epilepsy"
+        - "gi_bleeding"
+        - "glaucoma"
+        - "heart_failure"
+        - "hypertension"
+        - "hyperthyroidism"
+        - "hypothyroidism"
+        - "parkinsons"
       description: |
         Patient comorbidity. Used by the `clinical` domain to identify
         drugs that are contraindicated or require caution for patients
@@ -2028,7 +2129,7 @@ components:
               example: "V19"
             ddi:
               type: string
-              example: "V7"
+              example: "V8"
             clinical:
               type: string
               example: "7.3.1"
