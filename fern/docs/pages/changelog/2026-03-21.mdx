@@ -1,0 +1,27 @@
+# March 21, 2026
+
+## V102 Main Registry — Database Expansion
+
+**Product coverage expanded from 28,557 to 66,704 products.**
+
+The SafeRx drug registry has been upgraded to V102, more than doubling the product database with a unified three-tier classification:
+
+| Tier | Count | Description |
+|------|-------|-------------|
+| Pharmaceutical | 22,062 | Prescription and OTC medications |
+| Semi-pharmaceutical | 11,556 | Medical devices, supplements with therapeutic claims |
+| Non-pharmaceutical | 33,086 | Health products, cosmetics, wellness items |
+
+### What's New
+
+- **Product tiers** — all products now classified as pharmaceutical, semi-pharmaceutical, or non-pharmaceutical
+- **Product families** — related products (different strengths, forms) linked via parent hierarchy
+- **Expanded metadata** — clinical uses, indications, dosing information, mechanism of action, and warnings now available for most products
+- **Arabic enrichment** — bilingual name, description, and ingredient data across all tiers
+- **Stock availability** — real-time stock status indicator
+
+### API Impact
+
+**No breaking changes to the Drug Safety API.** The public field names (`SFX_ID`, `brand_name`, `active_ingredient`, `form`, etc.) remain unchanged. The drug resolution engine now matches against the expanded 66,704-product database.
+
+Existing SDK packages (Python, TypeScript, C#) and MCP server continue to work without updates.

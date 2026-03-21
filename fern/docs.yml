@@ -11,8 +11,8 @@ logo:
 
 colors:
   accent-primary:
-    light: "#0066CC"
-    dark: "#4D9FFF"
+    light: "#059669"
+    dark: "#34d399"
   background:
     light: "#FFFFFF"
     dark: "#0D1117"
@@ -30,6 +30,7 @@ tabs:
     icon: fa-solid fa-book
   sdks:
     display-name: SDKs
+    slug: sdks
     icon: fa-solid fa-cube
 
 navigation:
@@ -96,6 +97,10 @@ navigation:
             path: docs/pages/examples/postman.mdx
       - section: Changelog
         contents:
+          - page: "2026-03-21"
+            path: docs/pages/changelog/2026-03-21.mdx
+          - page: "2026-03-17"
+            path: docs/pages/changelog/2026-03-17.mdx
           - page: "2026-02-17"
             path: docs/pages/changelog/2026-02-17.mdx
           - page: "2026-02-14"

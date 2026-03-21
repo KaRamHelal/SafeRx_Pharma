@@ -14,7 +14,7 @@ info:
 
     - **Unified endpoint** — screen 1–20 drugs in a single POST request
     - **Six safety domains** checked in parallel (~40ms average response)
-    - **28,557 Egyptian products** with bilingual English/Arabic support
+    - **66,704 Egyptian products** with bilingual English/Arabic support
     - **Smart drug resolution** — accepts trade names, generic names, or partial matches
     - **Alert bubbling** — critical safety issues surfaced as top-level alerts
     - **Stable API contract** — public field names are versioned and will not change without notice
@@ -514,20 +514,20 @@ paths:
                         - "hepatic"
                         - "renal"
                       conditions:
-                        - "diabetes"
-                        - "hypertension"
-                        - "epilepsy"
-                        - "heart_failure"
-                        - "asthma"
-                        - "liver_disease"
-                        - "kidney_disease"
-                        - "thyroid"
-                        - "depression"
-                        - "blood_disorders"
-                        - "ischemic_heart"
                         - "arrhythmia"
-                        - "gout"
-                        - "osteoporosis"
+                        - "asthma"
+                        - "bph"
+                        - "coronary"
+                        - "depression"
+                        - "diabetes"
+                        - "epilepsy"
+                        - "gi_bleeding"
+                        - "glaucoma"
+                        - "heart_failure"
+                        - "hypertension"
+                        - "hyperthyroidism"
+                        - "hypothyroidism"
+                        - "parkinsons"
                     risk_scales:
                       pllr_pregnancy:
                         "0": "Unknown"
@@ -552,20 +552,20 @@ paths:
                         - "MODERATE"
                         - "HIGH"
                       ddi_severity:
-                        "1": "Unknown"
-                        "2": "Minor"
-                        "3": "Moderate"
-                        "4": "Major"
-                        "5": "Contraindicated"
+                        "0": "Unknown"
+                        "1": "Minor"
+                        "2": "Moderate"
+                        "3": "Major"
+                        "4": "Contraindicated"
                     database_versions:
                       ae: "V19"
-                      ddi: "V7"
+                      ddi: "V8"
                       clinical: "7.3.1"
                       pllr: "V2.3"
                       food: "V5"
                       dose: "V3.2"
                     database_stats:
-                      ae_products: 28557
+                      ae_products: 66704
                       ae_coverage_percent: 98.2
                       ddi_total_pairs: 337000
                       clinical_conditions: 14
@@ -939,20 +939,20 @@ components:
     Condition:
       type: string
       enum:
-        - "diabetes"
-        - "hypertension"
-        - "epilepsy"
-        - "heart_failure"
-        - "asthma"
-        - "liver_disease"
-        - "kidney_disease"
-        - "thyroid"
-        - "depression"
-        - "blood_disorders"
-        - "ischemic_heart"
         - "arrhythmia"
-        - "gout"
-        - "osteoporosis"
+        - "asthma"
+        - "bph"
+        - "coronary"
+        - "depression"
+        - "diabetes"
+        - "epilepsy"
+        - "gi_bleeding"
+        - "glaucoma"
+        - "heart_failure"
+        - "hypertension"
+        - "hyperthyroidism"
+        - "hypothyroidism"
+        - "parkinsons"
       description: |
         Patient comorbidity. Used by the `clinical` domain to identify
         drugs that are contraindicated or require caution for patients
@@ -2129,7 +2129,7 @@ components:
               example: "V19"
             ddi:
               type: string
-              example: "V7"
+              example: "V8"
             clinical:
               type: string
               example: "7.3.1"
@@ -2149,7 +2149,7 @@ components:
             ae_products:
               type: integer
               description: Products with adverse effect data
-              example: 28557
+              example: 66704
             ae_coverage_percent:
               type: number
               format: float
