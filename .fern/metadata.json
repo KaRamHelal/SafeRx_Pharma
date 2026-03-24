@@ -1,0 +1,9 @@
+{
+    "cliVersion": "3.78.0",
+    "generatorName": "fernapi/fern-typescript-sdk",
+    "generatorVersion": "3.48.2",
+    "generatorConfig": {
+        "namespaceExport": "SafeRx"
+    },
+    "sdkVersion": "1.1.0"
+}
