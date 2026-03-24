@@ -1,56 +1,51 @@
-# SafeRx Drug Safety API - C# SDK
+# SafeRx C# SDK
 
-This directory contains the Fern configuration for generating the C# SDK.
+Screen drugs for adverse effects, interactions, pregnancy/lactation risks, food interactions, and dosing across 28,000+ Egyptian pharmaceuticals.
 
-## Generating the SDK
-
-```bash
-cd fern/apis/drug-safety-csharp
-fern generate --group csharp-sdk
-```
-
-## Known Issues
-
-### StringContent Disposal Bug (Fern v2.20.5)
-
-The generated SDK has a bug in retry logic that causes `ObjectDisposedException`.
-
-**Symptom:**
-```
-System.ObjectDisposedException: Cannot access a disposed object.
-Object name: 'System.Net.Http.StringContent'.
-```
-
-**Root Cause:**
-The `CloneRequestAsync()` method in the generated `RawClient.cs` reuses the `StringContent` reference instead of creating a new instance. When retry disposes the cloned request, it also disposes the shared content.
-
-**Workaround:**
-After regenerating, manually patch `RawClient.cs` to clone `StringContent` instances in the retry path. This will be unnecessary once Fern fixes the upstream bug.
-
-## Publishing
+## Installation
 
 ```bash
-cd generated/csharp-sdk
-dotnet pack -c Release
-dotnet nuget push bin/Release/SaferxApi.X.Y.Z.nupkg \
-  --api-key YOUR_NUGET_KEY \
-  --source https://api.nuget.org/v3/index.json
+dotnet add package SafeRx
 ```
 
-## Files
+## Quick Start
 
-- `generators.yml` - Fern generator configuration (currently using v2.20.5)
-- `openapi/openapi.yaml` - OpenAPI 3.0.3 spec (converted from 3.1.1 for C# compatibility)
+```csharp
+using SaferxApi;
 
-## SDK Differences from Python/TypeScript
+var client = new SaferxApiClient("sfx_free_YOUR_KEY_HERE");
 
-1. **OpenAPI Version**: Uses 3.0.3 (not 3.1.1) due to C# generator requirements
-2. **Nullable Handling**: `nullable: true` instead of `oneOf` with null type
-3. **Field Naming**: PascalCase properties with snake_case JSON serialization
+var response = await client.DrugSafety.CheckAsync(new DrugSafetyCheckRequest
+{
+    Drugs = new[] { "Augmentin 1g", "Glucophage 500mg", "Marivan" },
+    Include = new[] { "ae", "ddi", "pllr", "food", "clinical", "dose" },
+    Lang = "en"
+});
 
-## Version History
+// High-severity alerts bubbled to top
+foreach (var alert in response.Alerts)
+{
+    Console.WriteLine($"[{alert.Severity}] {alert.Message}");
+}
+```
 
-- **0.0.5** (2026-02-17): Fixed ObjectDisposedException bug
-- **0.0.4** (2026-02-17): Initial release with auth param fix
-- **0.0.3** (2026-02-16): Namespace updates
-- **0.0.1-0.0.2** (2026-02-15): Initial development
+## Documentation
+
+- **API Docs:** https://docs.saferx.online
+- **GitHub:** https://github.com/KaRamHelal/SafeRx_Pharma
+- **Get a free API key:** `POST https://saferx.online/api/developers/keys/free`
+
+## Safety Domains
+
+| Domain | Description |
+|--------|-------------|
+| `ae` | Adverse effects, Black Box Warnings, monitoring |
+| `ddi` | Drug-drug interactions (requires 2+ drugs) |
+| `pllr` | Pregnancy & lactation risk ratings |
+| `food` | Meal timing & food-drug conflicts |
+| `clinical` | Population & condition safety alerts |
+| `dose` | Maximum daily dose (dual-source: WHO DDD + OpenFDA MDD) |
+
+## License
+
+MIT
