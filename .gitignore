@@ -1,13 +1,5 @@
-node_modules/
+.mypy_cache/
+.ruff_cache/
+__pycache__/
 dist/
-*.log
-.npmrc
-.env
-package-lock.json
-
-# Fern generated output
-fern/generated/
-
-# OS files
-.DS_Store
-Thumbs.db
+poetry.toml

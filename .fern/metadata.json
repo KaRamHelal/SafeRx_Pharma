@@ -1,0 +1,9 @@
+{
+  "cliVersion": "3.78.0",
+  "generatorName": "fernapi/fern-python-sdk",
+  "generatorVersion": "4.57.2",
+  "generatorConfig": {
+    "client_class_name": "SafeRxClient"
+  },
+  "sdkVersion": "1.1.0"
+}
