@@ -155,7 +155,7 @@ paths:
                     drugs:
                       - input: "Augmentin 1g"
                         resolved: true
-                        SFX_ID: "SRX-010-004748"
+                        sfrx_id: "SRX-010-004748"
                         brand_name: "AUGMENTIN 1GM 14 TAB"
                         active_ingredient: "AMOXICILLIN + CLAVULANIC ACID"
                         form: "Oral Tablet"
@@ -167,7 +167,7 @@ paths:
                         price_egp: 120.0
                       - input: "Glucophage 500mg"
                         resolved: true
-                        SFX_ID: "SRX-008-002145"
+                        sfrx_id: "SRX-008-002145"
                         brand_name: "GLUCOPHAGE 500MG 50 TAB"
                         active_ingredient: "METFORMIN HCL"
                         form: "Oral Tablet"
@@ -179,7 +179,7 @@ paths:
                         price_egp: 36.0
                       - input: "Marivan"
                         resolved: true
-                        SFX_ID: "SRX-012-003336"
+                        sfrx_id: "SRX-012-003336"
                         brand_name: "MARIVAN 2MG 30 TAB"
                         active_ingredient: "WARFARIN SODIUM"
                         form: "Oral Tablet"
@@ -258,8 +258,8 @@ paths:
                           moderate: 0
                           minor: 0
                         interactions:
-                          - drug_1_id: "SRX-010-004748"
-                            drug_2_id: "SRX-012-003336"
+                          - sfrx_id_1: "SRX-010-004748"
+                            sfrx_id_2: "SRX-012-003336"
                             severity: 3
                             severity_name: "MAJOR"
                             base_severity: 3
@@ -1041,7 +1041,7 @@ components:
       required:
         - input
         - resolved
-        - SFX_ID
+        - sfrx_id
         - brand_name
         - active_ingredient
         - form
@@ -1054,12 +1054,21 @@ components:
           type: boolean
           description: Always `true` for drugs in this array
           example: true
-        SFX_ID:
+        sfrx_id:
           type: string
           description: |
             SafeRx product identifier. Primary key used across all safety
             domains. Format: `SRX-{category}-{sequence}`.
           example: "SRX-010-004748"
+        parent_sfrx_id:
+          oneOf:
+            - type: string
+            - type: "null"
+          description: |
+            Parent product identifier for strength/pack variants.
+            When non-null, this product is a variant of the parent product.
+            Use this to group related products (e.g., Augmentin 625mg and 1g).
+          example: null
         brand_name:
           type: string
           description: Registered trade name with strength and pack size
@@ -1114,7 +1123,7 @@ components:
           additionalProperties:
             $ref: '#/components/schemas/SideEffectsData'
           description: |
-            Adverse effects data keyed by SFX_ID. Includes risk level,
+            Adverse effects data keyed by sfrx_id. Includes risk level,
             Black Box Warnings, severe/common effects, monitoring, and
             dose classification.
         interactions:
@@ -1123,19 +1132,19 @@ components:
           type: object
           additionalProperties:
             $ref: '#/components/schemas/ReproductiveSafetyData'
-          description: Pregnancy & lactation risk data keyed by SFX_ID
+          description: Pregnancy & lactation risk data keyed by sfrx_id
         food:
           type: object
           additionalProperties:
             $ref: '#/components/schemas/FoodData'
-          description: Food-drug interaction data keyed by SFX_ID
+          description: Food-drug interaction data keyed by sfrx_id
         clinical:
           $ref: '#/components/schemas/ClinicalData'
         dosing:
           type: object
           additionalProperties:
             $ref: '#/components/schemas/DosingData'
-          description: Maximum daily dose data keyed by SFX_ID
+          description: Maximum daily dose data keyed by sfrx_id
 
     # --- Side Effects (ae) ---
 
@@ -1454,13 +1463,13 @@ components:
     Interaction:
       type: object
       properties:
-        drug_1_id:
+        sfrx_id_1:
           type: string
-          description: SFX_ID of the first drug in the interaction pair
+          description: sfrx_id of the first drug in the interaction pair
           example: "SRX-010-004748"
-        drug_2_id:
+        sfrx_id_2:
           type: string
-          description: SFX_ID of the second drug in the interaction pair
+          description: sfrx_id of the second drug in the interaction pair
           example: "SRX-012-003336"
         severity:
           type: integer
@@ -1755,7 +1764,7 @@ components:
           type: object
           additionalProperties:
             $ref: '#/components/schemas/DrugClinicalData'
-          description: Per-drug clinical data keyed by SFX_ID
+          description: Per-drug clinical data keyed by sfrx_id
         condition_alerts:
           type: array
           items:
@@ -1814,7 +1823,7 @@ components:
       properties:
         drug_id:
           type: string
-          description: SFX_ID of the drug involved
+          description: sfrx_id of the drug involved
           example: "SRX-012-003336"
         drug:
           type: string

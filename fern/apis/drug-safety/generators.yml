@@ -13,6 +13,24 @@ groups:
           token: ${PYPI_TOKEN}
         config:
           client_class_name: SafeRxClient
+        metadata:
+          description: "SafeRx Drug Safety API — Python SDK. Screen drugs for adverse effects, interactions, pregnancy/lactation risks, food interactions, and dosing across 28,000+ Egyptian pharmaceuticals."
+          authors:
+            - name: "SafeRx"
+              email: "support@saferx.online"
+          license: MIT
+          keywords:
+            - drug-safety
+            - pharmacy
+            - drug-interactions
+            - adverse-effects
+            - pregnancy-safety
+            - egypt
+            - pharmaceutical
+            - mcp
+          homepage: "https://docs.saferx.online"
+          documentation: "https://docs.saferx.online"
+          repository: "https://github.com/KaRamHelal/SafeRx_Pharma"
 
   ts-sdk:
     generators:
@@ -24,3 +42,20 @@ groups:
           token: ${NPM_TOKEN}
         config:
           namespaceExport: SafeRx
+        metadata:
+          description: "SafeRx Drug Safety API — TypeScript SDK. Screen drugs for adverse effects, interactions, pregnancy/lactation risks, food interactions, and dosing across 28,000+ Egyptian pharmaceuticals."
+          authors:
+            - name: "SafeRx"
+              email: "support@saferx.online"
+          license: MIT
+          keywords:
+            - drug-safety
+            - pharmacy
+            - drug-interactions
+            - adverse-effects
+            - pregnancy-safety
+            - egypt
+            - pharmaceutical
+            - mcp
+          homepage: "https://docs.saferx.online"
+          repository: "https://github.com/KaRamHelal/SafeRx_Pharma"
