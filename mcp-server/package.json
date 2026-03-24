@@ -1,6 +1,6 @@
 {
   "name": "@saferx_pharma/mcp-server",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "SafeRx Drug Safety API — Model Context Protocol Server",
   "type": "module",
   "main": "dist/index.js",
