@@ -97,6 +97,8 @@ navigation:
             path: docs/pages/examples/postman.mdx
       - section: Changelog
         contents:
+          - page: "2026-03-24"
+            path: docs/pages/changelog/2026-03-24.mdx
           - page: "2026-03-21"
             path: docs/pages/changelog/2026-03-21.mdx
           - page: "2026-03-17"
