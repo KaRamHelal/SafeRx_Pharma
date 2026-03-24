@@ -14,7 +14,7 @@ info:
 
     - **Unified endpoint** — screen 1–20 drugs in a single POST request
     - **Six safety domains** checked in parallel (~40ms average response)
-    - **66,704 Egyptian products** with bilingual English/Arabic support
+    - **28,557 Egyptian products** with bilingual English/Arabic support
     - **Smart drug resolution** — accepts trade names, generic names, or partial matches
     - **Alert bubbling** — critical safety issues surfaced as top-level alerts
     - **Stable API contract** — public field names are versioned and will not change without notice
@@ -213,7 +213,7 @@ paths:
                               frequency_category: 2
                               severity: 5
                               severity_category: "life_threatening"
-                              source: "clinical_validation_2026"
+                              source: "SafeRx"
                           common:
                             - effect_name: "Bruising"
                               name_ar: "كدمات"
@@ -260,19 +260,23 @@ paths:
                         interactions:
                           - drug_1_id: "SRX-010-004748"
                             drug_2_id: "SRX-012-003336"
-                            severity: 4
+                            severity: 3
                             severity_name: "MAJOR"
+                            base_severity: 3
                             description: "Amoxicillin may increase the anticoagulant activities of Warfarin."
                             description_ar: "قد يزيد الأموكسيسيللين من تأثير الوارفارين المضاد للتجلط."
+                            clinical_effect: "Increased bleeding risk"
+                            clinical_effect_ar: "زيادة خطر النزيف"
                             recommendation: "Monitor INR/PT. Watch for signs of bleeding."
                             recommendation_ar: "مراقبة INR/PT. مراقبة علامات النزيف."
-                            source: "DrugBank"
+                            management: "Monitor INR closely when starting or stopping amoxicillin."
+                            management_ar: "مراقبة INR عند بدء أو وقف الأموكسيسيللين."
                       reproductive_safety:
                         SRX-012-003336:
                           pregnancy_risk_level: 7
-                          pregnancy_risk_name: "Absolutely Contraindicated"
+                          pregnancy_risk_name: "Contraindicated — Teratogenic Risk"
                           lactation_risk_level: 4
-                          lactation_risk_name: "Likely Unsafe"
+                          lactation_risk_name: "Moderate Risk"
                           pregnancy_rationale: "Warfarin is absolutely contraindicated in pregnancy. FDA Category X. Causes warfarin embryopathy."
                           lactation_rationale: "Warfarin is excreted in breast milk. Risk of hemorrhage in the nursing infant."
                           pregnancy_warning:
@@ -281,6 +285,15 @@ paths:
                             categories:
                               - "TERATOGENIC"
                               - "DEATH_RISK"
+                          preg_t1_risk: 7
+                          preg_t2_risk: 7
+                          preg_t3_risk: 7
+                          preg_t1_note: "Warfarin embryopathy risk highest in first trimester (weeks 6-9)."
+                          preg_t2_note: "CNS abnormalities and fetal hemorrhage risk."
+                          preg_t3_note: "Fetal and neonatal hemorrhage risk; discontinue before delivery."
+                          lact_rid: 0.0
+                          lact_milk_level_mgl: null
+                          lact_mp_ratio: null
                           lactation_warning:
                             has_warning: false
                             text: null
@@ -292,7 +305,7 @@ paths:
                             importance: "PREFERRED"
                             recommendation: "Can be taken with or without food. Take at the same time each day."
                             recommendation_ar: "يمكن تناوله مع أو بدون طعام. تناوله في نفس الوقت يومياً."
-                            evidence_level: "FDA_LABEL"
+                            evidence_level: "primary"
                             severity: 2
                             rationale: ""
                           conflicts:
@@ -514,39 +527,39 @@ paths:
                         - "hepatic"
                         - "renal"
                       conditions:
-                        - "arrhythmia"
-                        - "asthma"
-                        - "bph"
-                        - "coronary"
-                        - "depression"
                         - "diabetes"
-                        - "epilepsy"
-                        - "gi_bleeding"
-                        - "glaucoma"
-                        - "heart_failure"
                         - "hypertension"
-                        - "hyperthyroidism"
-                        - "hypothyroidism"
-                        - "parkinsons"
+                        - "epilepsy"
+                        - "heart_failure"
+                        - "asthma"
+                        - "liver_disease"
+                        - "kidney_disease"
+                        - "thyroid"
+                        - "depression"
+                        - "blood_disorders"
+                        - "ischemic_heart"
+                        - "arrhythmia"
+                        - "gout"
+                        - "osteoporosis"
                     risk_scales:
                       pllr_pregnancy:
-                        "0": "Unknown"
-                        "1": "Safe"
-                        "2": "Likely Safe"
-                        "3": "Possibly Unsafe"
-                        "4": "Likely Unsafe"
-                        "5": "Unsafe"
+                        "0": "No Data Available"
+                        "1": "Compatible"
+                        "2": "Probably Compatible"
+                        "3": "Use With Caution"
+                        "4": "Moderate Risk"
+                        "5": "High Risk"
                         "6": "Contraindicated"
-                        "7": "Absolutely Contraindicated"
+                        "7": "Contraindicated — Teratogenic Risk"
                       pllr_lactation:
-                        "0": "Unknown"
-                        "1": "Safe"
-                        "2": "Likely Safe"
-                        "3": "Possibly Unsafe"
-                        "4": "Likely Unsafe"
-                        "5": "Unsafe"
+                        "0": "No Data Available"
+                        "1": "Compatible"
+                        "2": "Probably Compatible"
+                        "3": "Use With Caution"
+                        "4": "Moderate Risk"
+                        "5": "High Risk"
                         "6": "Contraindicated"
-                        "7": "Absolutely Contraindicated"
+                        "7": "Contraindicated — Teratogenic Risk"
                       ae_risk_levels:
                         - "LOW"
                         - "MODERATE"
@@ -561,11 +574,11 @@ paths:
                       ae: "V19"
                       ddi: "V8"
                       clinical: "7.3.1"
-                      pllr: "V2.3"
+                      pllr: "V3.0.4"
                       food: "V5"
                       dose: "V3.2"
                     database_stats:
-                      ae_products: 66704
+                      ae_products: 28557
                       ae_coverage_percent: 98.2
                       ddi_total_pairs: 337000
                       clinical_conditions: 14
@@ -939,20 +952,20 @@ components:
     Condition:
       type: string
       enum:
-        - "arrhythmia"
-        - "asthma"
-        - "bph"
-        - "coronary"
-        - "depression"
         - "diabetes"
-        - "epilepsy"
-        - "gi_bleeding"
-        - "glaucoma"
-        - "heart_failure"
         - "hypertension"
-        - "hyperthyroidism"
-        - "hypothyroidism"
-        - "parkinsons"
+        - "epilepsy"
+        - "heart_failure"
+        - "asthma"
+        - "liver_disease"
+        - "kidney_disease"
+        - "thyroid"
+        - "depression"
+        - "blood_disorders"
+        - "ischemic_heart"
+        - "arrhythmia"
+        - "gout"
+        - "osteoporosis"
       description: |
         Patient comorbidity. Used by the `clinical` domain to identify
         drugs that are contraindicated or require caution for patients
@@ -1257,8 +1270,8 @@ components:
           example: "life_threatening"
         source:
           type: string
-          description: Data source for this effect
-          example: "clinical_validation_2026"
+          description: Data source attribution (always "SafeRx" for primary data)
+          example: "SafeRx"
         clinical_advice:
           type: string
           description: Brief clinical guidance
@@ -1423,19 +1436,19 @@ components:
       properties:
         contraindicated:
           type: integer
-          description: Number of contraindicated (severity 5) interactions
+          description: Number of contraindicated (severity 4) interactions
           example: 0
         major:
           type: integer
-          description: Number of major (severity 4) interactions
+          description: Number of major (severity 3) interactions
           example: 1
         moderate:
           type: integer
-          description: Number of moderate (severity 3) interactions
+          description: Number of moderate (severity 2) interactions
           example: 0
         minor:
           type: integer
-          description: Number of minor (severity 2) interactions
+          description: Number of minor (severity 1) interactions
           example: 0
 
     Interaction:
@@ -1451,15 +1464,15 @@ components:
           example: "SRX-012-003336"
         severity:
           type: integer
-          minimum: 2
-          maximum: 5
+          minimum: 1
+          maximum: 4
           description: |
             Interaction severity level.
-            - `2` — Minor: minimal clinical significance
-            - `3` — Moderate: may require monitoring or dose adjustment
-            - `4` — Major: avoid combination if possible, close monitoring required
-            - `5` — Contraindicated: do not use together
-          example: 4
+            - `1` — Minor: minimal clinical significance
+            - `2` — Moderate: may require monitoring or dose adjustment
+            - `3` — Major: avoid combination if possible, close monitoring required
+            - `4` — Contraindicated: do not use together
+          example: 3
         severity_name:
           type: string
           enum:
@@ -1485,10 +1498,34 @@ components:
           type: string
           description: Clinical recommendation in Arabic
           example: "مراقبة INR/PT. مراقبة علامات النزيف."
-        source:
+        clinical_effect:
           type: string
-          description: Data source
-          example: "DrugBank"
+          description: Expected clinical effect of the interaction (English)
+          example: "Increased bleeding risk"
+        clinical_effect_ar:
+          type: string
+          description: Expected clinical effect in Arabic
+          example: "زيادة خطر النزيف"
+        management:
+          type: string
+          description: Clinical management recommendation (English)
+          example: "Monitor INR closely when starting or stopping amoxicillin."
+        management_ar:
+          type: string
+          description: Clinical management recommendation in Arabic
+          example: "مراقبة INR عند بدء أو وقف الأموكسيسيللين."
+        base_severity:
+          type: integer
+          minimum: 1
+          maximum: 4
+          description: Base severity before any adjustments
+          example: 3
+        noise_type:
+          oneOf:
+            - type: string
+            - type: "null"
+          description: Noise classification for low-confidence interactions, or null
+          example: null
 
     # --- Reproductive Safety (pllr) ---
 
@@ -1502,14 +1539,14 @@ components:
           maximum: 7
           description: |
             Pregnancy risk score on the SafeRx 0-7 scale.
-            - `0` — Unknown
-            - `1` — Safe
-            - `2` — Likely Safe
-            - `3` — Possibly Unsafe
-            - `4` — Likely Unsafe
-            - `5` — Unsafe
+            - `0` — No Data Available
+            - `1` — Compatible
+            - `2` — Probably Compatible
+            - `3` — Use With Caution
+            - `4` — Moderate Risk
+            - `5` — High Risk
             - `6` — Contraindicated
-            - `7` — Absolutely Contraindicated
+            - `7` — Contraindicated — Teratogenic Risk
           example: 7
         pregnancy_risk_name:
           type: string
@@ -1537,6 +1574,67 @@ components:
           $ref: '#/components/schemas/ReproductiveWarning'
         lactation_warning:
           $ref: '#/components/schemas/ReproductiveWarning'
+        preg_t1_risk:
+          oneOf:
+            - type: integer
+              minimum: 0
+              maximum: 7
+            - type: "null"
+          description: First trimester pregnancy risk (0-7 scale, same as pregnancy_risk_level). Null if no trimester-specific data.
+          example: 7
+        preg_t2_risk:
+          oneOf:
+            - type: integer
+              minimum: 0
+              maximum: 7
+            - type: "null"
+          description: Second trimester pregnancy risk
+          example: 7
+        preg_t3_risk:
+          oneOf:
+            - type: integer
+              minimum: 0
+              maximum: 7
+            - type: "null"
+          description: Third trimester pregnancy risk
+          example: 7
+        preg_t1_note:
+          type: string
+          description: First trimester clinical note (language depends on `lang` parameter)
+          example: "Warfarin embryopathy risk highest in first trimester (weeks 6-9)."
+        preg_t2_note:
+          type: string
+          description: Second trimester clinical note
+          example: "CNS abnormalities and fetal hemorrhage risk."
+        preg_t3_note:
+          type: string
+          description: Third trimester clinical note
+          example: "Fetal and neonatal hemorrhage risk; discontinue before delivery."
+        lact_rid:
+          oneOf:
+            - type: number
+              format: float
+            - type: "null"
+          description: |
+            Relative Infant Dose (RID) as a percentage. RID < 10% is generally
+            considered acceptable for breastfeeding. Null if unknown.
+          example: 0.0
+        lact_milk_level_mgl:
+          oneOf:
+            - type: number
+              format: float
+            - type: "null"
+          description: Drug concentration in breast milk (mg/L). Null if unknown.
+          example: null
+        lact_mp_ratio:
+          oneOf:
+            - type: number
+              format: float
+            - type: "null"
+          description: |
+            Milk-to-plasma ratio. Values < 1 indicate lower concentration in milk
+            than in maternal plasma. Null if unknown.
+          example: null
 
     ReproductiveWarning:
       type: object
@@ -1606,8 +1704,10 @@ components:
           example: "يمكن تناوله مع أو بدون طعام. تناوله في نفس الوقت يومياً."
         evidence_level:
           type: string
-          description: Evidence source for this recommendation
-          example: "FDA_LABEL"
+          description: |
+            Evidence source for this recommendation.
+            Values: `primary` (FDA label), `clinical` (clinical study), `reference` (other)
+          example: "primary"
         severity:
           type: integer
           minimum: 1
@@ -2135,7 +2235,7 @@ components:
               example: "7.3.1"
             pllr:
               type: string
-              example: "V2.3"
+              example: "V3.0.4"
             food:
               type: string
               example: "V5"
@@ -2149,7 +2249,7 @@ components:
             ae_products:
               type: integer
               description: Products with adverse effect data
-              example: 66704
+              example: 28557
             ae_coverage_percent:
               type: number
               format: float
