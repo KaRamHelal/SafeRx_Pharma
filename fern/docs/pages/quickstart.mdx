@@ -148,15 +148,15 @@ The response contains five top-level sections:
 ```json
 {
   "status": "success",
-  "drugs": [...],          // Resolved drug details (SFX_ID, name, form, price)
+  "drugs": [...],          // Resolved drug details (sfrx_id, name, form, price)
   "unresolved": [...],     // Drug names that couldn't be matched
   "safety": {
-    "side_effects": {...},         // Adverse effects by SFX_ID
+    "side_effects": {...},         // Adverse effects by sfrx_id
     "interactions": {...},         // Drug-drug interactions
-    "reproductive_safety": {...},  // Pregnancy & lactation by SFX_ID
-    "food": {...},                 // Food interactions by SFX_ID
+    "reproductive_safety": {...},  // Pregnancy & lactation by sfrx_id
+    "food": {...},                 // Food interactions by sfrx_id
     "clinical": {...},             // Population & condition data
-    "dosing": {...}                // Dosing safety (dual-source) by SFX_ID
+    "dosing": {...}                // Dosing safety (dual-source) by sfrx_id
   },
   "alerts": [...],         // Critical items (check these FIRST)
   "meta": {...}            // Processing time, tier, counts
@@ -210,6 +210,6 @@ Set `lang: "ar"` to receive Arabic safety descriptions. You can also submit drug
 
 - **[Authentication](/api-reference/authentication/overview)** — API key tiers, rate limits
 - **[Rate Limits](/api-reference/authentication/rate-limits)** — Tier limits, retry strategies
-- **[API Reference](/api-reference/drug-safety-api)** — Full schema docs for every field
-- **[SDKs](/sdks/overview)** — Python, TypeScript, C# client libraries
-- **[Pharmacy Guide](/guides/pharmacy-dispensing)** — End-to-end integration tutorial
+- **[API Reference](/api-reference/getting-started/quickstart)** — Full schema docs for every field
+- **[SDKs](/sdks/client-libraries/overview)** — Python, TypeScript, C# client libraries
+- **[Pharmacy Guide](/guides/integration-guides/pharmacy-dispensing)** — End-to-end integration tutorial

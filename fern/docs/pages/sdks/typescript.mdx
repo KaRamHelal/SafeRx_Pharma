@@ -40,7 +40,7 @@ const result = await client.drugSafety.check({
 // Access resolved drugs (snake_case fields)
 for (const drug of result.drugs) {
   console.log(`${drug.brand_name} (${drug.active_ingredient})`);
-  console.log(`  SFX_ID: ${drug.SFX_ID}, Price: ${drug.price_egp} EGP`);
+  console.log(`  sfrx_id: ${drug.sfrx_id}, Price: ${drug.price_egp} EGP`);
 }
 
 // Check safety data
@@ -96,11 +96,14 @@ All response fields use **snake_case**, matching the OpenAPI spec:
 | Field | Type | Example |
 |-------|------|---------|
 | `brand_name` | string | `"AUGMENTIN 1GM 14 TAB"` |
-| `SFX_ID` | string | `"SFX_00295"` |
+| `sfrx_id` | string | `"SRX-010-004748"` |
+| `parent_sfrx_id` | string \| null | `null` |
 | `active_ingredient` | string | `"Amoxicillin + Clavulanic Acid"` |
+| `manufacturer_en` | string | `"GLAXOSMITHKLINE"` |
+| `supplier_en` | string | `""` |
 | `price_egp` | number | `108.0` |
-| `side_effects` | object | Keyed by SFX_ID |
-| `reproductive_safety` | object | Keyed by SFX_ID |
+| `side_effects` | object | Keyed by sfrx_id |
+| `reproductive_safety` | object | Keyed by sfrx_id |
 | `interactions` | object | `{ count, summary, interactions }` |
 | `condition_alerts` | array | Clinical condition alerts |
 | `population_alerts` | array | Clinical population alerts |

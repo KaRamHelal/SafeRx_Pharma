@@ -6,7 +6,7 @@ subtitle: ".NET SDK for the SafeRx Drug Safety API"
 ## Installation
 
 ```bash
-dotnet add package SafeRx --version 0.0.5
+dotnet add package SafeRx --version 0.0.6
 ```
 
 **Requirements:** .NET 8.0+, .NET Framework 4.6.2+, or .NET Standard 2.0+
@@ -119,9 +119,9 @@ catch (BadRequestError e)
 | Field | C# Type | Description |
 |-------|---------|-------------|
 | `response.Status` | `DrugSafetyCheckResponseStatus` | `"success"` or `"partial"` |
-| `response.Drugs` | `IEnumerable<ResolvedDrug>` | Matched drugs with `BrandName`, `ActiveIngredient`, `SfxId` |
+| `response.Drugs` | `IEnumerable<ResolvedDrug>` | Matched drugs with `BrandName`, `ActiveIngredient`, `SfrxId` |
 | `response.Safety` | `SafetyData` | All safety domain results |
-| `response.Safety.SideEffects` | `Dictionary<string, SideEffectsData>?` | Keyed by SFX_ID |
+| `response.Safety.SideEffects` | `Dictionary<string, SideEffectsData>?` | Keyed by sfrx_id |
 | `response.Safety.Interactions` | `InteractionsData?` | DDI pairs and summaries |
 | `response.Safety.ReproductiveSafety` | `Dictionary<string, ReproductiveSafetyData>?` | PLLR data |
 | `response.Safety.Food` | `Dictionary<string, FoodData>?` | Food-drug conflicts |
@@ -146,7 +146,7 @@ C# property names use **PascalCase** (standard .NET convention) while JSON seria
 
 | Feature | Status |
 |---------|--------|
-| NuGet package ([SafeRx](https://www.nuget.org/packages/SafeRx)) | Available (v0.0.5) |
+| NuGet package ([SafeRx](https://www.nuget.org/packages/SafeRx)) | Available (v0.0.6) |
 | Typed models | Available |
 | Auto-retry (429, 5xx) | Available |
 | Async/await | Available |
@@ -155,5 +155,5 @@ C# property names use **PascalCase** (standard .NET convention) while JSON seria
 
 - [NuGet Package](https://www.nuget.org/packages/SafeRx)
 - [API Reference](https://docs.saferx.online/api-reference)
-- [Quickstart](/api-reference/quickstart)
+- [Quickstart](/api-reference/getting-started/quickstart)
 - [Developer Portal](/api-reference/authentication/developer-portal) — Get your API key

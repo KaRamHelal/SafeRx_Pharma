@@ -22,6 +22,4 @@ The SafeRx drug registry has been upgraded to V102, more than doubling the produ
 
 ### API Impact
 
-**No breaking changes to the Drug Safety API.** The public field names (`sfrx_id`, `brand_name`, `active_ingredient`, `form`, etc.) remain unchanged. The drug resolution engine now matches against the expanded 66,704-product database.
-
-Existing SDK packages (Python, TypeScript, C#) and MCP server continue to work without updates.
+The drug resolution engine now matches against the expanded 66,704-product database. Several response field names were updated as part of the V102 migration — see the [March 25 changelog](/changelog/2026-03-25) for the complete field mapping and SDK update instructions.

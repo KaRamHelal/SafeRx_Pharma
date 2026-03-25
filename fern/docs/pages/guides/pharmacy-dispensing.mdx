@@ -135,7 +135,7 @@ result = screener.screen(drugs, patient_profile)
 
 # Show BBW for all drugs
 for drug in result["drugs"]:
-    sfx_id = drug["SFX_ID"]
+    sfx_id = drug["sfrx_id"]
     ae = result["safety"].get("side_effects", {}).get(sfx_id, {})
     if ae.get("has_black_box_warning"):
         bbw = ae["black_box_warning"]
@@ -164,9 +164,20 @@ When your ERP system collects patient demographics, map them to SafeRx enums for
 
 | ERP Condition | SafeRx Enum | ICD-10 Codes |
 |---------------|-------------|--------------|
+| Arrhythmia | `arrhythmia` | I48.x, I49.x |
+| Asthma | `asthma` | J45.x |
+| Benign prostatic hyperplasia | `bph` | N40.x |
+| Coronary artery disease | `coronary` | I25.x |
+| Depression | `depression` | F32.x, F33.x |
 | Diabetes (Type 1 or 2) | `diabetes` | E10.x, E11.x |
-| Hypertension | `hypertension` | I10.x, I11.x |
 | Epilepsy | `epilepsy` | G40.x |
+| GI bleeding | `gi_bleeding` | K92.x |
+| Glaucoma | `glaucoma` | H40.x |
+| Heart failure | `heart_failure` | I50.x |
+| Hypertension | `hypertension` | I10.x, I11.x |
+| Hyperthyroidism | `hyperthyroidism` | E05.x |
+| Hypothyroidism | `hypothyroidism` | E03.x |
+| Parkinson's disease | `parkinsons` | G20.x |
 
 ### Organ Function Impairment
 
@@ -197,13 +208,21 @@ def map_patient_to_profile(erp_patient):
     if erp_patient.heart_failure:
         populations.append("cardiac")
 
-    # Medical conditions
+    # Medical conditions (see full list: arrhythmia, asthma, bph, coronary,
+    # depression, diabetes, epilepsy, gi_bleeding, glaucoma, heart_failure,
+    # hypertension, hyperthyroidism, hypothyroidism, parkinsons)
     if "diabetes" in erp_patient.diagnoses or "E11" in erp_patient.icd10_codes:
         conditions.append("diabetes")
     if "hypertension" in erp_patient.diagnoses or "I10" in erp_patient.icd10_codes:
         conditions.append("hypertension")
     if "epilepsy" in erp_patient.diagnoses or "G40" in erp_patient.icd10_codes:
         conditions.append("epilepsy")
+    if "I48" in erp_patient.icd10_codes:
+        conditions.append("arrhythmia")
+    if "I25" in erp_patient.icd10_codes:
+        conditions.append("coronary")
+    if "G20" in erp_patient.icd10_codes:
+        conditions.append("parkinsons")
 
     return {
         "populations": populations if populations else None,

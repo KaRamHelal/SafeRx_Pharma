@@ -1,7 +1,7 @@
 openapi: 3.1.1
 info:
   title: SafeRx Drug Safety API
-  version: "1.0.0"
+  version: "1.1.0"
   summary: Comprehensive drug safety screening for Egyptian pharmaceuticals
   description: |
     One API call. Six safety domains. 28,000+ Egyptian products.
@@ -155,38 +155,41 @@ paths:
                     drugs:
                       - input: "Augmentin 1g"
                         resolved: true
-                        SFX_ID: "SRX-010-004748"
+                        sfrx_id: "SRX-010-004748"
+                        parent_sfrx_id: null
                         brand_name: "AUGMENTIN 1GM 14 TAB"
                         active_ingredient: "AMOXICILLIN + CLAVULANIC ACID"
                         form: "Oral Tablet"
-                        manufacturer: "GLAXOSMITHKLINE"
+                        manufacturer_en: "GLAXOSMITHKLINE"
                         therapeutic_class: "Penicillins|Combinations"
                         medical_specialty: "General"
-                        distributor: ""
+                        supplier_en: ""
                         barcode: ""
                         price_egp: 120.0
                       - input: "Glucophage 500mg"
                         resolved: true
-                        SFX_ID: "SRX-008-002145"
+                        sfrx_id: "SRX-008-002145"
+                        parent_sfrx_id: null
                         brand_name: "GLUCOPHAGE 500MG 50 TAB"
                         active_ingredient: "METFORMIN HCL"
                         form: "Oral Tablet"
-                        manufacturer: "MERCK SERONO"
+                        manufacturer_en: "MERCK SERONO"
                         therapeutic_class: "Biguanides|Monocomponent"
                         medical_specialty: "Endocrinology"
-                        distributor: ""
+                        supplier_en: ""
                         barcode: ""
                         price_egp: 36.0
                       - input: "Marivan"
                         resolved: true
-                        SFX_ID: "SRX-012-003336"
+                        sfrx_id: "SRX-012-003336"
+                        parent_sfrx_id: null
                         brand_name: "MARIVAN 2MG 30 TAB"
                         active_ingredient: "WARFARIN SODIUM"
                         form: "Oral Tablet"
-                        manufacturer: "AL-NILE PHARMA"
+                        manufacturer_en: "AL-NILE PHARMA"
                         therapeutic_class: "Anticoagulants|Coumarin"
                         medical_specialty: "Hematology"
-                        distributor: ""
+                        supplier_en: ""
                         barcode: ""
                         price_egp: 18.0
                     unresolved: []
@@ -258,8 +261,8 @@ paths:
                           moderate: 0
                           minor: 0
                         interactions:
-                          - drug_1_id: "SRX-010-004748"
-                            drug_2_id: "SRX-012-003336"
+                          - sfrx_id_1: "SRX-010-004748"
+                            sfrx_id_2: "SRX-012-003336"
                             severity: 4
                             severity_name: "MAJOR"
                             description: "Amoxicillin may increase the anticoagulant activities of Warfarin."
@@ -1028,7 +1031,7 @@ components:
       required:
         - input
         - resolved
-        - SFX_ID
+        - sfrx_id
         - brand_name
         - active_ingredient
         - form
@@ -1041,12 +1044,19 @@ components:
           type: boolean
           description: Always `true` for drugs in this array
           example: true
-        SFX_ID:
+        sfrx_id:
           type: string
           description: |
             SafeRx product identifier. Primary key used across all safety
             domains. Format: `SRX-{category}-{sequence}`.
           example: "SRX-010-004748"
+        parent_sfrx_id:
+          type: string
+          nullable: true
+          description: |
+            Parent product identifier for strength/pack variants of the same drug.
+            Null if this product has no parent.
+          example: null
         brand_name:
           type: string
           description: Registered trade name with strength and pack size
@@ -1059,7 +1069,7 @@ components:
           type: string
           description: Pharmaceutical dosage form
           example: "Oral Tablet"
-        manufacturer:
+        manufacturer_en:
           type: string
           description: Marketing authorization holder
           example: "GLAXOSMITHKLINE"
@@ -1071,9 +1081,9 @@ components:
           type: string
           description: Primary prescribing specialty
           example: "General"
-        distributor:
+        supplier_en:
           type: string
-          description: Distribution company (may be empty)
+          description: Distribution/supply company (may be empty)
           example: ""
         barcode:
           type: string
@@ -1101,7 +1111,7 @@ components:
           additionalProperties:
             $ref: '#/components/schemas/SideEffectsData'
           description: |
-            Adverse effects data keyed by SFX_ID. Includes risk level,
+            Adverse effects data keyed by sfrx_id. Includes risk level,
             Black Box Warnings, severe/common effects, monitoring, and
             dose classification.
         interactions:
@@ -1110,19 +1120,19 @@ components:
           type: object
           additionalProperties:
             $ref: '#/components/schemas/ReproductiveSafetyData'
-          description: Pregnancy & lactation risk data keyed by SFX_ID
+          description: Pregnancy & lactation risk data keyed by sfrx_id
         food:
           type: object
           additionalProperties:
             $ref: '#/components/schemas/FoodData'
-          description: Food-drug interaction data keyed by SFX_ID
+          description: Food-drug interaction data keyed by sfrx_id
         clinical:
           $ref: '#/components/schemas/ClinicalData'
         dosing:
           type: object
           additionalProperties:
             $ref: '#/components/schemas/DosingData'
-          description: Maximum daily dose data keyed by SFX_ID
+          description: Maximum daily dose data keyed by sfrx_id
 
     # --- Side Effects (ae) ---
 
@@ -1441,13 +1451,13 @@ components:
     Interaction:
       type: object
       properties:
-        drug_1_id:
+        sfrx_id_1:
           type: string
-          description: SFX_ID of the first drug in the interaction pair
+          description: sfrx_id of the first drug in the interaction pair
           example: "SRX-010-004748"
-        drug_2_id:
+        sfrx_id_2:
           type: string
-          description: SFX_ID of the second drug in the interaction pair
+          description: sfrx_id of the second drug in the interaction pair
           example: "SRX-012-003336"
         severity:
           type: integer
@@ -1460,6 +1470,12 @@ components:
             - `4` — Major: avoid combination if possible, close monitoring required
             - `5` — Contraindicated: do not use together
           example: 4
+        base_severity:
+          type: integer
+          description: |
+            Original severity before noise-type adjustments.
+            Same scale as `severity`. Useful for understanding if severity was modified.
+          example: 4
         severity_name:
           type: string
           enum:
@@ -1469,6 +1485,13 @@ components:
             - "CONTRAINDICATED"
           description: Human-readable severity label
           example: "MAJOR"
+        noise_type:
+          type: string
+          nullable: true
+          description: |
+            Noise classification for this interaction, if applicable.
+            Null when the interaction is clinically significant.
+          example: null
         description:
           type: string
           description: Interaction mechanism or clinical description (English)
@@ -1477,6 +1500,26 @@ components:
           type: string
           description: Interaction description in Arabic
           example: "قد يزيد الأموكسيسيللين من تأثير الوارفارين المضاد للتجلط."
+        clinical_effect:
+          type: string
+          nullable: true
+          description: Expected clinical effect of the interaction (English)
+          example: "Increased bleeding risk"
+        clinical_effect_ar:
+          type: string
+          nullable: true
+          description: Expected clinical effect in Arabic
+          example: null
+        management:
+          type: string
+          nullable: true
+          description: Clinical management strategy (English)
+          example: null
+        management_ar:
+          type: string
+          nullable: true
+          description: Clinical management strategy in Arabic
+          example: null
         recommendation:
           type: string
           description: Clinical recommendation for managing this interaction (English)
@@ -1537,6 +1580,69 @@ components:
           $ref: '#/components/schemas/ReproductiveWarning'
         lactation_warning:
           $ref: '#/components/schemas/ReproductiveWarning'
+        preg_t1_risk:
+          type: string
+          nullable: true
+          description: First trimester pregnancy risk classification
+          example: "Contraindicated"
+        preg_t1_note:
+          type: string
+          nullable: true
+          description: First trimester clinical note
+          example: null
+        preg_t1_ar:
+          type: string
+          nullable: true
+          description: First trimester note in Arabic
+          example: null
+        preg_t2_risk:
+          type: string
+          nullable: true
+          description: Second trimester pregnancy risk classification
+          example: "Contraindicated"
+        preg_t2_note:
+          type: string
+          nullable: true
+          description: Second trimester clinical note
+          example: null
+        preg_t2_ar:
+          type: string
+          nullable: true
+          description: Second trimester note in Arabic
+          example: null
+        preg_t3_risk:
+          type: string
+          nullable: true
+          description: Third trimester pregnancy risk classification
+          example: "Absolutely Contraindicated"
+        preg_t3_note:
+          type: string
+          nullable: true
+          description: Third trimester clinical note
+          example: null
+        preg_t3_ar:
+          type: string
+          nullable: true
+          description: Third trimester note in Arabic
+          example: null
+        lact_milk_level_mgl:
+          type: number
+          format: float
+          nullable: true
+          description: Measured drug concentration in breast milk (mg/L)
+          example: null
+        lact_mp_ratio:
+          type: number
+          format: float
+          nullable: true
+          description: Milk-to-plasma concentration ratio
+          example: null
+        lact_rid:
+          type: number
+          format: float
+          nullable: true
+          description: Relative Infant Dose (%) — percentage of maternal dose received by infant
+          example: null
 
     ReproductiveWarning:
       type: object
@@ -1655,7 +1761,7 @@ components:
           type: object
           additionalProperties:
             $ref: '#/components/schemas/DrugClinicalData'
-          description: Per-drug clinical data keyed by SFX_ID
+          description: Per-drug clinical data keyed by sfrx_id
         condition_alerts:
           type: array
           items:
@@ -1714,7 +1820,7 @@ components:
       properties:
         drug_id:
           type: string
-          description: SFX_ID of the drug involved
+          description: sfrx_id of the drug involved
           example: "SRX-012-003336"
         drug:
           type: string

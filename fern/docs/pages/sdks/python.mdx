@@ -33,7 +33,7 @@ result = client.drug_safety.check(
 # Access resolved drugs (typed Pydantic models)
 for drug in result.drugs:
     print(f"{drug.brand_name} ({drug.active_ingredient})")
-    print(f"  SFX_ID: {drug.sfx_id}, Price: {drug.price_egp} EGP")
+    print(f"  sfrx_id: {drug.sfrx_id}, Price: {drug.price_egp} EGP")
 
 # Check safety data
 if result.safety and result.safety.side_effects:
@@ -103,11 +103,14 @@ The Python SDK uses **snake_case** attribute names with typed Pydantic models:
 | Attribute | Type | Example |
 |-----------|------|---------|
 | `brand_name` | str | `"AUGMENTIN 1GM 14 TAB"` |
-| `sfx_id` | str | `"SFX_00295"` |
+| `sfrx_id` | str | `"SRX-010-004748"` |
+| `parent_sfrx_id` | str \| None | `None` |
 | `active_ingredient` | str | `"Amoxicillin + Clavulanic Acid"` |
+| `manufacturer_en` | str | `"GLAXOSMITHKLINE"` |
+| `supplier_en` | str | `""` |
 | `price_egp` | float | `108.0` |
-| `side_effects` | Dict[str, SideEffectsData] | Keyed by SFX_ID |
-| `reproductive_safety` | Dict[str, ReproductiveSafetyData] | Keyed by SFX_ID |
+| `side_effects` | Dict[str, SideEffectsData] | Keyed by sfrx_id |
+| `reproductive_safety` | Dict[str, ReproductiveSafetyData] | Keyed by sfrx_id |
 | `interactions` | InteractionsData | `{ count, summary, interactions }` |
 | `condition_alerts` | List[ClinicalAlert] | Clinical condition alerts |
 | `population_alerts` | List[ClinicalAlert] | Clinical population alerts |
