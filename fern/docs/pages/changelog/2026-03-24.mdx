@@ -44,12 +44,11 @@ All SDKs updated with the new schema. See [March 25 changelog](/changelog/2026-0
 # Before (v1.0.x)
 drug_id = response["drugs"][0]["SFX_ID"]
 interaction_drug_1 = interaction["drug_1_id"]
-is_contraindicated = interaction["severity"] == 5
 
 # After (v1.1.0)
 drug_id = response["drugs"][0]["sfrx_id"]
 parent_id = response["drugs"][0]["parent_sfrx_id"]  # new
 interaction_drug_1 = interaction["sfrx_id_1"]
-is_contraindicated = interaction["severity"] == 5
+is_contraindicated = interaction["severity"] == 4  # V8 scale: 1-4
 clinical_effect = interaction["clinical_effect"]  # new
 ```

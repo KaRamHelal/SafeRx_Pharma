@@ -263,7 +263,7 @@ paths:
                         interactions:
                           - sfrx_id_1: "SRX-010-004748"
                             sfrx_id_2: "SRX-012-003336"
-                            severity: 4
+                            severity: 3
                             severity_name: "MAJOR"
                             description: "Amoxicillin may increase the anticoagulant activities of Warfarin."
                             description_ar: "قد يزيد الأموكسيسيللين من تأثير الوارفارين المضاد للتجلط."
@@ -1461,21 +1461,29 @@ components:
           example: "SRX-012-003336"
         severity:
           type: integer
-          minimum: 2
-          maximum: 5
+          minimum: 1
+          maximum: 4
           description: |
-            Interaction severity level.
-            - `2` — Minor: minimal clinical significance
-            - `3` — Moderate: may require monitoring or dose adjustment
-            - `4` — Major: avoid combination if possible, close monitoring required
-            - `5` — Contraindicated: do not use together
-          example: 4
+            Interaction severity level (clinical interactions only).
+            - `1` — Minor: minimal clinical significance
+            - `2` — Moderate: may require monitoring or dose adjustment
+            - `3` — Major: avoid combination if possible, close monitoring required
+            - `4` — Contraindicated: do not use together
+
+            The API filters out noise interactions (severity ≤ 0) by default.
+            The internal V8 scale extends to -3 (noise) and 0 (unknown),
+            but these are never returned in the public response.
+          example: 3
         base_severity:
           type: integer
+          minimum: -3
+          maximum: 4
           description: |
-            Original severity before noise-type adjustments.
-            Same scale as `severity`. Useful for understanding if severity was modified.
-          example: 4
+            Original severity before route-based or noise adjustments.
+            Uses the full V8 scale: -3 (decreased efficacy), -2 (pharmacokinetic),
+            -1 (metabolic), 0 (unknown), 1-4 (clinical). May differ from
+            `severity` when route adjustments apply.
+          example: 3
         severity_name:
           type: string
           enum:
@@ -1490,7 +1498,8 @@ components:
           nullable: true
           description: |
             Noise classification for this interaction, if applicable.
-            Null when the interaction is clinically significant.
+            Null for clinically significant interactions. Possible values:
+            `"DECREASED_EFFICACY"`, `"PHARMACOKINETIC"`, `"METABOLIC"`.
           example: null
         description:
           type: string
