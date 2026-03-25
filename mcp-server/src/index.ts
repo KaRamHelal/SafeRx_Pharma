@@ -27,13 +27,13 @@ function authHeaders(): Record<string, string> {
 
 const server = new McpServer({
   name: "saferx",
-  version: "1.0.0",
+  version: "1.1.1",
 });
 
 // Tool: check_drug_safety
 server.tool(
   "check_drug_safety",
-  "Screen drugs for safety issues across 6 domains: adverse effects (Black Box Warnings, monitoring), drug interactions, pregnancy/lactation risks, food interactions, clinical considerations, and dosing. Covers 28,000+ Egyptian pharmaceutical products with bilingual EN/AR support.",
+  "Screen drugs for safety issues across 6 domains: adverse effects (Black Box Warnings, monitoring), drug interactions, pregnancy/lactation risks, food interactions, clinical considerations, and dosing. Covers 66,000+ Egyptian pharmaceutical products with bilingual EN/AR support.",
   {
     drugs: z
       .array(z.string())
@@ -51,20 +51,20 @@ server.tool(
         conditions: z
           .array(
             z.enum([
-              "diabetes",
-              "hypertension",
-              "epilepsy",
-              "heart_failure",
-              "asthma",
-              "liver_disease",
-              "kidney_disease",
-              "thyroid",
-              "depression",
-              "blood_disorders",
-              "ischemic_heart",
               "arrhythmia",
-              "gout",
-              "osteoporosis",
+              "asthma",
+              "bph",
+              "coronary",
+              "depression",
+              "diabetes",
+              "epilepsy",
+              "gi_bleeding",
+              "glaucoma",
+              "heart_failure",
+              "hypertension",
+              "hyperthyroidism",
+              "hypothyroidism",
+              "parkinsons",
             ])
           )
           .optional()
