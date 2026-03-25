@@ -59,6 +59,12 @@ print(f"Resolved: {result['meta']['resolved_count']}/{result['meta']['drug_count
 
 ## 3. Patient Profile with Populations and Conditions
 
+Pass `patient_profile` to get population- and condition-specific safety alerts.
+
+**Populations** (5): `pediatric`, `geriatric`, `cardiac`, `hepatic`, `renal`
+
+**Conditions** (14): `arrhythmia`, `asthma`, `bph`, `coronary`, `depression`, `diabetes`, `epilepsy`, `gi_bleeding`, `glaucoma`, `heart_failure`, `hypertension`, `hyperthyroidism`, `hypothyroidism`, `parkinsons`
+
 ```python
 resp = httpx.post(
     "https://saferx.online/api/drug_safety/check",
@@ -74,6 +80,19 @@ resp = httpx.post(
 ```
 
 ## 4. Selective Domain Inclusion
+
+Use `include` to request only the safety domains you need. This reduces response size and latency.
+
+| Code | Domain | What it returns |
+|------|--------|-----------------|
+| `ae` | Adverse Effects | Black Box Warnings, side effects, monitoring, dose classification |
+| `ddi` | Drug Interactions | Severity-rated interactions with management advice (needs 2+ drugs) |
+| `pllr` | Reproductive Safety | Pregnancy & lactation risk per trimester |
+| `food` | Food Interactions | Meal timing, specific food conflicts |
+| `clinical` | Clinical | Population & condition alerts (enhanced with `patient_profile`) |
+| `dose` | Dosing | Max daily dose with WHO DDD + OpenFDA MDD dual-source data |
+
+Omit `include` to run all six domains.
 
 ```python
 # DDI-only check (fastest, smallest response)
@@ -129,7 +148,18 @@ for sfx_id, pllr in result["safety"].get("reproductive_safety", {}).items():
     print(pllr["pregnancy_rationale"])  # Arabic text
 ```
 
-## 7. Parsing and Displaying Alerts
+## 7. Alert Severity Reference
+
+| Severity | Meaning | Recommended Action |
+|----------|---------|-------------------|
+| `CRITICAL` | Life-threatening risk (Black Box Warning, pregnancy contraindication) | Hard stop, require clinical override |
+| `HIGH` | Major interaction or significant risk | Warning, require acknowledgment |
+| `MODERATE` | Moderate concern, clinical attention advised | Informational display |
+| `LOW` | Minor concern, generally safe | Log only, optional display |
+
+**Alert types:** `ae_bbw` (Black Box Warning), `ddi` (Drug Interaction), `pllr_pregnancy`, `pllr_lactation`, `clinical_condition`, `clinical_population`
+
+## 8. Parsing and Displaying Alerts
 
 ```python
 result = safe_check(["Augmentin 1g", "Marivan"])

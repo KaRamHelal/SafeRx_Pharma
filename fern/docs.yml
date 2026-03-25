@@ -54,8 +54,6 @@ navigation:
             path: docs/pages/authentication/developer-portal.mdx
       - api: Drug Safety API
         api-name: drug-safety
-        audiences:
-          - external
 
   - tab: guides
     layout:
@@ -99,8 +97,6 @@ navigation:
         contents:
           - page: "2026-03-25"
             path: docs/pages/changelog/2026-03-25.mdx
-          - page: "2026-03-24"
-            path: docs/pages/changelog/2026-03-24.mdx
           - page: "2026-03-21"
             path: docs/pages/changelog/2026-03-21.mdx
           - page: "2026-03-17"

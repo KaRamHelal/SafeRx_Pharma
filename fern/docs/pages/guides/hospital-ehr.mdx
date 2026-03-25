@@ -69,24 +69,31 @@ class CPOESafetyScreener:
         elif age >= 65:
             populations.append("geriatric")
 
-        # Lab values to populations
+        # Lab values / clinical indicators to populations
         if patient.get("egfr") and patient["egfr"] < 60:
             populations.append("renal")
         if patient.get("child_pugh_score"):
             populations.append("hepatic")
+        if patient.get("nyha_class") or patient.get("heart_failure"):
+            populations.append("cardiac")
 
         # ICD-10 to condition mapping
         icd_map = {
-            "E11": "diabetes",      # Type 2 DM
-            "E10": "diabetes",      # Type 1 DM
+            "E11": "diabetes",          # Type 2 DM
+            "E10": "diabetes",          # Type 1 DM
             "I10": "hypertension",
             "G40": "epilepsy",
             "I50": "heart_failure",
             "J45": "asthma",
-            "I48": "arrhythmia",    # Atrial fibrillation
-            "I25": "coronary",      # Chronic ischaemic heart disease
+            "I25": "coronary",          # Chronic ischaemic heart disease
+            "I48": "arrhythmia",        # Atrial fibrillation / flutter
+            "G20": "parkinsons",        # Parkinson's disease
             "H40": "glaucoma",
-            "G20": "parkinsons",
+            "E05": "hyperthyroidism",
+            "E03": "hypothyroidism",
+            "N40": "bph",              # Benign prostatic hyperplasia
+            "K92": "gi_bleeding",       # GI haemorrhage
+            "F32": "depression",
         }
         for dx in patient.get("diagnoses_icd10", []):
             prefix = dx[:3]
@@ -172,20 +179,40 @@ def fhir_patient_to_profile(patient: dict, conditions: list) -> dict:
     # Map FHIR Condition codes to SafeRx conditions
     saferx_conditions = []
     snomed_map = {
-        "73211009": "diabetes",       # Diabetes mellitus
-        "38341003": "hypertension",   # Hypertensive disorder
-        "84757009": "epilepsy",       # Epilepsy
-        "42343007": "heart_failure",  # Congestive heart failure
-        "195967001": "asthma",        # Asthma
+        "73211009": "diabetes",         # Diabetes mellitus
+        "38341003": "hypertension",     # Hypertensive disorder
+        "84757009": "epilepsy",         # Epilepsy
+        "42343007": "heart_failure",    # Congestive heart failure
+        "195967001": "asthma",          # Asthma
+        "49436004": "arrhythmia",       # Atrial fibrillation
+        "13644009": "hyperthyroidism",  # Hyperthyroidism
+        "40930008": "hypothyroidism",   # Hypothyroidism
+        "49049000": "parkinsons",       # Parkinson's disease
+        "23986001": "glaucoma",         # Glaucoma
+        "266474003": "depression",      # Major depression
+        "53741008": "coronary",          # Coronary heart disease
+        "74474003": "gi_bleeding",      # GI haemorrhage
+        "110417007": "bph",             # Benign prostatic hyperplasia
     }
+    # SNOMED codes that also imply population flags
+    cardiac_codes = {"42343007", "49436004", "53741008"}  # heart_failure, arrhythmia, coronary
+    renal_codes = {"709044004"}    # Chronic kidney disease
+    hepatic_codes = {"235856003"}  # Liver cirrhosis
+
     for condition in conditions:
         code = condition.get("code", {}).get("coding", [{}])[0].get("code", "")
         if code in snomed_map:
             saferx_conditions.append(snomed_map[code])
+        if code in cardiac_codes:
+            populations.append("cardiac")
+        if code in renal_codes:
+            populations.append("renal")
+        if code in hepatic_codes:
+            populations.append("hepatic")
 
     return {
-        "populations": populations,
-        "conditions": saferx_conditions,
+        "populations": list(set(populations)),
+        "conditions": list(set(saferx_conditions)),
     }
 ```
 

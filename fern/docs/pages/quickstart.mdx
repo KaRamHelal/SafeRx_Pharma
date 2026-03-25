@@ -80,6 +80,10 @@ subtitle: Make your first drug safety check in 60 seconds
 
 ## Step 2: Check Drug Safety
 
+<Callout intent="info">
+Only `drugs` is required. The `lang` parameter is optional and defaults to `"en"`. Use `"ar"` for Arabic responses.
+</Callout>
+
 <CodeBlocks>
   <CodeBlock title="cURL">
     ```bash
@@ -206,10 +210,75 @@ Set `lang: "ar"` to receive Arabic safety descriptions. You can also submit drug
 }
 ```
 
+## Explore the API
+
+### Metadata
+
+`GET /api/drug_safety/metadata` returns all valid populations, conditions, domain codes, database versions, and your current tier limits. Cache this response for up to 24 hours.
+
+```bash
+curl https://saferx.online/api/drug_safety/metadata \
+  -H "X-SafeRx-API-Key: YOUR_API_KEY" \
+  -H "User-Agent: MyApp/1.0"
+```
+
+### Health Check
+
+`GET /api/drug_safety/health` returns system status. No authentication required — useful for monitoring dashboards.
+
+```bash
+curl https://saferx.online/api/drug_safety/health
+```
+
+## Available Domains
+
+Use the `include` parameter to request only the safety domains you need. Omit it to run all six.
+
+| Code | Domain | Description |
+|------|--------|-------------|
+| `ae` | Adverse Effects | Black Box Warnings, side effects, monitoring parameters |
+| `ddi` | Drug Interactions | Drug-drug interactions with severity (requires 2+ drugs) |
+| `pllr` | Reproductive Safety | Pregnancy & lactation risk ratings per trimester |
+| `food` | Food Interactions | Meal timing and specific food-drug conflicts |
+| `clinical` | Clinical | Population & condition-specific alerts (enhanced with `patient_profile`) |
+| `dose` | Dosing | Maximum daily dose limits (dual-source: WHO DDD + OpenFDA MDD) |
+
+## Patient Profile Options
+
+Optionally pass `patient_profile` to get population- and condition-specific alerts.
+
+**Populations** (5):
+
+| Value | Description |
+|-------|-------------|
+| `pediatric` | Children and adolescents (&lt; 18) |
+| `geriatric` | Elderly patients (65+) |
+| `cardiac` | Patients with cardiac conditions (NYHA Class II+) |
+| `hepatic` | Patients with liver impairment (Child-Pugh B/C) |
+| `renal` | Patients with kidney impairment (eGFR &lt; 60) |
+
+**Conditions** (14):
+
+`arrhythmia`, `asthma`, `bph`, `coronary`, `depression`, `diabetes`, `epilepsy`, `gi_bleeding`, `glaucoma`, `heart_failure`, `hypertension`, `hyperthyroidism`, `hypothyroidism`, `parkinsons`
+
+<Callout intent="info">
+Use `GET /api/drug_safety/metadata` to programmatically discover the latest populations and conditions — values may be added in future versions.
+</Callout>
+
+## Alert Severity Levels
+
+Alerts have four severity levels:
+
+| Severity | Meaning | Recommended Action |
+|----------|---------|-------------------|
+| `CRITICAL` | Life-threatening risk (Black Box Warning, pregnancy contraindication) | Hard stop, require override |
+| `HIGH` | Major interaction or significant risk | Warning, require acknowledgment |
+| `MODERATE` | Moderate concern, clinical attention advised | Informational display |
+| `LOW` | Minor concern, generally safe | Log only, optional display |
+
 ## What's Next
 
 - **[Authentication](/api-reference/authentication/overview)** — API key tiers, rate limits
 - **[Rate Limits](/api-reference/authentication/rate-limits)** — Tier limits, retry strategies
-- **[API Reference](/api-reference/getting-started/quickstart)** — Full schema docs for every field
 - **[SDKs](/sdks/client-libraries/overview)** — Python, TypeScript, C# client libraries
 - **[Pharmacy Guide](/guides/integration-guides/pharmacy-dispensing)** — End-to-end integration tutorial
