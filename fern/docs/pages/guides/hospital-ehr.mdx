@@ -83,8 +83,10 @@ class CPOESafetyScreener:
             "G40": "epilepsy",
             "I50": "heart_failure",
             "J45": "asthma",
-            "K70": "liver_disease",
-            "N18": "kidney_disease",
+            "I48": "arrhythmia",    # Atrial fibrillation
+            "I25": "coronary",      # Chronic ischaemic heart disease
+            "H40": "glaucoma",
+            "G20": "parkinsons",
         }
         for dx in patient.get("diagnoses_icd10", []):
             prefix = dx[:3]

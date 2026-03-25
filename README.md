@@ -1,6 +1,6 @@
 # SafeRx Pharma
 
-Drug safety intelligence for Egyptian pharmaceutical products. One API call, six safety domains, 28,000+ products.
+Drug safety intelligence for Egyptian pharmaceutical products. One API call, six safety domains, 66,000+ products.
 
 ## What's Here
 
@@ -98,7 +98,7 @@ Requires `SAFERX_API_KEY` environment variable. See [`mcp-server/README.md`](mcp
 | Requests/day | 60 | 500 | Custom |
 | Max drugs/request | 20 | 20 | 50 |
 | Auth | API Key | API Key | API Key |
-| Database | Full (28,557 products) | Full | Full |
+| Database | Full (66,704 products) | Full | Full |
 | Support | Email | Priority | Dedicated |
 
 ## Documentation

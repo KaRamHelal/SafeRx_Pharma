@@ -1,42 +1,26 @@
 # March 25, 2026
 
-## OpenAPI Spec Alignment — Field Name Corrections
+## v1.2.x — SDK Publication + Bug Fixes
 
-**Affected:** OpenAPI spec, all SDKs (Python, TypeScript, C#), MCP Server
+Publishes the spec changes from [March 24](/changelog/2026-03-24) to all SDKs and fixes additional issues found during enterprise integration testing.
 
-The OpenAPI specification has been updated to accurately reflect the field names returned by the live API after the V102 database migration. SDKs regenerated from this spec will now deserialize responses correctly.
+### SDKs Published
 
-### Breaking Changes (spec → SDK)
+| Package | Registry | Version |
+|---------|----------|---------|
+| `saferx-pharma` | PyPI | 1.2.0 |
+| `saferx-pharma-sdk` | npm | 1.2.0 |
+| `SafeRx` | NuGet | 1.2.1 |
+| `@saferx_pharma/mcp-server` | npm | 1.1.1 |
 
-These fields were renamed in the V102 migration but the spec was not updated at that time:
+### Bug Fixes
 
-| Field | Old (spec) | New (actual) | Notes |
-|-------|-----------|--------------|-------|
-| Drug ID | `SFX_ID` | `sfrx_id` | Primary identifier — used in all safety domain keys |
-| Manufacturer | `manufacturer` | `manufacturer_en` | Bilingual naming convention |
-| Supplier | `distributor` | `supplier_en` | Renamed + bilingual |
-| DDI drug 1 | `drug_1_id` | `sfrx_id_1` | Interaction pair identifier |
-| DDI drug 2 | `drug_2_id` | `sfrx_id_2` | Interaction pair identifier |
+- **DDI alerts `drugs_involved`** — Fixed a bug where DDI alerts returned `["", ""]` instead of actual drug names. The alert builder was referencing pre-V102 field names.
+- **C# SDK User-Agent** — Added default `User-Agent: SafeRx-CSharp-SDK/{version}` header. Without this, POST requests were rejected by the bot detector.
+- **C# SDK NuGet README** — Added proper namespace (`SaferxApi`), client class (`SaferxApiClient`), and usage examples to the NuGet package page.
+- **MCP server conditions enum** — Synced the 14 patient conditions with the live API. Seven stale values replaced (`liver_disease`, `kidney_disease`, `thyroid`, `blood_disorders`, `ischemic_heart`, `gout`, `osteoporosis`) with correct values (`bph`, `coronary`, `gi_bleeding`, `glaucoma`, `hyperthyroidism`, `hypothyroidism`, `parkinsons`).
 
-### New Fields Added to Spec
-
-| Field | Schema | Description |
-|-------|--------|-------------|
-| `parent_sfrx_id` | ResolvedDrug | Parent product for strength/pack variants |
-| `base_severity` | Interaction | Original severity before noise adjustments |
-| `noise_type` | Interaction | Noise classification (null if clinically significant) |
-| `clinical_effect` / `clinical_effect_ar` | Interaction | Expected clinical effect (EN/AR) |
-| `management` / `management_ar` | Interaction | Management strategy (EN/AR) |
-| `preg_t1_risk/note/ar`, `preg_t2_*`, `preg_t3_*` | ReproductiveSafetyData | Trimester-specific pregnancy risk |
-| `lact_milk_level_mgl`, `lact_mp_ratio`, `lact_rid` | ReproductiveSafetyData | Lactation pharmacokinetics |
-
-### Bug Fix
-
-- **DDI alerts `drugs_involved`** — Fixed a bug where DDI alerts returned `["", ""]` instead of actual drug names. The alert builder was looking for `product_id_1`/`product_id_2` (pre-V102 names) instead of `sfrx_id_1`/`sfrx_id_2`.
-
-### SDK Update Required
-
-All SDK users should update to the latest version once regenerated:
+### Upgrade
 
 ```bash
 # Python
@@ -46,9 +30,8 @@ pip install --upgrade saferx-pharma
 npm install saferx-pharma-sdk@latest
 
 # C#
-dotnet add package SafeRx --version latest
+dotnet add package SafeRx
+
+# MCP Server
+npx @saferx_pharma/mcp-server@latest
 ```
-
-### MCP Server
-
-The MCP server (`@saferx_pharma/mcp-server`) is a thin API wrapper and automatically reflects the corrected field names. No MCP server update is required.

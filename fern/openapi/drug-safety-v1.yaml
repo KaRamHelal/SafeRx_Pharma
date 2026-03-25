@@ -1,10 +1,10 @@
 openapi: 3.1.1
 info:
   title: SafeRx Drug Safety API
-  version: "1.0.0"
+  version: "1.1.0"
   summary: Comprehensive drug safety screening for Egyptian pharmaceuticals
   description: |
-    One API call. Six safety domains. 28,000+ Egyptian products.
+    One API call. Six safety domains. 66,000+ Egyptian products.
 
     The SafeRx Drug Safety API provides real-time drug safety screening across
     six clinical domains: adverse effects, drug interactions, pregnancy & lactation
@@ -14,7 +14,7 @@ info:
 
     - **Unified endpoint** — screen 1–20 drugs in a single POST request
     - **Six safety domains** checked in parallel (~40ms average response)
-    - **28,557 Egyptian products** with bilingual English/Arabic support
+    - **66,704 Egyptian products** with bilingual English/Arabic support
     - **Smart drug resolution** — accepts trade names, generic names, or partial matches
     - **Alert bubbling** — critical safety issues surfaced as top-level alerts
     - **Stable API contract** — public field names are versioned and will not change without notice
@@ -156,37 +156,40 @@ paths:
                       - input: "Augmentin 1g"
                         resolved: true
                         sfrx_id: "SRX-010-004748"
+                        parent_sfrx_id: null
                         brand_name: "AUGMENTIN 1GM 14 TAB"
                         active_ingredient: "AMOXICILLIN + CLAVULANIC ACID"
                         form: "Oral Tablet"
-                        manufacturer: "GLAXOSMITHKLINE"
+                        manufacturer_en: "GLAXOSMITHKLINE"
                         therapeutic_class: "Penicillins|Combinations"
                         medical_specialty: "General"
-                        distributor: ""
+                        supplier_en: ""
                         barcode: ""
                         price_egp: 120.0
                       - input: "Glucophage 500mg"
                         resolved: true
                         sfrx_id: "SRX-008-002145"
+                        parent_sfrx_id: null
                         brand_name: "GLUCOPHAGE 500MG 50 TAB"
                         active_ingredient: "METFORMIN HCL"
                         form: "Oral Tablet"
-                        manufacturer: "MERCK SERONO"
+                        manufacturer_en: "MERCK SERONO"
                         therapeutic_class: "Biguanides|Monocomponent"
                         medical_specialty: "Endocrinology"
-                        distributor: ""
+                        supplier_en: ""
                         barcode: ""
                         price_egp: 36.0
                       - input: "Marivan"
                         resolved: true
                         sfrx_id: "SRX-012-003336"
+                        parent_sfrx_id: null
                         brand_name: "MARIVAN 2MG 30 TAB"
                         active_ingredient: "WARFARIN SODIUM"
                         form: "Oral Tablet"
-                        manufacturer: "AL-NILE PHARMA"
+                        manufacturer_en: "AL-NILE PHARMA"
                         therapeutic_class: "Anticoagulants|Coumarin"
                         medical_specialty: "Hematology"
-                        distributor: ""
+                        supplier_en: ""
                         barcode: ""
                         price_egp: 18.0
                     unresolved: []
@@ -213,7 +216,7 @@ paths:
                               frequency_category: 2
                               severity: 5
                               severity_category: "life_threatening"
-                              source: "SafeRx"
+                              source: "clinical_validation_2026"
                           common:
                             - effect_name: "Bruising"
                               name_ar: "كدمات"
@@ -260,23 +263,19 @@ paths:
                         interactions:
                           - sfrx_id_1: "SRX-010-004748"
                             sfrx_id_2: "SRX-012-003336"
-                            severity: 3
+                            severity: 4
                             severity_name: "MAJOR"
-                            base_severity: 3
                             description: "Amoxicillin may increase the anticoagulant activities of Warfarin."
                             description_ar: "قد يزيد الأموكسيسيللين من تأثير الوارفارين المضاد للتجلط."
-                            clinical_effect: "Increased bleeding risk"
-                            clinical_effect_ar: "زيادة خطر النزيف"
                             recommendation: "Monitor INR/PT. Watch for signs of bleeding."
                             recommendation_ar: "مراقبة INR/PT. مراقبة علامات النزيف."
-                            management: "Monitor INR closely when starting or stopping amoxicillin."
-                            management_ar: "مراقبة INR عند بدء أو وقف الأموكسيسيللين."
+                            source: "DrugBank"
                       reproductive_safety:
                         SRX-012-003336:
                           pregnancy_risk_level: 7
-                          pregnancy_risk_name: "Contraindicated — Teratogenic Risk"
+                          pregnancy_risk_name: "Absolutely Contraindicated"
                           lactation_risk_level: 4
-                          lactation_risk_name: "Moderate Risk"
+                          lactation_risk_name: "Likely Unsafe"
                           pregnancy_rationale: "Warfarin is absolutely contraindicated in pregnancy. FDA Category X. Causes warfarin embryopathy."
                           lactation_rationale: "Warfarin is excreted in breast milk. Risk of hemorrhage in the nursing infant."
                           pregnancy_warning:
@@ -285,15 +284,6 @@ paths:
                             categories:
                               - "TERATOGENIC"
                               - "DEATH_RISK"
-                          preg_t1_risk: 7
-                          preg_t2_risk: 7
-                          preg_t3_risk: 7
-                          preg_t1_note: "Warfarin embryopathy risk highest in first trimester (weeks 6-9)."
-                          preg_t2_note: "CNS abnormalities and fetal hemorrhage risk."
-                          preg_t3_note: "Fetal and neonatal hemorrhage risk; discontinue before delivery."
-                          lact_rid: 0.0
-                          lact_milk_level_mgl: null
-                          lact_mp_ratio: null
                           lactation_warning:
                             has_warning: false
                             text: null
@@ -305,7 +295,7 @@ paths:
                             importance: "PREFERRED"
                             recommendation: "Can be taken with or without food. Take at the same time each day."
                             recommendation_ar: "يمكن تناوله مع أو بدون طعام. تناوله في نفس الوقت يومياً."
-                            evidence_level: "primary"
+                            evidence_level: "FDA_LABEL"
                             severity: 2
                             rationale: ""
                           conflicts:
@@ -527,39 +517,39 @@ paths:
                         - "hepatic"
                         - "renal"
                       conditions:
-                        - "diabetes"
-                        - "hypertension"
-                        - "epilepsy"
-                        - "heart_failure"
-                        - "asthma"
-                        - "liver_disease"
-                        - "kidney_disease"
-                        - "thyroid"
-                        - "depression"
-                        - "blood_disorders"
-                        - "ischemic_heart"
                         - "arrhythmia"
-                        - "gout"
-                        - "osteoporosis"
+                        - "asthma"
+                        - "bph"
+                        - "coronary"
+                        - "depression"
+                        - "diabetes"
+                        - "epilepsy"
+                        - "gi_bleeding"
+                        - "glaucoma"
+                        - "heart_failure"
+                        - "hypertension"
+                        - "hyperthyroidism"
+                        - "hypothyroidism"
+                        - "parkinsons"
                     risk_scales:
                       pllr_pregnancy:
-                        "0": "No Data Available"
-                        "1": "Compatible"
-                        "2": "Probably Compatible"
-                        "3": "Use With Caution"
-                        "4": "Moderate Risk"
-                        "5": "High Risk"
+                        "0": "Unknown"
+                        "1": "Safe"
+                        "2": "Likely Safe"
+                        "3": "Possibly Unsafe"
+                        "4": "Likely Unsafe"
+                        "5": "Unsafe"
                         "6": "Contraindicated"
-                        "7": "Contraindicated — Teratogenic Risk"
+                        "7": "Absolutely Contraindicated"
                       pllr_lactation:
-                        "0": "No Data Available"
-                        "1": "Compatible"
-                        "2": "Probably Compatible"
-                        "3": "Use With Caution"
-                        "4": "Moderate Risk"
-                        "5": "High Risk"
+                        "0": "Unknown"
+                        "1": "Safe"
+                        "2": "Likely Safe"
+                        "3": "Possibly Unsafe"
+                        "4": "Likely Unsafe"
+                        "5": "Unsafe"
                         "6": "Contraindicated"
-                        "7": "Contraindicated — Teratogenic Risk"
+                        "7": "Absolutely Contraindicated"
                       ae_risk_levels:
                         - "LOW"
                         - "MODERATE"
@@ -574,11 +564,11 @@ paths:
                       ae: "V19"
                       ddi: "V8"
                       clinical: "7.3.1"
-                      pllr: "V3.0.4"
+                      pllr: "V2.3"
                       food: "V5"
                       dose: "V3.2"
                     database_stats:
-                      ae_products: 28557
+                      ae_products: 66704
                       ae_coverage_percent: 98.2
                       ddi_total_pairs: 337000
                       clinical_conditions: 14
@@ -952,20 +942,20 @@ components:
     Condition:
       type: string
       enum:
-        - "diabetes"
-        - "hypertension"
-        - "epilepsy"
-        - "heart_failure"
-        - "asthma"
-        - "liver_disease"
-        - "kidney_disease"
-        - "thyroid"
-        - "depression"
-        - "blood_disorders"
-        - "ischemic_heart"
         - "arrhythmia"
-        - "gout"
-        - "osteoporosis"
+        - "asthma"
+        - "bph"
+        - "coronary"
+        - "depression"
+        - "diabetes"
+        - "epilepsy"
+        - "gi_bleeding"
+        - "glaucoma"
+        - "heart_failure"
+        - "hypertension"
+        - "hyperthyroidism"
+        - "hypothyroidism"
+        - "parkinsons"
       description: |
         Patient comorbidity. Used by the `clinical` domain to identify
         drugs that are contraindicated or require caution for patients
@@ -1061,13 +1051,11 @@ components:
             domains. Format: `SRX-{category}-{sequence}`.
           example: "SRX-010-004748"
         parent_sfrx_id:
-          oneOf:
-            - type: string
-            - type: "null"
+          type: string
+          nullable: true
           description: |
-            Parent product identifier for strength/pack variants.
-            When non-null, this product is a variant of the parent product.
-            Use this to group related products (e.g., Augmentin 625mg and 1g).
+            Parent product identifier for strength/pack variants of the same drug.
+            Null if this product has no parent.
           example: null
         brand_name:
           type: string
@@ -1081,7 +1069,7 @@ components:
           type: string
           description: Pharmaceutical dosage form
           example: "Oral Tablet"
-        manufacturer:
+        manufacturer_en:
           type: string
           description: Marketing authorization holder
           example: "GLAXOSMITHKLINE"
@@ -1093,9 +1081,9 @@ components:
           type: string
           description: Primary prescribing specialty
           example: "General"
-        distributor:
+        supplier_en:
           type: string
-          description: Distribution company (may be empty)
+          description: Distribution/supply company (may be empty)
           example: ""
         barcode:
           type: string
@@ -1279,8 +1267,8 @@ components:
           example: "life_threatening"
         source:
           type: string
-          description: Data source attribution (always "SafeRx" for primary data)
-          example: "SafeRx"
+          description: Data source for this effect
+          example: "clinical_validation_2026"
         clinical_advice:
           type: string
           description: Brief clinical guidance
@@ -1445,19 +1433,19 @@ components:
       properties:
         contraindicated:
           type: integer
-          description: Number of contraindicated (severity 4) interactions
+          description: Number of contraindicated (severity 5) interactions
           example: 0
         major:
           type: integer
-          description: Number of major (severity 3) interactions
+          description: Number of major (severity 4) interactions
           example: 1
         moderate:
           type: integer
-          description: Number of moderate (severity 2) interactions
+          description: Number of moderate (severity 3) interactions
           example: 0
         minor:
           type: integer
-          description: Number of minor (severity 1) interactions
+          description: Number of minor (severity 2) interactions
           example: 0
 
     Interaction:
@@ -1473,15 +1461,21 @@ components:
           example: "SRX-012-003336"
         severity:
           type: integer
-          minimum: 1
-          maximum: 4
+          minimum: 2
+          maximum: 5
           description: |
             Interaction severity level.
-            - `1` — Minor: minimal clinical significance
-            - `2` — Moderate: may require monitoring or dose adjustment
-            - `3` — Major: avoid combination if possible, close monitoring required
-            - `4` — Contraindicated: do not use together
-          example: 3
+            - `2` — Minor: minimal clinical significance
+            - `3` — Moderate: may require monitoring or dose adjustment
+            - `4` — Major: avoid combination if possible, close monitoring required
+            - `5` — Contraindicated: do not use together
+          example: 4
+        base_severity:
+          type: integer
+          description: |
+            Original severity before noise-type adjustments.
+            Same scale as `severity`. Useful for understanding if severity was modified.
+          example: 4
         severity_name:
           type: string
           enum:
@@ -1491,6 +1485,13 @@ components:
             - "CONTRAINDICATED"
           description: Human-readable severity label
           example: "MAJOR"
+        noise_type:
+          type: string
+          nullable: true
+          description: |
+            Noise classification for this interaction, if applicable.
+            Null when the interaction is clinically significant.
+          example: null
         description:
           type: string
           description: Interaction mechanism or clinical description (English)
@@ -1499,6 +1500,26 @@ components:
           type: string
           description: Interaction description in Arabic
           example: "قد يزيد الأموكسيسيللين من تأثير الوارفارين المضاد للتجلط."
+        clinical_effect:
+          type: string
+          nullable: true
+          description: Expected clinical effect of the interaction (English)
+          example: "Increased bleeding risk"
+        clinical_effect_ar:
+          type: string
+          nullable: true
+          description: Expected clinical effect in Arabic
+          example: null
+        management:
+          type: string
+          nullable: true
+          description: Clinical management strategy (English)
+          example: null
+        management_ar:
+          type: string
+          nullable: true
+          description: Clinical management strategy in Arabic
+          example: null
         recommendation:
           type: string
           description: Clinical recommendation for managing this interaction (English)
@@ -1507,34 +1528,10 @@ components:
           type: string
           description: Clinical recommendation in Arabic
           example: "مراقبة INR/PT. مراقبة علامات النزيف."
-        clinical_effect:
+        source:
           type: string
-          description: Expected clinical effect of the interaction (English)
-          example: "Increased bleeding risk"
-        clinical_effect_ar:
-          type: string
-          description: Expected clinical effect in Arabic
-          example: "زيادة خطر النزيف"
-        management:
-          type: string
-          description: Clinical management recommendation (English)
-          example: "Monitor INR closely when starting or stopping amoxicillin."
-        management_ar:
-          type: string
-          description: Clinical management recommendation in Arabic
-          example: "مراقبة INR عند بدء أو وقف الأموكسيسيللين."
-        base_severity:
-          type: integer
-          minimum: 1
-          maximum: 4
-          description: Base severity before any adjustments
-          example: 3
-        noise_type:
-          oneOf:
-            - type: string
-            - type: "null"
-          description: Noise classification for low-confidence interactions, or null
-          example: null
+          description: Data source
+          example: "DrugBank"
 
     # --- Reproductive Safety (pllr) ---
 
@@ -1548,14 +1545,14 @@ components:
           maximum: 7
           description: |
             Pregnancy risk score on the SafeRx 0-7 scale.
-            - `0` — No Data Available
-            - `1` — Compatible
-            - `2` — Probably Compatible
-            - `3` — Use With Caution
-            - `4` — Moderate Risk
-            - `5` — High Risk
+            - `0` — Unknown
+            - `1` — Safe
+            - `2` — Likely Safe
+            - `3` — Possibly Unsafe
+            - `4` — Likely Unsafe
+            - `5` — Unsafe
             - `6` — Contraindicated
-            - `7` — Contraindicated — Teratogenic Risk
+            - `7` — Absolutely Contraindicated
           example: 7
         pregnancy_risk_name:
           type: string
@@ -1584,65 +1581,67 @@ components:
         lactation_warning:
           $ref: '#/components/schemas/ReproductiveWarning'
         preg_t1_risk:
-          oneOf:
-            - type: integer
-              minimum: 0
-              maximum: 7
-            - type: "null"
-          description: First trimester pregnancy risk (0-7 scale, same as pregnancy_risk_level). Null if no trimester-specific data.
-          example: 7
-        preg_t2_risk:
-          oneOf:
-            - type: integer
-              minimum: 0
-              maximum: 7
-            - type: "null"
-          description: Second trimester pregnancy risk
-          example: 7
-        preg_t3_risk:
-          oneOf:
-            - type: integer
-              minimum: 0
-              maximum: 7
-            - type: "null"
-          description: Third trimester pregnancy risk
-          example: 7
+          type: string
+          nullable: true
+          description: First trimester pregnancy risk classification
+          example: "Contraindicated"
         preg_t1_note:
           type: string
-          description: First trimester clinical note (language depends on `lang` parameter)
-          example: "Warfarin embryopathy risk highest in first trimester (weeks 6-9)."
+          nullable: true
+          description: First trimester clinical note
+          example: null
+        preg_t1_ar:
+          type: string
+          nullable: true
+          description: First trimester note in Arabic
+          example: null
+        preg_t2_risk:
+          type: string
+          nullable: true
+          description: Second trimester pregnancy risk classification
+          example: "Contraindicated"
         preg_t2_note:
           type: string
+          nullable: true
           description: Second trimester clinical note
-          example: "CNS abnormalities and fetal hemorrhage risk."
+          example: null
+        preg_t2_ar:
+          type: string
+          nullable: true
+          description: Second trimester note in Arabic
+          example: null
+        preg_t3_risk:
+          type: string
+          nullable: true
+          description: Third trimester pregnancy risk classification
+          example: "Absolutely Contraindicated"
         preg_t3_note:
           type: string
+          nullable: true
           description: Third trimester clinical note
-          example: "Fetal and neonatal hemorrhage risk; discontinue before delivery."
-        lact_rid:
-          oneOf:
-            - type: number
-              format: float
-            - type: "null"
-          description: |
-            Relative Infant Dose (RID) as a percentage. RID < 10% is generally
-            considered acceptable for breastfeeding. Null if unknown.
-          example: 0.0
+          example: null
+        preg_t3_ar:
+          type: string
+          nullable: true
+          description: Third trimester note in Arabic
+          example: null
         lact_milk_level_mgl:
-          oneOf:
-            - type: number
-              format: float
-            - type: "null"
-          description: Drug concentration in breast milk (mg/L). Null if unknown.
+          type: number
+          format: float
+          nullable: true
+          description: Measured drug concentration in breast milk (mg/L)
           example: null
         lact_mp_ratio:
-          oneOf:
-            - type: number
-              format: float
-            - type: "null"
-          description: |
-            Milk-to-plasma ratio. Values < 1 indicate lower concentration in milk
-            than in maternal plasma. Null if unknown.
+          type: number
+          format: float
+          nullable: true
+          description: Milk-to-plasma concentration ratio
+          example: null
+        lact_rid:
+          type: number
+          format: float
+          nullable: true
+          description: Relative Infant Dose (%) — percentage of maternal dose received by infant
           example: null
 
     ReproductiveWarning:
@@ -1713,10 +1712,8 @@ components:
           example: "يمكن تناوله مع أو بدون طعام. تناوله في نفس الوقت يومياً."
         evidence_level:
           type: string
-          description: |
-            Evidence source for this recommendation.
-            Values: `primary` (FDA label), `clinical` (clinical study), `reference` (other)
-          example: "primary"
+          description: Evidence source for this recommendation
+          example: "FDA_LABEL"
         severity:
           type: integer
           minimum: 1
@@ -2244,7 +2241,7 @@ components:
               example: "7.3.1"
             pllr:
               type: string
-              example: "V3.0.4"
+              example: "V2.3"
             food:
               type: string
               example: "V5"
@@ -2258,7 +2255,7 @@ components:
             ae_products:
               type: integer
               description: Products with adverse effect data
-              example: 28557
+              example: 66704
             ae_coverage_percent:
               type: number
               format: float

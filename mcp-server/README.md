@@ -1,6 +1,6 @@
 # SafeRx MCP Server
 
-Model Context Protocol server for the [SafeRx Drug Safety API](https://saferx.online). Enables AI assistants (Claude Desktop, Claude Code, Cursor) to check drug safety across 28,000+ Egyptian pharmaceutical products.
+Model Context Protocol server for the [SafeRx Drug Safety API](https://saferx.online). Enables AI assistants (Claude Desktop, Claude Code, Cursor) to check drug safety across 66,000+ Egyptian pharmaceutical products.
 
 ## Tools
 

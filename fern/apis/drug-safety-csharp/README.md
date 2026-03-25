@@ -1,6 +1,6 @@
 # SafeRx C# SDK
 
-Screen drugs for adverse effects, interactions, pregnancy/lactation risks, food interactions, and dosing across 28,000+ Egyptian pharmaceuticals.
+Screen drugs for adverse effects, interactions, pregnancy/lactation risks, food interactions, and dosing across 66,000+ Egyptian pharmaceuticals.
 
 ## Installation
 
