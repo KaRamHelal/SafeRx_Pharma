@@ -21,6 +21,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -61,10 +62,19 @@ jobs:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
       - name: Build & Publish MCP Server
+        shell: bash
         run: |
           cd mcp-server
           npm ci
           npm run build
+          LOCAL_VERSION=$(node -p "require('./package.json').version")
+          REMOTE_VERSION=$(npm view @saferx_pharma/mcp-server version 2>/dev/null || echo "none")
+          echo "Local MCP version: $LOCAL_VERSION"
+          echo "Remote MCP version: $REMOTE_VERSION"
+          if [ "$LOCAL_VERSION" = "$REMOTE_VERSION" ]; then
+            echo "MCP version already published; skipping npm publish."
+            exit 0
+          fi
           npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
