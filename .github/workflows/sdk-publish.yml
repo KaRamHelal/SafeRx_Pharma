@@ -17,6 +17,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Detect changed areas
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            mcp:
+              - 'mcp-server/**'
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -62,6 +70,7 @@ jobs:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
       - name: Build & Publish MCP Server
+        if: steps.changes.outputs.mcp == 'true'
         shell: bash
         run: |
           cd mcp-server
@@ -72,8 +81,9 @@ jobs:
           echo "Local MCP version: $LOCAL_VERSION"
           echo "Remote MCP version: $REMOTE_VERSION"
           if [ "$LOCAL_VERSION" = "$REMOTE_VERSION" ]; then
-            echo "MCP version already published; skipping npm publish."
-            exit 0
+            echo "ERROR: MCP package version was not bumped (still $LOCAL_VERSION)."
+            echo "Please bump mcp-server/package.json version before publishing."
+            exit 1
           fi
           npm publish --access public
         env:
