@@ -1,5 +1,7 @@
 # SafeRx Pharma
 
+[![Latest Release](https://img.shields.io/github/v/release/KaRamHelal/SafeRx_Pharma?label=latest%20release&logo=github)](https://github.com/KaRamHelal/SafeRx_Pharma/releases/latest)
+
 Drug safety intelligence for Egyptian pharmaceutical products. One API call, six safety domains, 66,000+ products.
 
 ## What's Here
@@ -112,6 +114,7 @@ Requires `SAFERX_API_KEY` environment variable. See [`mcp-server/README.md`](mcp
 
 - **Website:** [saferx.online](https://saferx.online)
 - **Developer Portal:** [saferx.online/developer.html](https://saferx.online/developer.html)
+- **Releases:** [github.com/KaRamHelal/SafeRx_Pharma/releases/latest](https://github.com/KaRamHelal/SafeRx_Pharma/releases/latest)
 - **npm:** [@saferx_pharma/mcp-server](https://www.npmjs.com/package/@saferx_pharma/mcp-server)
 - **Status:** [saferx.instatus.com](https://saferx.instatus.com)
 - **Support:** support@saferx.online
