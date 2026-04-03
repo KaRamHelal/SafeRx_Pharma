@@ -1,6 +1,6 @@
 {
   "name": "@saferx_pharma/mcp-server",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "SafeRx Drug Safety API \u2014 Model Context Protocol Server",
   "type": "module",
   "main": "dist/index.js",
@@ -31,7 +31,7 @@
     "url": "https://github.com/KaRamHelal/SafeRx_Pharma",
     "directory": "mcp-server"
   },
-  "homepage": "https://saferx.docs.buildwithfern.com/guides/ai-integration/mcp-server",
+  "homepage": "https://docs.saferx.online/guides/ai-integration/mcp-server",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
     "zod": "^3.23.0"

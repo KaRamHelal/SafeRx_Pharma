@@ -1,7 +1,7 @@
 openapi: 3.1.1
 info:
   title: SafeRx Drug Safety API
-  version: "1.1.0"
+  version: "1.2.0"
   summary: Comprehensive drug safety screening for Egyptian pharmaceuticals
   description: |
     One API call. Six safety domains. 66,000+ Egyptian products.
@@ -14,7 +14,7 @@ info:
 
     - **Unified endpoint** — screen 1–20 drugs in a single POST request
     - **Six safety domains** checked in parallel (~40ms average response)
-    - **66,704 Egyptian products** with bilingual English/Arabic support
+    - **66,659 Egyptian products** with bilingual English/Arabic support
     - **Smart drug resolution** — accepts trade names, generic names, or partial matches
     - **Alert bubbling** — critical safety issues surfaced as top-level alerts
     - **Stable API contract** — public field names are versioned and will not change without notice

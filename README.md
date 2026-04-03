@@ -11,7 +11,7 @@ SafeRx_Pharma/
 ├── mcp-server/               # MCP server for AI assistants
 │   └── src/index.ts           # Published: @saferx_pharma/mcp-server
 ├── fern/                     # Fern docs + SDK generation config
-│   ├── docs.yml               # docs.saferx.online (26 pages)
+│   ├── docs.yml               # docs.saferx.online (29 pages)
 │   ├── docs/                  # Documentation content (MDX)
 │   ├── generators.yml         # SDK generators (Python, TS, C#, Java, Go, Swift)
 │   └── apis/                  # API definitions per SDK
@@ -98,13 +98,13 @@ Requires `SAFERX_API_KEY` environment variable. See [`mcp-server/README.md`](mcp
 | Requests/day | 60 | 500 | Custom |
 | Max drugs/request | 20 | 20 | 50 |
 | Auth | API Key | API Key | API Key |
-| Database | Full (66,704 products) | Full | Full |
+| Database | Full (66,659 products) | Full | Full |
 | Support | Email | Priority | Dedicated |
 
 ## Documentation
 
-- [API Reference](https://saferx.docs.buildwithfern.com) — Interactive endpoint docs
-- [Integration Guides](https://saferx.docs.buildwithfern.com/guides/integration-guides/pharmacy-dispensing) — Pharmacy, Hospital EHR, POS, Mobile, AI Agent
+- [API Reference](https://docs.saferx.online) — Interactive endpoint docs
+- [Integration Guides](https://docs.saferx.online/guides/integration-guides/pharmacy-dispensing) — Pharmacy, Hospital EHR, POS, Mobile, AI Agent
 - [OpenAPI Spec](openapi/drug-safety-v1.yaml) — Machine-readable API definition
 - [Postman Collection](postman/SafeRx-Drug-Safety-API.postman_collection.json) — Import and test in seconds
 
