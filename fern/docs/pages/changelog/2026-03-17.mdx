@@ -1,20 +1,49 @@
 # March 17, 2026
 
-## OpenAPI Spec Sync & MCP Server v1.0.2
+## Conditions Enum Fix — All SDKs + MCP Server
 
-### OpenAPI Specification
+**Affected packages:** Python v0.0.10, TypeScript v0.0.11, C# v0.0.6, MCP Server v1.0.2
 
-- Synced OpenAPI spec to match live API behavior as of March 17
-- All response schemas validated against production responses
+The `conditions` enum was out of sync across all SDKs and the MCP server. Corrected to match the 14 conditions supported by the live API.
 
-### MCP Server v1.0.2
+**Before (7 stale values):**
 
-- Published `@saferx_pharma/mcp-server` v1.0.2 to npm
-- Two tools: `check_drug_safety` and `get_drug_metadata`
-- Works with Claude Desktop, Cursor, and any MCP-compatible AI assistant
+```
+diabetes, hypertension, renal_impairment, hepatic_impairment,
+cardiac_disease, peptic_ulcer, thyroid_disorder
+```
 
-### SDKs
+**After (14 correct values):**
 
-- Python SDK v1.0.0 published to PyPI (`pip install saferx-pharma`)
-- TypeScript SDK v1.0.0 published to npm (`npm install saferx-pharma-sdk`)
-- C# SDK v1.0.0 published to NuGet (`dotnet add package SafeRx`)
+```
+diabetes, hypertension, renal_impairment, hepatic_impairment,
+cardiac_disease, peptic_ulcer, thyroid_disorder,
+asthma, epilepsy, depression, anxiety, obesity, anemia, osteoporosis
+```
+
+**Upgrade:**
+
+```bash
+# Python
+pip install --upgrade saferx-pharma
+
+# TypeScript
+npm install saferx-pharma-sdk@latest
+
+# C#
+dotnet add package SafeRx --version 0.0.6
+
+# MCP Server
+npx @saferx_pharma/mcp-server@latest
+```
+
+---
+
+## API Bug Fixes
+
+**Fixed:** `POST /api/drug_safety/check` was returning a 500 error on every request due to an internal argument error introduced in a recent security refactor. The endpoint is now fully operational.
+
+**No Breaking Changes:**
+
+- Request and response structure unchanged
+- All SDK clients compatible with the fix

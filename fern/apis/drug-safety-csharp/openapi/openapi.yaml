@@ -1,7 +1,7 @@
 openapi: 3.1.1
 info:
   title: SafeRx Drug Safety API
-  version: "1.2.0"
+  version: "1.1.0"
   summary: Comprehensive drug safety screening for Egyptian pharmaceuticals
   description: |
     One API call. Six safety domains. 66,000+ Egyptian products.
@@ -277,20 +277,16 @@ paths:
                           lactation_risk_level: 4
                           lactation_risk_name: "Likely Unsafe"
                           pregnancy_rationale: "Warfarin is absolutely contraindicated in pregnancy. FDA Category X. Causes warfarin embryopathy."
-                          pregnancy_rationale_ar: "الوارفارين ممنوع تماماً أثناء الحمل. تصنيف FDA فئة X. يسبب اعتلال الجنين بالوارفارين."
                           lactation_rationale: "Warfarin is excreted in breast milk. Risk of hemorrhage in the nursing infant."
-                          lactation_rationale_ar: "يُفرز الوارفارين في حليب الأم. خطر حدوث نزيف عند الرضيع."
                           pregnancy_warning:
                             has_warning: true
-                            text_en: "Warfarin crosses the placenta and can cause fatal hemorrhage in the fetus."
-                            text_ar: "يعبر الوارفارين المشيمة ويمكن أن يسبب نزيفاً مميتاً للجنين."
+                            text: "Warfarin crosses the placenta and can cause fatal hemorrhage in the fetus."
                             categories:
                               - "TERATOGENIC"
                               - "DEATH_RISK"
                           lactation_warning:
                             has_warning: false
-                            text_en: null
-                            text_ar: null
+                            text: null
                             categories: []
                       food:
                         SRX-012-003336:
@@ -1065,34 +1061,14 @@ components:
           type: string
           description: Registered trade name with strength and pack size
           example: "AUGMENTIN 1GM 14 TAB"
-        brand_name_ar:
-          type: string
-          description: Arabic trade name
-          example: "أوجمنتين 1 جم 14 قرص"
         active_ingredient:
           type: string
           description: Active pharmaceutical ingredient(s), pipe-separated for combinations
           example: "AMOXICILLIN + CLAVULANIC ACID"
-        active_ingredient_ar:
-          type: string
-          description: Arabic active ingredient name
-          example: "أموكسيسيلين + حمض كلافولانيك"
-        generic_name:
-          type: string
-          description: Short generic drug name
-          example: "AUGMENTIN"
-        generic_name_ar:
-          type: string
-          description: Arabic generic drug name
-          example: "أوجمنتين"
         form:
           type: string
           description: Pharmaceutical dosage form
           example: "Oral Tablet"
-        form_ar:
-          type: string
-          description: Arabic dosage form
-          example: "أقراص فموية"
         manufacturer_en:
           type: string
           description: Marketing authorization holder
@@ -1603,20 +1579,12 @@ components:
           example: "Likely Unsafe"
         pregnancy_rationale:
           type: string
-          description: Clinical rationale for the pregnancy risk rating (English)
+          description: Clinical rationale for the pregnancy risk rating (language depends on `lang` parameter)
           example: "Warfarin is absolutely contraindicated in pregnancy. FDA Category X."
-        pregnancy_rationale_ar:
-          type: string
-          description: Clinical rationale for the pregnancy risk rating (Arabic)
-          example: "الوارفارين ممنوع تماماً أثناء الحمل. تصنيف FDA فئة X."
         lactation_rationale:
           type: string
-          description: Clinical rationale for the lactation risk rating (English)
+          description: Clinical rationale for the lactation risk rating
           example: "Warfarin is excreted in breast milk."
-        lactation_rationale_ar:
-          type: string
-          description: Clinical rationale for the lactation risk rating (Arabic)
-          example: "يُفرز الوارفارين في حليب الأم."
         pregnancy_warning:
           $ref: '#/components/schemas/ReproductiveWarning'
         lactation_warning:
@@ -1631,7 +1599,7 @@ components:
           nullable: true
           description: First trimester clinical note
           example: null
-        preg_t1_note_ar:
+        preg_t1_ar:
           type: string
           nullable: true
           description: First trimester note in Arabic
@@ -1646,7 +1614,7 @@ components:
           nullable: true
           description: Second trimester clinical note
           example: null
-        preg_t2_note_ar:
+        preg_t2_ar:
           type: string
           nullable: true
           description: Second trimester note in Arabic
@@ -1661,7 +1629,7 @@ components:
           nullable: true
           description: Third trimester clinical note
           example: null
-        preg_t3_note_ar:
+        preg_t3_ar:
           type: string
           nullable: true
           description: Third trimester note in Arabic
@@ -1687,24 +1655,18 @@ components:
 
     ReproductiveWarning:
       type: object
-      description: Pregnancy or lactation specific warning (bilingual)
+      description: Pregnancy or lactation specific warning
       properties:
         has_warning:
           type: boolean
           description: Whether a specific warning exists
           example: true
-        text_en:
+        text:
           oneOf:
             - type: string
             - type: "null"
-          description: Warning text in English
+          description: Warning text (language depends on `lang` parameter)
           example: "Warfarin crosses the placenta and can cause fatal hemorrhage in the fetus."
-        text_ar:
-          oneOf:
-            - type: string
-            - type: "null"
-          description: Warning text in Arabic
-          example: "يعبر الوارفارين المشيمة ويمكن أن يسبب نزيفاً مميتاً للجنين."
         categories:
           type: array
           items:
@@ -1774,22 +1736,12 @@ components:
 
     FoodConflict:
       type: object
-      description: A specific food-drug interaction (bilingual)
+      description: A specific food-drug interaction
       properties:
         food:
           type: string
           description: Food item or food category involved
           example: "Vitamin K rich foods"
-        food_category:
-          type: string
-          description: Food category identifier
-          example: "VITAMIN_K_FOODS"
-        affected_foods:
-          type: array
-          items:
-            type: string
-          description: Specific foods affected
-          example: ["spinach", "kale", "broccoli"]
         severity:
           type: integer
           minimum: 1
@@ -1800,18 +1752,10 @@ components:
           type: string
           description: Pharmacological interaction mechanism
           example: "VITAMIN_K_ANTAGONISM"
-        brief_en:
+        recommendation:
           type: string
-          description: Patient guidance in English
-          example: "Maintain consistent vitamin K intake while taking this medication."
-        brief_ar:
-          type: string
-          description: Patient guidance in Arabic
-          example: "حافظ على تناول ثابت لفيتامين ك أثناء تناول هذا الدواء."
-        action_required:
-          type: string
-          description: Required patient action
-          example: "MONITOR"
+          description: Dietary recommendation
+          example: "Maintain consistent vitamin K intake"
 
     # --- Clinical Considerations ---
 
@@ -2176,12 +2120,8 @@ components:
           example: "ae_bbw"
         message:
           type: string
-          description: Human-readable alert message (English)
+          description: Human-readable alert message
           example: "Black Box Warning for MARIVAN 2MG 30 TAB"
-        message_ar:
-          type: string
-          description: Human-readable alert message (Arabic)
-          example: "تحذير الصندوق الأسود لـ ماريفان 2 مجم 30 قرص"
         drugs_involved:
           type: array
           items:

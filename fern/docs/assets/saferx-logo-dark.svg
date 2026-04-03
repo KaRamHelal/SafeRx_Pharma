@@ -1,7 +1,28 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none">
-  <rect x="0" y="4" width="32" height="32" rx="6" fill="#4D9FFF"/>
-  <path d="M16 12 L10 20 L16 20 L16 28 L22 20 L16 20 Z" fill="white"/>
-  <text x="40" y="28" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="700" fill="#E6EDF3">
-    Safe<tspan fill="#4D9FFF">Rx</tspan>
+  <defs>
+    <linearGradient id="sh" x1="16" y1="3" x2="16" y2="34" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6EE7B7"/>
+      <stop offset="40%" stop-color="#34D399"/>
+      <stop offset="100%" stop-color="#10B981"/>
+    </linearGradient>
+    <radialGradient id="sp" cx="12" cy="10" r="16" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="white" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="rm" x1="16" y1="3" x2="16" y2="34" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="white" stop-opacity="0.35"/>
+      <stop offset="40%" stop-color="white" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0.03"/>
+    </linearGradient>
+  </defs>
+  <!-- Shield -->
+  <path d="M16,3 C16,3 27,6 30,6 C30,6 31,6 31,7 C31,18 27,27 16,34 C5,27 1,18 1,7 C1,6 2,6 2,6 C5,6 16,3 16,3z" fill="url(#sh)"/>
+  <path d="M16,3 C16,3 27,6 30,6 C30,6 31,6 31,7 C31,18 27,27 16,34 C5,27 1,18 1,7 C1,6 2,6 2,6 C5,6 16,3 16,3z" fill="url(#sp)"/>
+  <path d="M16,3 C16,3 27,6 30,6 C30,6 31,6 31,7 C31,18 27,27 16,34 C5,27 1,18 1,7 C1,6 2,6 2,6 C5,6 16,3 16,3z" fill="none" stroke="url(#rm)" stroke-width="0.6"/>
+  <!-- S letter -->
+  <path d="M19.5,11.5 C18.5,10.8 17,10.5 15.5,10.5 C13,10.5 11,12 11,14 C11,15.8 12.5,16.8 14.5,17.5 L15.5,17.8 C17,18.3 17.5,18.8 17.5,19.8 C17.5,21 16.5,21.8 15,21.8 C13.5,21.8 12.2,21 11.5,19.8 L10,21 C11,22.8 12.8,24 15.2,24 C18,24 20,22 20,19.5 C20,17.8 18.8,16.5 16.5,15.8 L15.5,15.5 C14,15 13.2,14.5 13.2,13.8 C13.2,12.8 14.2,12 15.5,12 C16.8,12 17.8,12.5 18.5,13.2 L19.5,11.5z" fill="white"/>
+  <!-- SafeRx text -->
+  <text x="40" y="28" font-family="'DM Sans', system-ui, sans-serif" font-size="22" font-weight="800" fill="#E6EDF3">
+    Safe<tspan fill="#34D399" font-style="italic" font-weight="700">Rx</tspan>
   </text>
 </svg>

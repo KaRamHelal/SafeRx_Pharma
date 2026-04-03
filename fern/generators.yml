@@ -1,26 +1,15 @@
+# Root generators.yml — INTENTIONALLY EMPTY for SDK groups.
+#
+# SDK generation is defined in sub-API configs ONLY:
+#   fern/apis/drug-safety/generators.yml      — Python + TypeScript
+#   fern/apis/drug-safety-csharp/generators.yml — C#
+#
+# This prevents dual version counters (root vs sub-API).
+# CI uses: fern generate --group <group> --api <api>
+#
+# Inactive SDK configs (Java/Go/Swift) preserved below for future use.
+
 groups:
-  python-sdk:
-    generators:
-      - name: fernapi/fern-python-sdk
-        version: 4.57.2
-        output:
-          location: pypi
-          package-name: saferx-pharma
-          token: ${PYPI_TOKEN}
-        config:
-          client_class_name: SafeRxClient
-
-  ts-sdk:
-    generators:
-      - name: fernapi/fern-typescript-sdk
-        version: 3.48.2
-        output:
-          location: npm
-          package-name: saferx-pharma-sdk
-          token: ${NPM_TOKEN}
-        config:
-          namespaceExport: SafeRx
-
   java-sdk:
     generators:
       - name: fernapi/fern-java-sdk
