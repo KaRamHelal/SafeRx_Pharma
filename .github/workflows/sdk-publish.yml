@@ -10,9 +10,14 @@ on:
       - ".github/workflows/sdk-publish.yml"
   workflow_dispatch:
 
+concurrency:
+  group: publish-sdks-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   publish-sdks:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v4
@@ -90,6 +95,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish Fern Docs
+        timeout-minutes: 10
         run: fern generate --docs --force --no-prompt
         env:
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
