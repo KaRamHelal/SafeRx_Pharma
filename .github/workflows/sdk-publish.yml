@@ -1,0 +1,75 @@
+name: Publish SDKs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "openapi/**"
+      - "fern/**"
+      - "mcp-server/**"
+      - ".github/workflows/sdk-publish.yml"
+  workflow_dispatch:
+
+jobs:
+  publish-sdks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Install Fern CLI
+        run: npm install -g fern-api
+
+      - name: Fern Login
+        run: fern login
+        env:
+          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
+
+      - name: Generate & Publish Python SDK
+        run: fern generate --group python-sdk --api drug-safety
+        env:
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+
+      - name: Generate & Publish TypeScript SDK
+        run: fern generate --group ts-sdk --api drug-safety
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Generate C# SDK
+        run: fern generate --group csharp-sdk --api drug-safety-csharp --force
+
+      - name: Fix & Publish C# SDK
+        run: |
+          python scripts/fix_csharp_sdk_bug.py --pharma-root .
+          dotnet pack fern/generated/csharp-sdk/src/SaferxApi/SaferxApi.csproj -c Release
+          dotnet nuget push fern/generated/csharp-sdk/src/SaferxApi/bin/Release/SafeRx.*.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+
+      - name: Build & Publish MCP Server
+        run: |
+          cd mcp-server
+          npm ci
+          npm run build
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish Fern Docs
+        run: |
+          echo "y" | fern generate --docs
