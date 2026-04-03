@@ -90,6 +90,6 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish Fern Docs
-        run: echo "y" | fern generate --docs
+        run: fern generate --docs --force --no-prompt
         env:
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
