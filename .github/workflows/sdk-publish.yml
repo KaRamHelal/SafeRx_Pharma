@@ -35,23 +35,22 @@ jobs:
       - name: Install Fern CLI
         run: npm install -g fern-api
 
-      - name: Fern Login
-        run: fern login
-        env:
-          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
-
       - name: Generate & Publish Python SDK
         run: fern generate --group python-sdk --api drug-safety
         env:
+          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
 
       - name: Generate & Publish TypeScript SDK
         run: fern generate --group ts-sdk --api drug-safety
         env:
+          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Generate C# SDK
         run: fern generate --group csharp-sdk --api drug-safety-csharp --force
+        env:
+          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
 
       - name: Fix & Publish C# SDK
         run: |
@@ -71,5 +70,6 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish Fern Docs
-        run: |
-          echo "y" | fern generate --docs
+        run: echo "y" | fern generate --docs
+        env:
+          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
