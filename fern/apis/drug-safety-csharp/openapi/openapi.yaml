@@ -4,7 +4,7 @@ info:
   version: "1.2.0"
   summary: Comprehensive drug safety screening for Egyptian pharmaceuticals
   description: |
-    One API call. Six safety domains. 66,000+ Egyptian products.
+    One API call. Six safety domains. 33,000 Egyptian pharma + semi-pharma products.
 
     The SafeRx Drug Safety API provides real-time drug safety screening across
     six clinical domains: adverse effects, drug interactions, pregnancy & lactation
@@ -14,7 +14,7 @@ info:
 
     - **Unified endpoint** — screen 1–20 drugs in a single POST request
     - **Six safety domains** checked in parallel (~40ms average response)
-    - **66,659 Egyptian products** with bilingual English/Arabic support
+    - **33,000 Egyptian pharma + semi-pharma products** with bilingual English/Arabic support
     - **Smart drug resolution** — accepts trade names, generic names, or partial matches
     - **Alert bubbling** — critical safety issues surfaced as top-level alerts
     - **Stable API contract** — public field names are versioned and will not change without notice
@@ -71,6 +71,8 @@ paths:
         The API resolves drug names via fuzzy matching, runs all requested safety
         checks in parallel, and returns a unified response with alerts bubbled to
         the top for easy triage.
+
+        This endpoint is API-key only. It does not require `X-SafeRx-Token`.
 
         **Typical response time:** ~40ms (warm cache, 3 drugs, all domains).
       tags:
@@ -134,15 +136,6 @@ paths:
                 type: string
                 example: "1.0"
               description: API version
-            X-RateLimit-Remaining-Minute:
-              schema:
-                type: integer
-              description: Requests remaining in the current minute window
-            X-RateLimit-Tier:
-              schema:
-                type: string
-                enum: [free, pro, enterprise]
-              description: Your current tier
           content:
             application/json:
               schema:
@@ -841,7 +834,7 @@ components:
       in: header
       name: X-SafeRx-API-Key
       description: |
-        API key for all tiers. Required for every request.
+        API key for the unified drug safety API. Required for `/api/drug_safety/check` and `/api/drug_safety/metadata`.
 
         | Prefix | Tier | How to get |
         |--------|------|------------|
@@ -1590,10 +1583,12 @@ components:
         lactation_warning:
           $ref: '#/components/schemas/ReproductiveWarning'
         preg_t1_risk:
-          type: string
+          type: integer
           nullable: true
+          minimum: 0
+          maximum: 7
           description: First trimester pregnancy risk classification
-          example: "Contraindicated"
+          example: 6
         preg_t1_note:
           type: string
           nullable: true
@@ -1605,10 +1600,12 @@ components:
           description: First trimester note in Arabic
           example: null
         preg_t2_risk:
-          type: string
+          type: integer
           nullable: true
+          minimum: 0
+          maximum: 7
           description: Second trimester pregnancy risk classification
-          example: "Contraindicated"
+          example: 6
         preg_t2_note:
           type: string
           nullable: true
@@ -1620,10 +1617,12 @@ components:
           description: Second trimester note in Arabic
           example: null
         preg_t3_risk:
-          type: string
+          type: integer
           nullable: true
+          minimum: 0
+          maximum: 7
           description: Third trimester pregnancy risk classification
-          example: "Absolutely Contraindicated"
+          example: 7
         preg_t3_note:
           type: string
           nullable: true

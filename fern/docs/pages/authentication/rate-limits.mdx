@@ -18,7 +18,9 @@ subtitle: Request limits, throttling, and retry strategies by tier
 
 ## Rate Limit Headers
 
-Responses include rate limit headers for clients subject to rate limiting:
+The live API currently guarantees `Retry-After` on `429` responses. The older
+`X-RateLimit-Remaining-Minute` and `X-RateLimit-Tier` headers are not
+guaranteed in the current production contract.
 
 | Header | Description |
 |--------|-------------|
@@ -27,7 +29,7 @@ Responses include rate limit headers for clients subject to rate limiting:
 | `Retry-After` | Seconds to wait (only on 429 responses) |
 
 <Note>
-`X-RateLimit-Remaining-Minute` and `X-RateLimit-Tier` are only included for non-whitelisted IPs. If your IP is whitelisted (e.g., internal services), these headers may not be present. Do not rely on their presence for application logic — use them for observability only.
+Do not rely on `X-RateLimit-Remaining-Minute` or `X-RateLimit-Tier` for application logic. The API enforces limits server-side regardless of whether a client sees those headers.
 </Note>
 
 ## 429 Responses
