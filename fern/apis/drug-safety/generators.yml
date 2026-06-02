@@ -6,7 +6,7 @@ groups:
   python-sdk:
     generators:
       - name: fernapi/fern-python-sdk
-        version: 4.57.2
+        version: 4.64.1
         output:
           location: pypi
           package-name: saferx-pharma
@@ -17,7 +17,7 @@ groups:
   ts-sdk:
     generators:
       - name: fernapi/fern-typescript-sdk
-        version: 3.48.2
+        version: 3.60.9
         output:
           location: npm
           package-name: saferx-pharma-sdk
