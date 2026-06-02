@@ -1,7 +1,7 @@
 openapi: 3.1.1
 info:
   title: SafeRx Drug Safety API
-  version: "1.2.0"
+  version: "1.3.0"
   summary: Comprehensive drug safety screening for Egyptian pharmaceuticals
   description: |
     One API call. Seven safety domains. 66,000+ Egyptian products.
@@ -181,7 +181,7 @@ paths:
             X-SafeRx-API-Version:
               schema:
                 type: string
-                example: "1.0"
+              example: "1.3"
               description: API version
           content:
             application/json:
@@ -314,7 +314,6 @@ paths:
                             description_ar: "قد يزيد الأموكسيسيللين من تأثير الوارفارين المضاد للتجلط."
                             recommendation: "Monitor INR/PT. Watch for signs of bleeding."
                             recommendation_ar: "مراقبة INR/PT. مراقبة علامات النزيف."
-                            source: "DrugBank"
                       reproductive_safety:
                         SRX-012-003336:
                           pregnancy_risk_level: 7
@@ -362,9 +361,17 @@ paths:
                                 severity: 3
                                 severity_name: "CAUTION"
                                 reason: "Diabetes may alter warfarin metabolism"
-                                source: "openFDA Label"
+                                source: "SafeRx"
                         condition_alerts: []
                         population_alerts: []
+                        context_applied:
+                          conditions:
+                            - "diabetes"
+                          populations:
+                            - "renal"
+                          requested_populations: []
+                          inferred_populations:
+                            - "renal"
                       dosing:
                         SRX-008-002145:
                           tier: 1
@@ -408,6 +415,21 @@ paths:
                           cross_reactivity_warnings: 0
                           total_warnings: 1
                           contraindicated_count: 1
+                        product_families:
+                          SRX-010-004748:
+                            tradename_en: "AUGMENTIN 1GM 14 TAB"
+                            generic_en: "AMOXICILLIN + CLAVULANIC ACID"
+                            dosage_form_en: "Oral Tablet"
+                            has_allergy_data: true
+                            families:
+                              - family_id: "penicillin"
+                                name_en: "Penicillins"
+                                clinical_significance: "HIGH"
+                                cross_reactivity:
+                                  - target_family: "cephalosporin"
+                                    target_family_name_en: "Cephalosporins"
+                                    severity: 3
+                                    severity_label: "CAUTION"
                         needs_review_entries: []
                         unresolved_entries: []
                         missing_products: []
@@ -1052,6 +1074,40 @@ components:
           description: Known patient allergies for the `allergy` domain.
           example:
             - "penicillin"
+        age:
+          type: integer
+          minimum: 0
+          maximum: 150
+          description: Patient age in years. Used to infer pediatric or geriatric clinical-dose context.
+          example: 72
+        weight_kg:
+          type: number
+          format: float
+          minimum: 0
+          description: Patient weight in kilograms. Used for pediatric weight-based dose context when available.
+          example: 70
+        crcl:
+          type: number
+          format: float
+          minimum: 0
+          description: Creatinine clearance in mL/min. Supplying this infers the `renal` population and returns matched renal dose-adjustment context when available.
+          example: 25
+        egfr:
+          type: number
+          format: float
+          minimum: 0
+          description: eGFR value accepted as a fallback renal-function input when `crcl` is not supplied.
+          example: 32
+        child_pugh:
+          type: string
+          enum: ["A", "B", "C"]
+          description: Child-Pugh class. Supplying this infers the `hepatic` population and returns matched hepatic dose-adjustment context when available.
+          example: "B"
+        hepatic_status:
+          type: string
+          enum: ["normal", "mild", "moderate", "severe"]
+          description: Hepatic impairment severity. `mild`, `moderate`, and `severe` map to hepatic clinical-dose context when `child_pugh` is not supplied.
+          example: "moderate"
 
     Population:
       type: string
@@ -1304,6 +1360,14 @@ components:
           type: string
           description: Arabic trade name
           example: "أوجمنتين 1 جم 14 قرص"
+        display_name:
+          type: string
+          description: Concise registered name plus strength, useful for app display and local matching.
+          example: "AUGMENTIN 1GM"
+        display_name_ar:
+          type: string
+          description: Arabic concise registered name plus strength, when available.
+          example: "أوجمنتين 1 جم"
         active_ingredient:
           type: string
           description: Active pharmaceutical ingredient(s), pipe-separated for combinations
@@ -1328,6 +1392,14 @@ components:
           type: string
           description: Arabic dosage form
           example: "أقراص فموية"
+        strength:
+          type: string
+          description: Registered strength text as listed for the product.
+          example: "1 GM"
+        route:
+          type: string
+          description: Administration route, when available.
+          example: "oral"
         manufacturer_en:
           type: string
           description: Marketing authorization holder
@@ -1336,6 +1408,38 @@ components:
           type: string
           description: ATC-based therapeutic classification, pipe-separated hierarchy
           example: "Penicillins|Combinations"
+        therapeutic_class_detail:
+          type: string
+          description: Public therapeutic/pharmacology summary in English.
+          example: "Beta-lactam antibacterial combination"
+        therapeutic_class_detail_ar:
+          type: string
+          description: Public therapeutic/pharmacology summary in Arabic, when available.
+          example: "مضاد حيوي من عائلة بيتا لاكتام"
+        pharma_uses:
+          type: string
+          description: Registered pharmaceutical uses or indications in English, when available.
+          example: "Bacterial infections susceptible to amoxicillin/clavulanate."
+        pharma_uses_ar:
+          type: string
+          description: Registered pharmaceutical uses or indications in Arabic, when available.
+          example: "عدوى بكتيرية حساسة للأموكسيسيلين/كلافولانات."
+        description:
+          type: string
+          description: Patient/app-friendly product description in English, when available.
+          example: "Amoxicillin/clavulanate antibacterial product."
+        description_ar:
+          type: string
+          description: Patient/app-friendly product description in Arabic, when available.
+          example: "مستحضر أموكسيسيلين/كلافولانات مضاد للبكتيريا."
+        mechanism:
+          type: string
+          description: Mechanism of action summary in English, when available.
+          example: "Inhibits bacterial cell wall synthesis."
+        warnings:
+          type: string
+          description: Public warning summary in English, when available.
+          example: "Review allergy history before dispensing beta-lactam antibiotics."
         medical_specialty:
           type: string
           description: Primary prescribing specialty
@@ -1776,19 +1880,19 @@ components:
       properties:
         contraindicated:
           type: integer
-          description: Number of contraindicated (severity 5) interactions
+          description: Number of contraindicated (severity 4) interactions
           example: 0
         major:
           type: integer
-          description: Number of major (severity 4) interactions
+          description: Number of major (severity 3) interactions
           example: 1
         moderate:
           type: integer
-          description: Number of moderate (severity 3) interactions
+          description: Number of moderate (severity 2) interactions
           example: 0
         minor:
           type: integer
-          description: Number of minor (severity 2) interactions
+          description: Number of minor (severity 1) interactions
           example: 0
 
     Interaction:
@@ -1880,10 +1984,6 @@ components:
           type: string
           description: Clinical recommendation in Arabic
           example: "مراقبة INR/PT. مراقبة علامات النزيف."
-        source:
-          type: string
-          description: Data source
-          example: "DrugBank"
 
     # --- Reproductive Safety (pllr) ---
 
@@ -2157,6 +2257,37 @@ components:
           items:
             $ref: '#/components/schemas/ClinicalAlert'
           description: Population-related alerts. Narrowed to `patient_profile.populations` when supplied; otherwise product-wide population signals may be returned.
+        context_applied:
+          $ref: '#/components/schemas/ClinicalContextApplied'
+          description: Patient context actually applied to clinical-dose matching, including inferred populations from age, renal, or hepatic values.
+
+    ClinicalContextApplied:
+      type: object
+      properties:
+        conditions:
+          type: array
+          items:
+            type: string
+          description: Condition keys applied to clinical filtering.
+          example: ["diabetes"]
+        populations:
+          type: array
+          items:
+            type: string
+          description: Population keys applied to clinical filtering after adding inferred populations.
+          example: ["renal", "geriatric"]
+        requested_populations:
+          type: array
+          items:
+            type: string
+          description: Population keys explicitly supplied by the caller.
+          example: ["geriatric"]
+        inferred_populations:
+          type: array
+          items:
+            type: string
+          description: Population keys inferred from patient values such as `crcl`, `child_pugh`, or `age`.
+          example: ["renal"]
 
     DrugClinicalData:
       type: object
@@ -2253,6 +2384,25 @@ components:
           type: boolean
           description: Whether dose adjustment is needed
           example: false
+        dose_adjustment:
+          type: string
+          nullable: true
+          description: Matched dose-adjustment instruction from the population band, when available.
+          example: "50%"
+        dose_recommendation:
+          type: string
+          nullable: true
+          description: Matched dosing recommendation in English, when available.
+          example: "Reduce dose to 250 mg once daily."
+        dose_recommendation_ar:
+          type: string
+          nullable: true
+          description: Matched dosing recommendation in Arabic, when available.
+          example: "قلل الجرعة إلى 250 مجم مرة يومياً."
+        matched_context:
+          type: object
+          additionalProperties: true
+          description: Matched renal/hepatic/pediatric context, including the selected band or grade when available.
         monitoring_required:
           type: boolean
           description: Whether additional monitoring is needed
@@ -2339,6 +2489,36 @@ components:
             - $ref: '#/components/schemas/DailyLimit'
             - type: "null"
           description: Regulatory maximum daily dose data
+        standard_dose:
+          oneOf:
+            - type: object
+              additionalProperties: true
+            - type: "null"
+          description: Standard-dose summary when available, including route, frequency, and verification flags.
+        dose_limits:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+          description: Dose-limit records used by the unified dosing path.
+        display_summary:
+          oneOf:
+            - type: object
+              additionalProperties: true
+            - type: "null"
+          description: Clinician/patient display summary for dose limits and caveats, when available.
+        dose_uncertainty:
+          oneOf:
+            - type: object
+              additionalProperties: true
+            - type: "null"
+          description: Calculation uncertainty or review requirement, when available.
+        monitoring_display:
+          oneOf:
+            - type: object
+              additionalProperties: true
+            - type: "null"
+          description: Display-safe monitoring instructions linked to the dose record, when available.
         components:
           oneOf:
             - type: array
@@ -2470,6 +2650,11 @@ components:
             $ref: '#/components/schemas/AllergyWarning'
         summary:
           $ref: '#/components/schemas/AllergySummary'
+        product_families:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/AllergyProductFamilyReference'
+          description: Product-level allergy family and cross-reactivity reference data keyed by `sfrx_id`.
         needs_review_entries:
           type: array
           items:
@@ -2483,6 +2668,119 @@ components:
           items:
             type: string
           description: Resolved product IDs that had no allergy reference record.
+
+    AllergyProductFamilyReference:
+      type: object
+      properties:
+        tradename_en:
+          type: string
+          example: "AUGMENTIN 1GM 14 TAB"
+        generic_en:
+          type: string
+          example: "AMOXICILLIN + CLAVULANIC ACID"
+        dosage_form_en:
+          type: string
+          example: "Oral Tablet"
+        route_type:
+          type: string
+          nullable: true
+          example: "oral"
+        has_allergy_data:
+          type: boolean
+          example: true
+        families:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllergyFamilyReference'
+
+    AllergyFamilyReference:
+      type: object
+      properties:
+        family_id:
+          type: string
+          example: "penicillin"
+        name_en:
+          type: string
+          example: "Penicillins"
+        name_ar:
+          type: string
+          nullable: true
+          example: "البنسلينات"
+        description_en:
+          type: string
+          nullable: true
+          example: "Penicillin beta-lactam antibiotics."
+        description_ar:
+          type: string
+          nullable: true
+          example: "مضادات حيوية بيتا لاكتام من عائلة البنسلين."
+        clinical_significance:
+          type: string
+          nullable: true
+          example: "HIGH"
+        cross_reactivity:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllergyCrossReactivityReference'
+
+    AllergyCrossReactivityReference:
+      type: object
+      properties:
+        target_family:
+          type: string
+          example: "cephalosporin"
+        target_family_name_en:
+          type: string
+          example: "Cephalosporins"
+        target_family_name_ar:
+          type: string
+          nullable: true
+          example: "السيفالوسبورينات"
+        severity:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 3
+        severity_label:
+          type: string
+          nullable: true
+          example: "CAUTION"
+        severity_label_ar:
+          type: string
+          nullable: true
+          example: "تحذير"
+        frequency_category:
+          type: integer
+          nullable: true
+          example: 2
+        frequency_label:
+          type: string
+          nullable: true
+          example: "uncommon"
+        frequency_label_ar:
+          type: string
+          nullable: true
+          example: "غير شائع"
+        mechanism_en:
+          type: string
+          nullable: true
+          example: "Shared beta-lactam structure."
+        mechanism_ar:
+          type: string
+          nullable: true
+          example: "تركيب بيتا لاكتام مشترك."
+        clinical_note_en:
+          type: string
+          nullable: true
+          example: "Review allergy severity and reaction history before use."
+        clinical_note_ar:
+          type: string
+          nullable: true
+          example: "راجع شدة الحساسية وتاريخ التفاعل قبل الاستخدام."
+        evidence_level:
+          type: string
+          nullable: true
+          example: "moderate"
 
     AllergyWarning:
       type: object
@@ -2658,7 +2956,7 @@ components:
           description: |
             Alert source domain and trigger.
             - `ae_bbw` — Drug has a Black Box Warning
-            - `ddi` — Major (severity 4) or contraindicated (severity 5) interaction
+            - `ddi` — Major (severity 3) or contraindicated (severity 4) interaction
             - `pllr_pregnancy` — Pregnancy risk >= 6 (Contraindicated or Absolutely Contraindicated)
             - `pllr_lactation` — Lactation risk >= 6
             - `clinical_condition` — Clinical condition severity >= 4

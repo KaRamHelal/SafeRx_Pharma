@@ -6,7 +6,7 @@ Model Context Protocol server for the [SafeRx Drug Safety API](https://saferx.on
 
 | Tool | Description |
 |------|-------------|
-| `check_drug_safety` | Screen 1-20 drugs across 7 safety domains |
+| `check_drug_safety` | Screen 1-20 drugs across 7 safety domains and return full JSON safety data |
 | `get_drug_metadata` | Get available populations, conditions, and database versions |
 
 ## Quick Start
@@ -62,9 +62,26 @@ npm start
 | Drug Interactions | `ddi` | 337K+ interaction pairs with severity |
 | Pregnancy & Lactation | `pllr` | 0-7 risk scale, 24K+ products |
 | Food Interactions | `food` | Meal timing, food-drug conflicts |
-| Clinical | `clinical` | 5 populations, 14 conditions |
-| Dosing | `dose` | Max daily dose (WHO DDD) |
-| Allergy | `allergy` | Patient allergy matching and cross-reactivity warnings |
+| Clinical | `clinical` | 5 populations, 14 conditions, matched renal/hepatic/pediatric context from patient values |
+| Dosing | `dose` | Standard-dose summaries, dose limits, monitoring display, and daily-dose references |
+| Allergy | `allergy` | Patient allergy matching, allergy families, and cross-reactivity warnings |
+
+## Patient Context
+
+`check_drug_safety` accepts optional `patient_profile` fields:
+
+```json
+{
+  "age": 72,
+  "weight_kg": 70,
+  "crcl": 25,
+  "child_pugh": "B",
+  "conditions": ["diabetes"],
+  "allergies": ["penicillin"]
+}
+```
+
+Use these fields when asking an AI assistant to assess renal/hepatic dose adjustment, monitoring instructions, allergy warnings, or cross-reactivity. The tool returns the full API response under `Full Safety Data`, including `drugs[]`, `safety.clinical`, `safety.dosing`, and `safety.allergy.product_families`.
 
 ## License
 

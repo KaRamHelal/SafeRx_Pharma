@@ -1,0 +1,41 @@
+# June 2, 2026
+
+## Enterprise Usability Release
+
+**Affected:** Drug Safety API, OpenAPI contract, SDK docs, MCP server, and MCP docs
+
+This release focuses on making the Enterprise API directly useful inside medical, clinic management, pharmacy, and pharmaceutical ERP applications. The API contract is now version `1.3.0`, and the MCP server package is now version `1.5.0`.
+
+### Response Coverage
+
+The unified `/api/drug_safety/check` response now documents and exposes:
+
+| Need | Response path |
+|------|---------------|
+| Product identity | `drugs[].sfrx_id`, `drugs[].display_name`, `drugs[].route` |
+| Public drug information | `drugs[].pharma_uses`, `drugs[].description`, `drugs[].mechanism` |
+| Matched patient context | `safety.clinical.context_applied` |
+| Dose adjustment | `safety.clinical.population_alerts[].dose_recommendation` |
+| Monitoring instructions | `safety.clinical.population_alerts[].monitoring_display` |
+| Dose limits | `safety.dosing[<sfrx_id>]` |
+| Allergy family reference | `safety.allergy.product_families` |
+| Patient allergy warnings | `safety.allergy.alerts` |
+
+### Patient Profile Inputs
+
+Clinical and allergy checks can now use structured patient values:
+
+- `age`
+- `weight_kg`
+- `crcl`
+- `egfr`
+- `child_pugh`
+- `hepatic_status`
+- `conditions`
+- `allergies`
+
+These values are applied by the API to infer renal, hepatic, pediatric, and geriatric context where applicable.
+
+### SDK and MCP Updates
+
+The Python, TypeScript, and C# SDK documentation has been updated with examples that show how to render the clinically useful fields above. The MCP server now accepts the same patient profile fields and returns the full API JSON under `Full Safety Data`.

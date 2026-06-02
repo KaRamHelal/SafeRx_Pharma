@@ -6,7 +6,7 @@ import { z } from "zod";
 
 const API_KEY = process.env.SAFERX_API_KEY ?? "";
 const BASE_URL = process.env.SAFERX_BASE_URL ?? "https://saferx.online";
-const USER_AGENT = "SafeRx-MCP-Server/1.4.0";
+const USER_AGENT = "SafeRx-MCP-Server/1.5.0";
 
 if (!API_KEY) {
   console.error(
@@ -23,11 +23,62 @@ function authHeaders(): Record<string, string> {
   };
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function asArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function formatCount(label: string, value: unknown): string {
+  return `- ${label}: ${asArray(value).length}`;
+}
+
+function formatIntelligenceBlock(data: Record<string, unknown>): string {
+  const intelligence = asRecord(data.intelligence);
+  if (Object.keys(intelligence).length === 0) {
+    return "";
+  }
+
+  const synthesis = asRecord(intelligence.synthesis);
+  const saferAlternatives = asRecord(intelligence.safer_alternatives);
+  const alternativeSourceIds = Object.keys(saferAlternatives).filter(
+    (key) => !key.startsWith("_")
+  );
+  const status = String(intelligence.status ?? "available");
+
+  const lines = [
+    "## Medication Intelligence",
+    "",
+    `- Status: ${status}`,
+    formatCount("Cumulative dose warnings", intelligence.cumulative_warnings),
+    formatCount("Cross-domain findings", synthesis.cross_domain_findings),
+    formatCount("Predictive adverse effects", synthesis.predictive_ae),
+    `- Safer alternative source drugs: ${alternativeSourceIds.length}`,
+  ];
+
+  const summary = synthesis.summary;
+  if (typeof summary === "string" && summary.trim()) {
+    lines.push(`- Summary: ${summary.trim()}`);
+  }
+
+  const processorErrors = asArray(intelligence.processor_errors);
+  if (processorErrors.length > 0) {
+    lines.push(`- Processor errors: ${processorErrors.length}`);
+  }
+
+  lines.push("", "```json", JSON.stringify(intelligence, null, 2), "```", "");
+  return lines.join("\n");
+}
+
 // --- MCP Server ---
 
 const server = new McpServer({
   name: "saferx",
-  version: "1.4.0",
+  version: "1.5.0",
 });
 
 // Tool: check_drug_safety
@@ -73,9 +124,72 @@ server.tool(
           .array(z.string())
           .optional()
           .describe("Known patient allergies for allergy-domain screening"),
+        age: z
+          .number()
+          .int()
+          .min(0)
+          .max(150)
+          .optional()
+          .describe("Patient age in years; infers pediatric/geriatric context"),
+        weight_kg: z
+          .number()
+          .min(0)
+          .optional()
+          .describe("Patient weight in kilograms for weight-based dose context"),
+        crcl: z
+          .number()
+          .min(0)
+          .optional()
+          .describe("Creatinine clearance in mL/min; infers renal dose context"),
+        egfr: z
+          .number()
+          .min(0)
+          .optional()
+          .describe("eGFR fallback renal-function input when crcl is unavailable"),
+        child_pugh: z
+          .enum(["A", "B", "C"])
+          .optional()
+          .describe("Child-Pugh class; infers hepatic dose context"),
+        hepatic_status: z
+          .enum(["normal", "mild", "moderate", "severe"])
+          .optional()
+          .describe("Hepatic impairment severity; used when child_pugh is unavailable"),
       })
       .optional()
       .describe("Patient context for personalized safety screening"),
+    intelligence_context: z
+      .object({
+        user_id: z.string().optional().describe("Optional caller-side patient/profile identifier"),
+        clinical_profile: z
+          .object({
+            age: z.number().int().min(0).max(150).optional(),
+            crcl: z.number().min(0).optional().describe("Creatinine clearance in mL/min"),
+            hepatic_status: z.enum(["normal", "mild", "moderate", "severe"]).optional(),
+            pregnancy: z.boolean().optional(),
+            lactation: z.boolean().optional(),
+            conditions: z.array(z.string()).optional(),
+            populations: z.array(z.string()).optional(),
+            allergies: z.array(z.string()).optional(),
+            diet_habits: z.array(z.string()).optional(),
+          })
+          .optional()
+          .describe("Clinical profile used by Medication Intelligence processors"),
+        medication_history: z
+          .array(
+            z.object({
+              sfrx_id: z.string().describe("SafeRx product identifier"),
+              start_date: z.string().optional().describe("Medication start date, preferably ISO 8601"),
+              status: z
+                .enum(["active", "historical"])
+                .optional()
+                .describe("Only active medications participate in cumulative dose aggregation"),
+            })
+          )
+          .optional()
+          .describe("Longitudinal medication history; use status=active or status=historical"),
+      })
+      .optional()
+      .describe("Optional Medication Intelligence Platform context"),
     include: z
       .array(z.enum(["ae", "ddi", "pllr", "food", "clinical", "dose", "allergy"]))
       .min(1)
@@ -92,6 +206,7 @@ server.tool(
   async (args) => {
     const body: Record<string, unknown> = { drugs: args.drugs };
     if (args.patient_profile) body.patient_profile = args.patient_profile;
+    if (args.intelligence_context) body.intelligence_context = args.intelligence_context;
     if (args.include) body.include = args.include;
     if (args.lang) body.lang = args.lang;
 
@@ -101,7 +216,7 @@ server.tool(
       body: JSON.stringify(body),
     });
 
-    const data = await resp.json();
+    const data = (await resp.json()) as Record<string, unknown>;
 
     if (!resp.ok) {
       return {
@@ -140,6 +255,7 @@ server.tool(
           type: "text" as const,
           text:
             alertText +
+            formatIntelligenceBlock(data) +
             "## Full Safety Data\n\n```json\n" +
             JSON.stringify(data, null, 2) +
             "\n```",
