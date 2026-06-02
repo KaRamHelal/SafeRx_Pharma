@@ -6,7 +6,7 @@ Model Context Protocol server for the [SafeRx Drug Safety API](https://saferx.on
 
 | Tool | Description |
 |------|-------------|
-| `check_drug_safety` | Screen 1-20 drugs across 6 safety domains |
+| `check_drug_safety` | Screen 1-20 drugs across 7 safety domains |
 | `get_drug_metadata` | Get available populations, conditions, and database versions |
 
 ## Quick Start
@@ -64,6 +64,7 @@ npm start
 | Food Interactions | `food` | Meal timing, food-drug conflicts |
 | Clinical | `clinical` | 5 populations, 14 conditions |
 | Dosing | `dose` | Max daily dose (WHO DDD) |
+| Allergy | `allergy` | Patient allergy matching and cross-reactivity warnings |
 
 ## License
 

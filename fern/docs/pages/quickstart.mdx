@@ -224,7 +224,7 @@ curl https://saferx.online/api/drug_safety/metadata \
 
 ### Health Check
 
-`GET /api/drug_safety/health` returns system status. No authentication required — useful for monitoring dashboards.
+`GET /api/drug_safety/health` returns minimal system status. No authentication required — useful for uptime monitoring. The public health response keeps `checks` empty and does not expose database counts or internal module details.
 
 ```bash
 curl https://saferx.online/api/drug_safety/health
@@ -232,7 +232,7 @@ curl https://saferx.online/api/drug_safety/health
 
 ## Available Domains
 
-Use the `include` parameter to request only the safety domains you need. Omit it to run all six.
+Use the `include` parameter to request only the safety domains you need. Omit it to run all seven. When provided, `include` must be a non-empty array of valid lowercase domain codes; unknown codes return `400 INVALID_INCLUDE_DOMAIN`.
 
 | Code | Domain | Description |
 |------|--------|-------------|
@@ -240,12 +240,13 @@ Use the `include` parameter to request only the safety domains you need. Omit it
 | `ddi` | Drug Interactions | Drug-drug interactions with severity (requires 2+ drugs) |
 | `pllr` | Reproductive Safety | Pregnancy & lactation risk ratings per trimester |
 | `food` | Food Interactions | Meal timing and specific food-drug conflicts |
-| `clinical` | Clinical | Population & condition-specific alerts (enhanced with `patient_profile`) |
-| `dose` | Dosing | Maximum daily dose limits (dual-source: WHO DDD + OpenFDA MDD) |
+| `clinical` | Clinical | Product-wide population/condition signals, narrowed by `patient_profile` when supplied |
+| `dose` | Dosing | Dose limits, daily-dose references, and calculation caveats |
+| `allergy` | Allergy | Patient allergy matching and cross-reactivity warnings |
 
 ## Patient Profile Options
 
-Optionally pass `patient_profile` to get population- and condition-specific alerts.
+Optionally pass `patient_profile` to narrow clinical alerts to the patient's known populations, conditions, and allergies.
 
 **Populations** (5):
 

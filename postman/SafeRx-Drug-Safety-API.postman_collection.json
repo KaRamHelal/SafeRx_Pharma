@@ -68,8 +68,15 @@
             },
             "url": {
               "raw": "{{base_url}}/api/developers/keys/free",
-              "host": ["{{base_url}}"],
-              "path": ["api", "developers", "keys", "free"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "developers",
+                "keys",
+                "free"
+              ]
             },
             "description": "Register for a free API key. The key is automatically saved to the `api_key` environment variable.\n\n**Free tier limits:** 5 requests/minute, 100 requests/day."
           },
@@ -105,8 +112,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/api/security/token",
-              "host": ["{{base_url}}"],
-              "path": ["api", "security", "token"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "security",
+                "token"
+              ]
             },
             "description": "Session tokens are for the website frontend, NOT the Drug Safety API.\n\nThe Drug Safety endpoints require `X-SafeRx-API-Key` (from \"Register Free API Key\").\n\nSession tokens expire in 5 minutes."
           },
@@ -116,7 +129,7 @@
     },
     {
       "name": "Drug Safety",
-      "description": "Screen drugs across 6 safety domains: adverse effects (ae), drug interactions (ddi), pregnancy & lactation (pllr), food interactions (food), clinical considerations (clinical), and dosing (dose).",
+      "description": "Screen drugs across 7 safety domains: adverse effects (ae), drug interactions (ddi), pregnancy & lactation (pllr), food interactions (food), clinical considerations (clinical), dosing (dose), and allergy matching (allergy).",
       "item": [
         {
           "name": "Full Safety Check (2 drugs, all domains)",
@@ -138,10 +151,16 @@
             },
             "url": {
               "raw": "{{base_url}}/api/drug_safety/check",
-              "host": ["{{base_url}}"],
-              "path": ["api", "drug_safety", "check"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "drug_safety",
+                "check"
+              ]
             },
-            "description": "Screen 2 drugs across ALL 6 safety domains. Augmentin + Marivan has a known major DDI.\n\nResponse includes bilingual drug identity (brand_name + brand_name_ar), all safety data, and Arabic alert messages."
+            "description": "Screen 2 drugs across all 7 safety domains. Augmentin + Marivan has a known major DDI.\n\nResponse includes bilingual drug identity (brand_name + brand_name_ar), all safety data, and Arabic alert messages."
           },
           "response": []
         },
@@ -165,8 +184,14 @@
             },
             "url": {
               "raw": "{{base_url}}/api/drug_safety/check",
-              "host": ["{{base_url}}"],
-              "path": ["api", "drug_safety", "check"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "drug_safety",
+                "check"
+              ]
             },
             "description": "Screen drugs with patient context for personalized clinical alerts.\n\n**Populations:** pediatric, geriatric, cardiac, hepatic, renal\n**Conditions:** arrhythmia, asthma, bph, coronary, depression, diabetes, epilepsy, gi_bleeding, glaucoma, heart_failure, hypertension, hyperthyroidism, hypothyroidism, parkinsons"
           },
@@ -192,8 +217,14 @@
             },
             "url": {
               "raw": "{{base_url}}/api/drug_safety/check",
-              "host": ["{{base_url}}"],
-              "path": ["api", "drug_safety", "check"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "drug_safety",
+                "check"
+              ]
             },
             "description": "Check drug interactions only (smallest, fastest response).\n\nUse `include` to request specific domains: ae, ddi, pllr, food, clinical, dose."
           },
@@ -219,8 +250,14 @@
             },
             "url": {
               "raw": "{{base_url}}/api/drug_safety/check",
-              "host": ["{{base_url}}"],
-              "path": ["api", "drug_safety", "check"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "drug_safety",
+                "check"
+              ]
             },
             "description": "Check pregnancy/lactation safety and food interactions for Warfarin.\n\nPLLR response includes bilingual rationale (pregnancy_rationale + pregnancy_rationale_ar), trimester-specific risks, BBW with text_en/text_ar, and LactMed pharmacokinetics."
           },
@@ -246,8 +283,14 @@
             },
             "url": {
               "raw": "{{base_url}}/api/drug_safety/check",
-              "host": ["{{base_url}}"],
-              "path": ["api", "drug_safety", "check"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "drug_safety",
+                "check"
+              ]
             },
             "description": "Check adverse effects (including Black Box Warnings) and maximum daily dose for a single drug."
           },
@@ -265,8 +308,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/api/drug_safety/metadata",
-              "host": ["{{base_url}}"],
-              "path": ["api", "drug_safety", "metadata"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "drug_safety",
+                "metadata"
+              ]
             },
             "description": "Get available populations, conditions, database versions, risk scales, and tier limits.\n\nNo authentication required."
           },

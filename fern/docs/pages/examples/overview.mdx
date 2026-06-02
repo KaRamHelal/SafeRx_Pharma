@@ -89,10 +89,11 @@ Use `include` to request only the safety domains you need. This reduces response
 | `ddi` | Drug Interactions | Severity-rated interactions with management advice (needs 2+ drugs) |
 | `pllr` | Reproductive Safety | Pregnancy & lactation risk per trimester |
 | `food` | Food Interactions | Meal timing, specific food conflicts |
-| `clinical` | Clinical | Population & condition alerts (enhanced with `patient_profile`) |
-| `dose` | Dosing | Max daily dose with WHO DDD + OpenFDA MDD dual-source data |
+| `clinical` | Clinical | Product-wide population/condition signals, narrowed by `patient_profile` when supplied |
+| `dose` | Dosing | Dose limits, daily-dose references, and calculation caveats |
+| `allergy` | Allergy | Patient allergy matching and cross-reactivity warnings |
 
-Omit `include` to run all six domains.
+Omit `include` to run all seven domains. If supplied, `include` must contain at least one valid lowercase domain code. Unknown codes return `400 INVALID_INCLUDE_DOMAIN`; duplicates are ignored.
 
 ```python
 # DDI-only check (fastest, smallest response)

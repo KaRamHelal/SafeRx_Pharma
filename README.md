@@ -2,7 +2,7 @@
 
 [![Latest Release](https://img.shields.io/github/v/release/KaRamHelal/SafeRx_Pharma?label=latest%20release&logo=github)](https://github.com/KaRamHelal/SafeRx_Pharma/releases/latest)
 
-Drug safety intelligence for Egyptian pharmaceutical products. One API call, six safety domains, 66,000+ products.
+Drug safety intelligence for Egyptian pharmaceutical products. One API call, seven safety domains, 66,704 products.
 
 ## What's Here
 
@@ -47,7 +47,7 @@ curl -X POST https://saferx.online/api/drug_safety/check \
   -d '{"drugs": ["Augmentin 1g", "Marivan", "Glucophage 500"]}'
 ```
 
-Returns safety data across all 6 domains in ~40ms.
+Returns safety data across all 7 domains in ~40ms.
 
 ## SDKs
 
@@ -90,17 +90,19 @@ Requires `SAFERX_API_KEY` environment variable. See [`mcp-server/README.md`](mcp
 | Pregnancy & Lactation | `pllr` | 24K+ products, 0-7 risk scale |
 | Food Interactions | `food` | 38K+ interactions |
 | Clinical Considerations | `clinical` | 5 populations, 14 conditions |
-| Dosing | `dose` | 19K+ products, dual-source |
+| Dosing | `dose` | Dose limits and calculation caveats |
+| Allergy | `allergy` | Patient allergy matching and cross-reactivity |
 
 ## API Tiers
 
 | | Free | Pro | Enterprise |
 |---|------|-----|------------|
-| Requests/min | 20 | 60 | Custom |
-| Requests/day | 60 | 500 | Custom |
+| Monthly quota | 100 checks | 15,000+ checks | Custom |
+| Requests/min | 20 anti-abuse | 60 anti-abuse | Custom |
+| Requests/day | 60 safety cap | 500 safety cap | Custom |
 | Max drugs/request | 20 | 20 | 50 |
 | Auth | API Key | API Key | API Key |
-| Database | Full (66,659 products) | Full | Full |
+| Database | Full (66,704 products) | Full | Full |
 | Support | Email | Priority | Dedicated |
 
 ## Documentation

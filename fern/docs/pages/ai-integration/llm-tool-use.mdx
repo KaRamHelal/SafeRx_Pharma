@@ -10,7 +10,7 @@ subtitle: Ready-to-use function calling schemas for OpenAI, Anthropic, and Googl
   "type": "function",
   "function": {
     "name": "check_drug_safety",
-    "description": "Screen drugs for safety issues including adverse effects, drug interactions, pregnancy/lactation risks, food interactions, clinical considerations, and dosing. Covers 66,000+ Egyptian pharmaceutical products.",
+    "description": "Screen drugs for safety issues including adverse effects, drug interactions, pregnancy/lactation risks, food interactions, clinical considerations, dosing, and patient allergy matching. Covers 66,000+ Egyptian pharmaceutical products.",
     "strict": true,
     "parameters": {
       "type": "object",
@@ -32,13 +32,18 @@ subtitle: Ready-to-use function calling schemas for OpenAI, Anthropic, and Googl
             "conditions": {
               "type": "array",
               "items": {"type": "string", "enum": ["arrhythmia", "asthma", "bph", "coronary", "depression", "diabetes", "epilepsy", "gi_bleeding", "glaucoma", "heart_failure", "hypertension", "hyperthyroidism", "hypothyroidism", "parkinsons"]}
+            },
+            "allergies": {
+              "type": "array",
+              "items": {"type": "string"}
             }
           },
           "additionalProperties": false
         },
         "include": {
           "type": "array",
-          "items": {"type": "string", "enum": ["ae", "ddi", "pllr", "food", "clinical", "dose"]},
+          "minItems": 1,
+          "items": {"type": "string", "enum": ["ae", "ddi", "pllr", "food", "clinical", "dose", "allergy"]},
           "description": "Safety domains to check (omit for all)"
         },
         "lang": {
@@ -57,7 +62,7 @@ subtitle: Ready-to-use function calling schemas for OpenAI, Anthropic, and Googl
 ```json
 {
   "name": "check_drug_safety",
-  "description": "Screen drugs for safety issues including adverse effects, drug interactions, pregnancy/lactation risks, food interactions, clinical considerations, and dosing. Covers 66,000+ Egyptian pharmaceutical products.",
+  "description": "Screen drugs for safety issues including adverse effects, drug interactions, pregnancy/lactation risks, food interactions, clinical considerations, dosing, and patient allergy matching. Covers 66,000+ Egyptian pharmaceutical products.",
   "input_schema": {
     "type": "object",
     "required": ["drugs"],
@@ -77,12 +82,17 @@ subtitle: Ready-to-use function calling schemas for OpenAI, Anthropic, and Googl
           "conditions": {
             "type": "array",
             "items": {"type": "string", "enum": ["arrhythmia", "asthma", "bph", "coronary", "depression", "diabetes", "epilepsy", "gi_bleeding", "glaucoma", "heart_failure", "hypertension", "hyperthyroidism", "hypothyroidism", "parkinsons"]}
+          },
+          "allergies": {
+            "type": "array",
+            "items": {"type": "string"}
           }
         }
       },
       "include": {
         "type": "array",
-        "items": {"type": "string", "enum": ["ae", "ddi", "pllr", "food", "clinical", "dose"]}
+        "minItems": 1,
+        "items": {"type": "string", "enum": ["ae", "ddi", "pllr", "food", "clinical", "dose", "allergy"]}
       },
       "lang": {
         "type": "string",
@@ -98,7 +108,7 @@ subtitle: Ready-to-use function calling schemas for OpenAI, Anthropic, and Googl
 ```json
 {
   "name": "check_drug_safety",
-  "description": "Screen drugs for safety issues including adverse effects, drug interactions, pregnancy/lactation risks, food interactions, clinical considerations, and dosing. Covers 66,000+ Egyptian pharmaceutical products.",
+  "description": "Screen drugs for safety issues including adverse effects, drug interactions, pregnancy/lactation risks, food interactions, clinical considerations, dosing, and patient allergy matching. Covers 66,000+ Egyptian pharmaceutical products.",
   "parameters": {
     "type": "OBJECT",
     "required": ["drugs"],

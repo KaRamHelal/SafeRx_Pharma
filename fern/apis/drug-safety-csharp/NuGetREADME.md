@@ -1,6 +1,6 @@
 # SafeRx C# SDK
 
-Official .NET SDK for the [SafeRx Drug Safety API](https://docs.saferx.online) — screen drugs across 6 safety domains covering 66,000+ Egyptian pharmaceutical products.
+Official .NET SDK for the [SafeRx Drug Safety API](https://docs.saferx.online) — screen drugs across 7 safety domains covering 66,704 Egyptian pharmaceutical products.
 
 ## Installation
 

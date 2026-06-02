@@ -1,15 +1,15 @@
 ---
 title: SafeRx Drug Safety API
-subtitle: One API call. Six safety domains. 66,000+ Egyptian products.
+subtitle: One API call. Seven safety domains. 66,000+ Egyptian products.
 ---
 
-The SafeRx Drug Safety API provides real-time drug safety screening for Egyptian pharmaceuticals. Submit drug names, get back comprehensive safety data across six clinical domains in a single response.
+The SafeRx Drug Safety API provides real-time drug safety screening for Egyptian pharmaceuticals. Submit drug names, get back comprehensive safety data across seven clinical domains in a single response.
 
 ## What You Can Do
 
 <Cards>
   <Card title="Adverse Effects" icon="fa-solid fa-triangle-exclamation">
-    Black Box Warnings, severe and common side effects, monitoring parameters, and dose-response classification for 66,659 products with 98.2% coverage.
+    Black Box Warnings, severe and common side effects, monitoring parameters, and dose-response classification for 66,704 products with 98.2% coverage.
   </Card>
   <Card title="Drug Interactions" icon="fa-solid fa-arrows-split-up-and-left">
     337,000+ interaction pairs with severity scoring (Minor → Contraindicated), clinical descriptions, and monitoring recommendations in English and Arabic.
@@ -21,10 +21,13 @@ The SafeRx Drug Safety API provides real-time drug safety screening for Egyptian
     38,000+ food-drug interactions including meal timing recommendations, food conflict severity, and Egyptian-specific food considerations.
   </Card>
   <Card title="Clinical Considerations" icon="fa-solid fa-stethoscope">
-    Population-specific safety data (pediatric, geriatric, cardiac, hepatic, renal) and condition-drug interaction alerts for 14 comorbidities.
+    Product-level and patient-context clinical safety data for five populations and 14 comorbidities.
   </Card>
   <Card title="Dosing" icon="fa-solid fa-pills">
-    Dual-source dosing safety with international reference standards and regulatory label data. 19,000+ products with max daily dose calculations and combo drug handling.
+    Dose limits, standard dose summaries, daily-dose references, and caveats for products that need pharmacist review.
+  </Card>
+  <Card title="Allergy" icon="fa-solid fa-shield-heart">
+    Patient allergy matching, direct family warnings, and cross-reactivity warnings when allergies are supplied.
   </Card>
 </Cards>
 
@@ -41,7 +44,8 @@ POST /api/drug_safety/check
     │   ├── Pregnancy & Lactation
     │   ├── Food Interactions
     │   ├── Clinical Considerations
-    │   └── Dosing
+    │   ├── Dosing
+    │   └── Allergy
     │
     ├── Alert Generation (critical items bubbled up)
     │
@@ -52,7 +56,7 @@ POST /api/drug_safety/check
 
 | Metric | Value |
 |--------|-------|
-| Products covered | 66,659 |
+| Products covered | 66,704 |
 | Interaction pairs | 337,000+ |
 | Side effects | 1.4M+ |
 | AE coverage | 98.2% |

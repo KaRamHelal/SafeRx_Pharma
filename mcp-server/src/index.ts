@@ -6,7 +6,7 @@ import { z } from "zod";
 
 const API_KEY = process.env.SAFERX_API_KEY ?? "";
 const BASE_URL = process.env.SAFERX_BASE_URL ?? "https://saferx.online";
-const USER_AGENT = "SafeRx-MCP-Server/1.3.3";
+const USER_AGENT = "SafeRx-MCP-Server/1.4.0";
 
 if (!API_KEY) {
   console.error(
@@ -27,13 +27,13 @@ function authHeaders(): Record<string, string> {
 
 const server = new McpServer({
   name: "saferx",
-  version: "1.3.3",
+  version: "1.4.0",
 });
 
 // Tool: check_drug_safety
 server.tool(
   "check_drug_safety",
-  "Screen drugs for safety issues across 6 domains: adverse effects (Black Box Warnings, monitoring), drug interactions, pregnancy/lactation risks, food interactions, clinical considerations, and dosing. Covers 66,000+ Egyptian pharmaceutical products with bilingual EN/AR support.",
+  "Screen drugs for safety issues across 7 domains: adverse effects (Black Box Warnings, monitoring), drug interactions, pregnancy/lactation risks, food interactions, clinical considerations, dosing, and patient allergy matching. Covers 66,000+ Egyptian pharmaceutical products with bilingual EN/AR support.",
   {
     drugs: z
       .array(z.string())
@@ -69,14 +69,19 @@ server.tool(
           )
           .optional()
           .describe("Patient comorbidities"),
+        allergies: z
+          .array(z.string())
+          .optional()
+          .describe("Known patient allergies for allergy-domain screening"),
       })
       .optional()
       .describe("Patient context for personalized safety screening"),
     include: z
-      .array(z.enum(["ae", "ddi", "pllr", "food", "clinical", "dose"]))
+      .array(z.enum(["ae", "ddi", "pllr", "food", "clinical", "dose", "allergy"]))
+      .min(1)
       .optional()
       .describe(
-        "Safety domains to check (ae=adverse effects, ddi=drug interactions, pllr=pregnancy/lactation, food=food interactions, clinical=population/condition safety, dose=max daily dose). Omit for all."
+        "Safety domains to check (ae=adverse effects, ddi=drug interactions, pllr=pregnancy/lactation, food=food interactions, clinical=population/condition safety, dose=max daily dose, allergy=patient allergy matching). Omit for all."
       ),
     lang: z
       .enum(["en", "ar"])

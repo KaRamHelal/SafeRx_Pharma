@@ -4,17 +4,18 @@ info:
   version: "1.2.0"
   summary: Comprehensive drug safety screening for Egyptian pharmaceuticals
   description: |
-    One API call. Six safety domains. 33,000 Egyptian pharma + semi-pharma products.
+    One API call. Seven safety domains. 66,000+ Egyptian products.
 
     The SafeRx Drug Safety API provides real-time drug safety screening across
-    six clinical domains: adverse effects, drug interactions, pregnancy & lactation
-    safety, food interactions, clinical considerations, and dosing information.
+    seven clinical domains: adverse effects, drug interactions, pregnancy & lactation
+    safety, food interactions, clinical considerations, dosing information, and
+    patient allergy matching.
 
     ## Key Features
 
     - **Unified endpoint** — screen 1–20 drugs in a single POST request
-    - **Six safety domains** checked in parallel (~40ms average response)
-    - **33,000 Egyptian pharma + semi-pharma products** with bilingual English/Arabic support
+    - **Seven safety domains** checked in parallel (~40ms average response)
+    - **66,704 Egyptian products** with bilingual English/Arabic support
     - **Smart drug resolution** — accepts trade names, generic names, or partial matches
     - **Alert bubbling** — critical safety issues surfaced as top-level alerts
     - **Stable API contract** — public field names are versioned and will not change without notice
@@ -28,7 +29,8 @@ info:
     | `pllr` | Pregnancy & lactation risk ratings | 24,512 products mapped |
     | `food` | Meal timing & food-drug conflicts | 38K+ interactions |
     | `clinical` | Population & condition safety alerts | 5 populations, 14 conditions |
-    | `dose` | Maximum daily dose (dual-source: WHO DDD + OpenFDA MDD) | 19,341 products, tier-based safety |
+    | `dose` | Dose limits, daily-dose references, and product-level dosing caveats | Unified dosing coverage, tier-based safety |
+    | `allergy` | Patient allergy matching and cross-reactivity warnings | Allergy family and cross-reaction reference data |
 
     ## Getting Started
 
@@ -66,7 +68,7 @@ paths:
       x-fern-sdk-method-name: check
       summary: Check drug safety
       description: |
-        Screen one or more drugs across six safety domains in a single request.
+        Screen one or more drugs across seven safety domains in a single request.
 
         The API resolves drug names via fuzzy matching, runs all requested safety
         checks in parallel, and returns a unified response with alerts bubbled to
@@ -106,11 +108,56 @@ paths:
                     conditions:
                       - "diabetes"
                       - "hypertension"
+                    allergies:
+                      - "penicillin"
                   include:
                     - "ae"
                     - "ddi"
                     - "pllr"
+                    - "food"
                     - "clinical"
+                    - "dose"
+                    - "allergy"
+                  lang: "en"
+              with_intelligence_context:
+                summary: Medication intelligence check with longitudinal context
+                value:
+                  drugs:
+                    - "Augmentin 1g"
+                    - "Marivan"
+                  intelligence_context:
+                    user_id: "patient-123"
+                    clinical_profile:
+                      age: 72
+                      crcl: 38
+                      hepatic_status: "normal"
+                      pregnancy: false
+                      lactation: false
+                      conditions:
+                        - "renal impairment"
+                        - "hypertension"
+                      populations:
+                        - "geriatric"
+                        - "renal"
+                      allergies:
+                        - "penicillin"
+                      diet_habits:
+                        - "low_sodium"
+                    medication_history:
+                      - sfrx_id: "SRX-010-004748"
+                        start_date: "2026-01-10"
+                        status: "active"
+                      - sfrx_id: "SRX-050-000123"
+                        start_date: "2025-09-01"
+                        status: "historical"
+                  include:
+                    - "ae"
+                    - "ddi"
+                    - "pllr"
+                    - "food"
+                    - "clinical"
+                    - "dose"
+                    - "allergy"
                   lang: "en"
               selective_domains:
                 summary: DDI-only check (fastest)
@@ -159,6 +206,11 @@ paths:
                         supplier_en: ""
                         barcode: ""
                         price_egp: 120.0
+                        identity_match:
+                          method: "name_strength_prefix"
+                          confidence: 0.96
+                          matched_field: "name_strength"
+                          matched_value: "AUGMENTIN 1GM"
                       - input: "Glucophage 500mg"
                         resolved: true
                         sfrx_id: "SRX-008-002145"
@@ -270,16 +322,20 @@ paths:
                           lactation_risk_level: 4
                           lactation_risk_name: "Likely Unsafe"
                           pregnancy_rationale: "Warfarin is absolutely contraindicated in pregnancy. FDA Category X. Causes warfarin embryopathy."
+                          pregnancy_rationale_ar: "الوارفارين ممنوع تماماً أثناء الحمل. تصنيف FDA فئة X. يسبب اعتلال الجنين بالوارفارين."
                           lactation_rationale: "Warfarin is excreted in breast milk. Risk of hemorrhage in the nursing infant."
+                          lactation_rationale_ar: "يُفرز الوارفارين في حليب الأم. خطر حدوث نزيف عند الرضيع."
                           pregnancy_warning:
                             has_warning: true
-                            text: "Warfarin crosses the placenta and can cause fatal hemorrhage in the fetus."
+                            text_en: "Warfarin crosses the placenta and can cause fatal hemorrhage in the fetus."
+                            text_ar: "يعبر الوارفارين المشيمة ويمكن أن يسبب نزيفاً مميتاً للجنين."
                             categories:
                               - "TERATOGENIC"
                               - "DEATH_RISK"
                           lactation_warning:
                             has_warning: false
-                            text: null
+                            text_en: null
+                            text_ar: null
                             categories: []
                       food:
                         SRX-012-003336:
@@ -328,7 +384,39 @@ paths:
                             route: "oral"
                           components: null
                           source: "dual_source"
+                      allergy:
+                        mode: "patient_profile"
+                        warnings:
+                          - sfrx_id: "SRX-010-004748"
+                            drug_name: "AUGMENTIN 1GM 14 TAB"
+                            generic_en: "AMOXICILLIN + CLAVULANIC ACID"
+                            dosage_form_en: "Oral Tablet"
+                            warning_type: "direct"
+                            allergen_family: "penicillin"
+                            allergen_family_name_en: "Penicillins"
+                            patient_allergy: "penicillin"
+                            patient_allergy_raw_input: "penicillin"
+                            severity: 5
+                            severity_label: "CONTRAINDICATED"
+                            clinical_note_en: "Direct allergy family match. Contraindicated unless allergy status is verified."
+                        summary:
+                          check_mode: "stateless"
+                          products_checked: 3
+                          patient_allergies_count: 1
+                          resolved_patient_allergies_count: 1
+                          direct_warnings: 1
+                          cross_reactivity_warnings: 0
+                          total_warnings: 1
+                          contraindicated_count: 1
+                        needs_review_entries: []
+                        unresolved_entries: []
+                        missing_products: []
                     alerts:
+                      - severity: "CRITICAL"
+                        type: "allergy_direct"
+                        message: "Allergy warning: AUGMENTIN 1GM 14 TAB matches Penicillins"
+                        drugs_involved:
+                          - "AUGMENTIN 1GM 14 TAB"
                       - severity: "CRITICAL"
                         type: "ae_bbw"
                         message: "Black Box Warning for MARIVAN 2MG 30 TAB"
@@ -354,10 +442,17 @@ paths:
                         - "food"
                         - "clinical"
                         - "dose"
+                        - "allergy"
                       drug_count: 3
                       resolved_count: 3
                       unresolved_count: 0
                       tier: "free"
+                      quota:
+                        monthly_limit: 100
+                        monthly_used: 12
+                        monthly_remaining: 88
+                        reset_at: "2026-07-01T00:00:00+00:00"
+                        billable_units: 1
         "400":
           description: Invalid request
           content:
@@ -387,6 +482,23 @@ paths:
                     your_count: 25
                     hint: "Upgrade to Enterprise for up to 50 drugs/request. Contact support@saferx.online"
                     support: "support@saferx.online"
+                invalid_include:
+                  summary: Invalid include domain
+                  value:
+                    error: true
+                    code: "INVALID_INCLUDE_DOMAIN"
+                    message: "Unknown safety domain(s): typo"
+                    invalid_domains:
+                      - "typo"
+                    valid_domains:
+                      - "ae"
+                      - "ddi"
+                      - "pllr"
+                      - "food"
+                      - "clinical"
+                      - "dose"
+                      - "allergy"
+                    status: 400
         "401":
           description: Authentication failure
           content:
@@ -441,14 +553,17 @@ paths:
                     tier: "free"
                     hint: "Upgrade to Pro for higher limits. Contact support@saferx.online"
                     support: "support@saferx.online"
-                daily_limit:
-                  summary: Daily limit exceeded
+                monthly_quota:
+                  summary: Monthly quota exceeded
                   value:
-                    error: "You have exceeded your daily limit"
-                    daily_limit: 60
-                    requests_today: 61
+                    error: "Monthly quota exceeded"
+                    reason: "monthly_quota_exceeded"
+                    monthly_limit: 100
+                    requests_this_month: 100
+                    monthly_remaining: 0
+                    reset_at: "2026-07-01T00:00:00+00:00"
                     tier: "free"
-                    hint: "Upgrade to Pro for 500 requests/day. Contact support@saferx.online"
+                    hint: "Contact support@saferx.online to increase your pilot quota."
                     support: "support@saferx.online"
         "500":
           description: Internal server error
@@ -502,6 +617,7 @@ paths:
                       - "food"
                       - "clinical"
                       - "dose"
+                      - "allergy"
                     patient_profile_options:
                       populations:
                         - "pediatric"
@@ -553,19 +669,31 @@ paths:
                         "2": "Moderate"
                         "3": "Major"
                         "4": "Contraindicated"
+                      allergy_severity:
+                        "1": "Minimal"
+                        "2": "Minor"
+                        "3": "Moderate"
+                        "4": "Severe"
+                        "5": "Contraindicated"
                     database_versions:
                       ae: "V19"
                       ddi: "V8"
                       clinical: "7.3.1"
                       pllr: "V2.3"
                       food: "V5"
-                      dose: "V3.2"
+                      clinical_dose: "V3.2"
+                      allergy: "V2"
                     database_stats:
                       ae_products: 66704
                       ae_coverage_percent: 98.2
                       ddi_total_pairs: 337000
                       clinical_conditions: 14
                       clinical_populations: 5
+                      clinical_dose_products: 19341
+                      clinical_dose_schema_version: "3.2"
+                      allergy_products: 66704
+                      allergy_families: 120
+                      allergy_cross_reaction_pairs: 350
                     supported_languages:
                       - "en"
                       - "ar"
@@ -616,10 +744,11 @@ paths:
       operationId: getDrugSafetyHealth
       summary: Health check
       description: |
-        Returns health status of the Drug Safety API subsystem including
-        overall system health and availability.
+        Returns minimal health status of the Drug Safety API subsystem.
 
         No authentication required. Designed for monitoring services.
+        The public enterprise health endpoint intentionally does not expose
+        database counts, module internals, or detailed dependency checks.
       tags:
         - Drug Safety
       security: []
@@ -639,12 +768,8 @@ paths:
                     example: "drug_safety"
                   checks:
                     type: object
-                    additionalProperties:
-                      type: object
-                      properties:
-                        status:
-                          type: string
-                          enum: ["healthy", "degraded", "unhealthy"]
+                    description: Always empty on the public health endpoint.
+                    additionalProperties: false
                   latency_ms:
                     type: number
                     example: 12.3
@@ -654,9 +779,7 @@ paths:
                   value:
                     status: "healthy"
                     subsystem: "drug_safety"
-                    checks:
-                      api:
-                        status: "healthy"
+                    checks: {}
                     latency_ms: 12.3
 
   /api/developers/keys/free:
@@ -758,7 +881,7 @@ paths:
         - Code expires after 30 minutes
         - Max 5 wrong attempts per code (then must request new code)
         - On success: issues sfx_free_ key (persistent, 1 per email)
-        - Free tier: 20 requests/minute, 60 requests/day
+        - Free tier: 100 checks/month, 20 requests/minute anti-abuse, 60/day safety cap
       tags:
         - Developers
       security: []
@@ -838,9 +961,10 @@ components:
 
         | Prefix | Tier | How to get |
         |--------|------|------------|
-        | `sfx_free_` | Free (20 rpm, 60 rpd) | `POST /api/developers/keys/free` → verify email → `POST /api/developers/keys/free/verify` |
-        | `sk_test_` | Free (20 rpm, 60 rpd) | Developer Portal |
-        | `sk_live_` | Pro/Enterprise (60-200 rpm) | Contact support |
+        | `sfx_free_` | Free (100 checks/month, 20 rpm anti-abuse) | `POST /api/developers/keys/free` → verify email → `POST /api/developers/keys/free/verify` |
+        | `sk_test_` | Free (100 checks/month, 20 rpm anti-abuse) | Developer Portal |
+        | `sk_startup_` | Startup (100 checks/month, 20 rpm anti-abuse) | Developer-group promo after email verification |
+        | `sk_live_` | Pro/Enterprise (15,000+ checks/month, 60-200 rpm) | Contact support |
 
   schemas:
     # =========================================================================
@@ -871,13 +995,18 @@ components:
             - "Marivan"
         patient_profile:
           $ref: '#/components/schemas/PatientProfile'
+        intelligence_context:
+          $ref: '#/components/schemas/IntelligenceContext'
         include:
           type: array
+          minItems: 1
           items:
             $ref: '#/components/schemas/DomainCode'
           description: |
-            Safety domains to check. Omit to run all six domains.
-            Including fewer domains reduces response size and may improve latency.
+            Safety domains to check. Omit or pass `null` to run all seven domains.
+            When provided, `include` must be a non-empty array of valid lowercase
+            domain codes. Unknown domain codes return `400 INVALID_INCLUDE_DOMAIN`.
+            Duplicate valid domains are accepted and de-duplicated.
           example:
             - "ae"
             - "ddi"
@@ -915,6 +1044,14 @@ components:
           example:
             - "diabetes"
             - "hypertension"
+        allergies:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+          description: Known patient allergies for the `allergy` domain.
+          example:
+            - "penicillin"
 
     Population:
       type: string
@@ -963,14 +1100,121 @@ components:
         - "food"
         - "clinical"
         - "dose"
+        - "allergy"
       description: |
         Safety domain identifier.
         - `ae` — Adverse effects, Black Box Warnings, monitoring parameters
         - `ddi` — Drug-drug interactions (requires 2+ drugs)
         - `pllr` — Pregnancy & lactation risk ratings
         - `food` — Meal timing & food-drug conflicts
-        - `clinical` — Population & condition safety (enhanced with `patient_profile`)
-        - `dose` — Maximum daily dose (V3: dual-source, 19K+ products, tier-based safety)
+        - `clinical` — Population & condition safety. Without patient context, returns product-wide clinical signals; with `patient_profile`, alerts are narrowed to supplied populations and conditions.
+        - `dose` — Dose limits and daily-dose references from the unified dosing data path
+        - `allergy` — Patient allergy matching plus direct and cross-reactivity warnings
+
+    IntelligenceContext:
+      type: object
+      description: |
+        Optional Medication Intelligence Platform context. When present and the
+        intelligence layer is enabled, SafeRx adds a top-level `intelligence`
+        block without changing the standard safety response.
+      properties:
+        user_id:
+          type: string
+          description: Optional caller-side patient or profile identifier.
+          example: "patient-123"
+        clinical_profile:
+          $ref: '#/components/schemas/IntelligenceClinicalProfile'
+        medication_history:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/MedicationHistoryItem'
+          description: |
+            Longitudinal medication list used for active-medication cumulative
+            dose tracking. Items with `status: historical` are retained as
+            context but excluded from active overdose aggregation.
+
+    IntelligenceClinicalProfile:
+      type: object
+      description: Patient profile fields used by intelligence processors.
+      properties:
+        age:
+          type: integer
+          minimum: 0
+          maximum: 150
+          example: 72
+        crcl:
+          type: number
+          minimum: 0
+          description: Creatinine clearance in mL/min.
+          example: 38
+        hepatic_status:
+          type: string
+          enum:
+            - "normal"
+            - "mild"
+            - "moderate"
+            - "severe"
+          example: "normal"
+        pregnancy:
+          type: boolean
+          example: false
+        lactation:
+          type: boolean
+          example: false
+        conditions:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+          example:
+            - "renal impairment"
+            - "hypertension"
+        populations:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+          example:
+            - "geriatric"
+            - "renal"
+        allergies:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+          example:
+            - "penicillin"
+        diet_habits:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+          example:
+            - "low_sodium"
+
+    MedicationHistoryItem:
+      type: object
+      required:
+        - sfrx_id
+      properties:
+        sfrx_id:
+          type: string
+          description: SafeRx product identifier.
+          example: "SRX-010-004748"
+        start_date:
+          type: string
+          description: Caller-provided start date, preferably ISO 8601.
+          example: "2026-01-10"
+        status:
+          type: string
+          enum:
+            - "active"
+            - "historical"
+          description: |
+            Active medications participate in cumulative dose checks.
+            Historical medications are retained as context only.
+          example: "active"
 
     # =========================================================================
     # Response Schemas
@@ -1018,6 +1262,8 @@ components:
             it contains the most actionable items from the full safety data.
         meta:
           $ref: '#/components/schemas/Meta'
+        intelligence:
+          $ref: '#/components/schemas/IntelligenceResult'
 
     ResolvedDrug:
       type: object
@@ -1054,14 +1300,34 @@ components:
           type: string
           description: Registered trade name with strength and pack size
           example: "AUGMENTIN 1GM 14 TAB"
+        brand_name_ar:
+          type: string
+          description: Arabic trade name
+          example: "أوجمنتين 1 جم 14 قرص"
         active_ingredient:
           type: string
           description: Active pharmaceutical ingredient(s), pipe-separated for combinations
           example: "AMOXICILLIN + CLAVULANIC ACID"
+        active_ingredient_ar:
+          type: string
+          description: Arabic active ingredient name
+          example: "أموكسيسيلين + حمض كلافولانيك"
+        generic_name:
+          type: string
+          description: Short generic drug name
+          example: "AUGMENTIN"
+        generic_name_ar:
+          type: string
+          description: Arabic generic drug name
+          example: "أوجمنتين"
         form:
           type: string
           description: Pharmaceutical dosage form
           example: "Oral Tablet"
+        form_ar:
+          type: string
+          description: Arabic dosage form
+          example: "أقراص فموية"
         manufacturer_en:
           type: string
           description: Marketing authorization holder
@@ -1087,6 +1353,32 @@ components:
           format: float
           description: Current price in Egyptian Pounds (EGP)
           example: 120.0
+        identity_match:
+          $ref: '#/components/schemas/IdentityMatch'
+
+    IdentityMatch:
+      type: object
+      description: Non-sensitive drug identity resolution metadata for auditability.
+      properties:
+        method:
+          type: string
+          description: Resolver path that produced the match.
+          example: "name_strength_prefix"
+        confidence:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Match confidence score.
+          example: 0.96
+        matched_field:
+          type: string
+          description: Public drug field used for the match.
+          example: "name_strength"
+        matched_value:
+          type: string
+          description: Public-safe value that matched the input.
+          example: "AUGMENTIN 1GM"
 
     # =========================================================================
     # Safety Domain Schemas
@@ -1126,6 +1418,64 @@ components:
           additionalProperties:
             $ref: '#/components/schemas/DosingData'
           description: Maximum daily dose data keyed by sfrx_id
+        allergy:
+          $ref: '#/components/schemas/AllergyData'
+
+    IntelligenceResult:
+      type: object
+      description: Optional Medication Intelligence Platform post-processing output.
+      properties:
+        status:
+          type: string
+          example: "active"
+        cumulative_warnings:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+          description: Active-medication cumulative dose warnings.
+        synthesis:
+          $ref: '#/components/schemas/IntelligenceSynthesis'
+        safer_alternatives:
+          type: object
+          additionalProperties: true
+          description: Allergy/profile-filtered alternative candidates keyed by source `sfrx_id`.
+        processor_errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/IntelligenceProcessorError'
+          description: Best-effort processor errors; standard safety output remains valid.
+        error:
+          type: string
+          description: Top-level degradation reason when the whole intelligence layer fails.
+
+    IntelligenceSynthesis:
+      type: object
+      properties:
+        cross_domain_findings:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        summary:
+          type: string
+          example: "High-priority reproductive safety finding suppresses lower-level AE noise."
+        predictive_ae:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+          description: Condition-specific adverse effects elevated for the supplied context.
+
+    IntelligenceProcessorError:
+      type: object
+      properties:
+        processor:
+          type: string
+          example: "predictive_ae"
+        error:
+          type: string
+          example: "Processor failed gracefully"
 
     # --- Side Effects (ae) ---
 
@@ -1572,63 +1922,65 @@ components:
           example: "Likely Unsafe"
         pregnancy_rationale:
           type: string
-          description: Clinical rationale for the pregnancy risk rating (language depends on `lang` parameter)
+          description: Clinical rationale for the pregnancy risk rating (English)
           example: "Warfarin is absolutely contraindicated in pregnancy. FDA Category X."
+        pregnancy_rationale_ar:
+          type: string
+          description: Clinical rationale for the pregnancy risk rating (Arabic)
+          example: "الوارفارين ممنوع تماماً أثناء الحمل. تصنيف FDA فئة X."
         lactation_rationale:
           type: string
-          description: Clinical rationale for the lactation risk rating
+          description: Clinical rationale for the lactation risk rating (English)
           example: "Warfarin is excreted in breast milk."
+        lactation_rationale_ar:
+          type: string
+          description: Clinical rationale for the lactation risk rating (Arabic)
+          example: "يُفرز الوارفارين في حليب الأم."
         pregnancy_warning:
           $ref: '#/components/schemas/ReproductiveWarning'
         lactation_warning:
           $ref: '#/components/schemas/ReproductiveWarning'
         preg_t1_risk:
-          type: integer
+          type: string
           nullable: true
-          minimum: 0
-          maximum: 7
           description: First trimester pregnancy risk classification
-          example: 6
+          example: "Contraindicated"
         preg_t1_note:
           type: string
           nullable: true
           description: First trimester clinical note
           example: null
-        preg_t1_ar:
+        preg_t1_note_ar:
           type: string
           nullable: true
           description: First trimester note in Arabic
           example: null
         preg_t2_risk:
-          type: integer
+          type: string
           nullable: true
-          minimum: 0
-          maximum: 7
           description: Second trimester pregnancy risk classification
-          example: 6
+          example: "Contraindicated"
         preg_t2_note:
           type: string
           nullable: true
           description: Second trimester clinical note
           example: null
-        preg_t2_ar:
+        preg_t2_note_ar:
           type: string
           nullable: true
           description: Second trimester note in Arabic
           example: null
         preg_t3_risk:
-          type: integer
+          type: string
           nullable: true
-          minimum: 0
-          maximum: 7
           description: Third trimester pregnancy risk classification
-          example: 7
+          example: "Absolutely Contraindicated"
         preg_t3_note:
           type: string
           nullable: true
           description: Third trimester clinical note
           example: null
-        preg_t3_ar:
+        preg_t3_note_ar:
           type: string
           nullable: true
           description: Third trimester note in Arabic
@@ -1654,18 +2006,24 @@ components:
 
     ReproductiveWarning:
       type: object
-      description: Pregnancy or lactation specific warning
+      description: Pregnancy or lactation specific warning (bilingual)
       properties:
         has_warning:
           type: boolean
           description: Whether a specific warning exists
           example: true
-        text:
+        text_en:
           oneOf:
             - type: string
             - type: "null"
-          description: Warning text (language depends on `lang` parameter)
+          description: Warning text in English
           example: "Warfarin crosses the placenta and can cause fatal hemorrhage in the fetus."
+        text_ar:
+          oneOf:
+            - type: string
+            - type: "null"
+          description: Warning text in Arabic
+          example: "يعبر الوارفارين المشيمة ويمكن أن يسبب نزيفاً مميتاً للجنين."
         categories:
           type: array
           items:
@@ -1735,12 +2093,22 @@ components:
 
     FoodConflict:
       type: object
-      description: A specific food-drug interaction
+      description: A specific food-drug interaction (bilingual)
       properties:
         food:
           type: string
           description: Food item or food category involved
           example: "Vitamin K rich foods"
+        food_category:
+          type: string
+          description: Food category identifier
+          example: "VITAMIN_K_FOODS"
+        affected_foods:
+          type: array
+          items:
+            type: string
+          description: Specific foods affected
+          example: ["spinach", "kale", "broccoli"]
         severity:
           type: integer
           minimum: 1
@@ -1751,10 +2119,18 @@ components:
           type: string
           description: Pharmacological interaction mechanism
           example: "VITAMIN_K_ANTAGONISM"
-        recommendation:
+        brief_en:
           type: string
-          description: Dietary recommendation
-          example: "Maintain consistent vitamin K intake"
+          description: Patient guidance in English
+          example: "Maintain consistent vitamin K intake while taking this medication."
+        brief_ar:
+          type: string
+          description: Patient guidance in Arabic
+          example: "حافظ على تناول ثابت لفيتامين ك أثناء تناول هذا الدواء."
+        action_required:
+          type: string
+          description: Required patient action
+          example: "MONITOR"
 
     # --- Clinical Considerations ---
 
@@ -1762,8 +2138,9 @@ components:
       type: object
       description: |
         Clinical safety considerations combining per-drug population/condition
-        data with cross-drug clinical alerts. Enhanced when `patient_profile`
-        is provided in the request.
+        data with cross-drug clinical alerts. Without `patient_profile`, the
+        API returns product-wide clinical signals; with `patient_profile`, alert
+        lists are narrowed to the supplied populations and conditions.
       properties:
         drug_specific:
           type: object
@@ -1774,12 +2151,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ClinicalAlert'
-          description: Cross-drug condition-related alerts (requires `patient_profile.conditions`)
+          description: Condition-related alerts. Narrowed to `patient_profile.conditions` when supplied; otherwise product-wide condition signals may be returned.
         population_alerts:
           type: array
           items:
             $ref: '#/components/schemas/ClinicalAlert'
-          description: Cross-drug population-related alerts (requires `patient_profile.populations`)
+          description: Population-related alerts. Narrowed to `patient_profile.populations` when supplied; otherwise product-wide population signals may be returned.
 
     DrugClinicalData:
       type: object
@@ -1906,17 +2283,17 @@ components:
     DosingData:
       type: object
       description: |
-        Maximum daily dose data from Dose V3 — dual-source system combining
-        WHO Defined Daily Dose (DDD) and OpenFDA Maximum Daily Dose (MDD).
-        Covers 19,341 products (67.7% of database) with tier-based safety calculations.
+        Dose limits and daily-dose reference data from the unified dosing path.
+        Includes standard dose summaries, dose limits, daily-limit data when
+        available, and caveats for products where calculation needs pharmacist review.
       properties:
         tier:
           type: integer
           enum: [1, 2]
           description: |
             Data quality tier.
-            - `1` — Full reference data (WHO DDD + OpenFDA MDD available)
-            - `2` — Regulatory label data only
+            - `1` - Full reference and regulatory daily-limit data available
+            - `2` - Regulatory daily-limit data only
           example: 1
         max_units_per_day:
           oneOf:
@@ -1961,7 +2338,7 @@ components:
           oneOf:
             - $ref: '#/components/schemas/DailyLimit'
             - type: "null"
-          description: OpenFDA maximum daily dose data
+          description: Regulatory maximum daily dose data
         components:
           oneOf:
             - type: array
@@ -1979,9 +2356,9 @@ components:
             - "dual_source"
           description: |
             Data source for this dose calculation.
-            - `reference_standard` — WHO DDD only
-            - `regulatory_label` — OpenFDA MDD only
-            - `dual_source` — Both WHO DDD and OpenFDA MDD available
+            - `reference_standard` — reference dose data only
+            - `regulatory_label` — regulatory daily-limit data only
+            - `dual_source` — reference and regulatory daily-limit data available
           example: "dual_source"
 
     ReferenceDose:
@@ -2005,7 +2382,7 @@ components:
 
     DailyLimit:
       type: object
-      description: OpenFDA Maximum Daily Dose data
+      description: Regulatory maximum daily dose data
       properties:
         value_mg:
           type: number
@@ -2072,6 +2449,174 @@ components:
           type: string
           example: "Higher doses for severe infections"
 
+    # --- Allergy ---
+
+    AllergyData:
+      type: object
+      description: |
+        Patient allergy matching results. Without `patient_profile.allergies`,
+        the domain returns reference-only summary data and no patient-specific
+        clearance should be inferred.
+      properties:
+        mode:
+          type: string
+          enum:
+            - "reference_only"
+            - "patient_profile"
+          example: "patient_profile"
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllergyWarning'
+        summary:
+          $ref: '#/components/schemas/AllergySummary'
+        needs_review_entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllergyInputEntry'
+        unresolved_entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllergyInputEntry'
+        missing_products:
+          type: array
+          items:
+            type: string
+          description: Resolved product IDs that had no allergy reference record.
+
+    AllergyWarning:
+      type: object
+      properties:
+        sfrx_id:
+          type: string
+          example: "SRX-010-004748"
+        drug_name:
+          type: string
+          example: "AUGMENTIN 1GM 14 TAB"
+        generic_en:
+          type: string
+          example: "AMOXICILLIN + CLAVULANIC ACID"
+        dosage_form_en:
+          type: string
+          example: "Oral Tablet"
+        warning_type:
+          type: string
+          enum:
+            - "direct"
+            - "cross_reactivity"
+        allergen_family:
+          type: string
+          example: "penicillin"
+        allergen_family_name_en:
+          type: string
+          example: "Penicillins"
+        patient_allergy:
+          type: string
+          example: "penicillin"
+        patient_allergy_raw_input:
+          type: string
+          example: "penicillin"
+        severity:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 5
+        severity_label:
+          type: string
+          example: "CONTRAINDICATED"
+        severity_label_ar:
+          type: string
+          example: "ممنوع"
+        frequency_category:
+          type: integer
+          nullable: true
+        frequency_label:
+          type: string
+          nullable: true
+        frequency_min_pct:
+          type: number
+          format: float
+          nullable: true
+        frequency_max_pct:
+          type: number
+          format: float
+          nullable: true
+        mechanism_en:
+          type: string
+          nullable: true
+        mechanism_ar:
+          type: string
+          nullable: true
+        clinical_note_en:
+          type: string
+          nullable: true
+        clinical_note_ar:
+          type: string
+          nullable: true
+        evidence_level:
+          type: string
+          nullable: true
+
+    AllergySummary:
+      type: object
+      properties:
+        check_mode:
+          type: string
+          example: "stateless"
+        products_checked:
+          type: integer
+          example: 3
+        patient_allergies_count:
+          type: integer
+          example: 1
+        resolved_patient_allergies_count:
+          type: integer
+          example: 1
+        resolved_family_count:
+          type: integer
+          example: 1
+        needs_review_count:
+          type: integer
+          example: 0
+        unresolved_patient_allergies_count:
+          type: integer
+          example: 0
+        direct_warnings:
+          type: integer
+          example: 1
+        cross_reactivity_warnings:
+          type: integer
+          example: 0
+        total_warnings:
+          type: integer
+          example: 1
+        contraindicated_count:
+          type: integer
+          example: 1
+        missing_products_count:
+          type: integer
+          example: 0
+
+    AllergyInputEntry:
+      type: object
+      description: Caller-provided allergy entry that could not be fully resolved or needs review.
+      properties:
+        raw_input:
+          type: string
+          example: "penicillin"
+        source_label:
+          type: string
+          example: "penicillin"
+        family_id:
+          type: string
+          nullable: true
+        source_sfrx_id:
+          type: string
+          nullable: true
+        normalization_status:
+          type: string
+          nullable: true
+
     # --- Alerts ---
 
     Alert:
@@ -2108,6 +2653,8 @@ components:
             - "pllr_lactation"
             - "clinical_condition"
             - "clinical_population"
+            - "allergy_direct"
+            - "allergy_cross_reactivity"
           description: |
             Alert source domain and trigger.
             - `ae_bbw` — Drug has a Black Box Warning
@@ -2116,11 +2663,17 @@ components:
             - `pllr_lactation` — Lactation risk >= 6
             - `clinical_condition` — Clinical condition severity >= 4
             - `clinical_population` — Clinical population severity >= 4
+            - `allergy_direct` — Product directly matches a supplied patient allergy
+            - `allergy_cross_reactivity` — Product cross-reacts with a supplied patient allergy
           example: "ae_bbw"
         message:
           type: string
-          description: Human-readable alert message
+          description: Human-readable alert message (English)
           example: "Black Box Warning for MARIVAN 2MG 30 TAB"
+        message_ar:
+          type: string
+          description: Human-readable alert message (Arabic)
+          example: "تحذير الصندوق الأسود لـ ماريفان 2 مجم 30 قرص"
         drugs_involved:
           type: array
           items:
@@ -2152,6 +2705,7 @@ components:
             - "food"
             - "clinical"
             - "dose"
+            - "allergy"
         drug_count:
           type: integer
           description: Number of drugs submitted
@@ -2168,10 +2722,35 @@ components:
           type: string
           enum:
             - "free"
+            - "startup"
             - "pro"
             - "enterprise"
           description: Caller's current tier
           example: "free"
+        quota:
+          $ref: '#/components/schemas/QuotaMeta'
+
+    QuotaMeta:
+      type: object
+      description: Monthly quota accounting for the request.
+      properties:
+        monthly_limit:
+          type: integer
+          example: 100
+        monthly_used:
+          type: integer
+          example: 12
+        monthly_remaining:
+          type: integer
+          example: 88
+        reset_at:
+          type: string
+          format: date-time
+          example: "2026-07-01T00:00:00+00:00"
+        billable_units:
+          type: integer
+          description: Units consumed by this response. Unresolved-only checks return 0.
+          example: 1
 
     # =========================================================================
     # Metadata Response
@@ -2234,6 +2813,11 @@ components:
               additionalProperties:
                 type: string
               description: "DDI severity scale: integer key → label"
+            allergy_severity:
+              type: object
+              additionalProperties:
+                type: string
+              description: "Allergy warning severity scale: integer key → label"
         database_versions:
           type: object
           description: Current database versions
@@ -2253,9 +2837,12 @@ components:
             food:
               type: string
               example: "V5"
-            dose:
+            clinical_dose:
               type: string
               example: "V3.2"
+            allergy:
+              type: string
+              example: "V2"
         database_stats:
           type: object
           description: Database coverage statistics
@@ -2281,19 +2868,26 @@ components:
               type: integer
               description: Number of supported populations
               example: 5
-            dose_products:
+            clinical_dose_products:
               type: integer
               description: Products with dose data
               example: 19341
-            dose_coverage_percent:
-              type: number
-              format: float
-              description: Percentage of products with dose coverage
-              example: 67.7
-            dose_with_calculation:
+            clinical_dose_schema_version:
+              type: string
+              description: Dose data schema version
+              example: "3.2"
+            allergy_products:
               type: integer
-              description: Products with max units/day calculation
-              example: 17500
+              description: Products with allergy reference data
+              example: 66704
+            allergy_families:
+              type: integer
+              description: Allergy family count
+              example: 120
+            allergy_cross_reaction_pairs:
+              type: integer
+              description: Allergy family cross-reaction pair count
+              example: 350
         supported_languages:
           type: array
           items:
@@ -2306,6 +2900,7 @@ components:
           type: string
           enum:
             - "free"
+            - "startup"
             - "pro"
             - "enterprise"
           description: Caller's current tier
@@ -2352,6 +2947,26 @@ components:
           format: email
           description: Support email for assistance
           example: "support@saferx.online"
+        invalid_domains:
+          type: array
+          items:
+            type: string
+          description: Invalid safety domain codes supplied in `include`.
+          example:
+            - "typo"
+        valid_domains:
+          type: array
+          items:
+            $ref: '#/components/schemas/DomainCode'
+          description: Valid safety domain codes.
+          example:
+            - "ae"
+            - "ddi"
+            - "pllr"
+            - "food"
+            - "clinical"
+            - "dose"
+            - "allergy"
 
     BlockedResponse:
       type: object
@@ -2394,10 +3009,32 @@ components:
           type: integer
           description: Requests made today (present on daily limit errors)
           example: 61
+        reason:
+          type: string
+          description: Machine-readable limit reason
+          example: "monthly_quota_exceeded"
+        monthly_limit:
+          type: integer
+          description: Your monthly commercial quota (present on monthly quota errors)
+          example: 100
+        requests_this_month:
+          type: integer
+          description: Requests consumed in the current monthly quota period
+          example: 100
+        monthly_remaining:
+          type: integer
+          description: Remaining monthly quota units
+          example: 0
+        reset_at:
+          type: string
+          format: date-time
+          description: Monthly quota reset timestamp
+          example: "2026-07-01T00:00:00+00:00"
         tier:
           type: string
           enum:
             - "free"
+            - "startup"
             - "pro"
             - "enterprise"
           example: "free"

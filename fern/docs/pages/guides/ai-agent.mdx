@@ -61,13 +61,18 @@ TOOLS = [{
                         "conditions": {
                             "type": "array",
                             "items": {"type": "string"}
+                        },
+                        "allergies": {
+                            "type": "array",
+                            "items": {"type": "string"}
                         }
                     }
                 },
                 "include": {
                     "type": "array",
+                    "minItems": 1,
                     "items": {"type": "string"},
-                    "description": "Domains: ae, ddi, pllr, food, clinical, dose"
+                    "description": "Domains: ae, ddi, pllr, food, clinical, dose, allergy"
                 }
             }
         }
@@ -182,6 +187,7 @@ model = genai.GenerativeModel(
                     },
                     "include": {
                         "type": "array",
+                        "minItems": 1,
                         "items": {"type": "string"},
                     },
                 },
