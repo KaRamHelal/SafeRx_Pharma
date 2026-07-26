@@ -1,8 +1,12 @@
-# SafeRx Pharma
+# SafeRx Pharma — MIS Public Release 2.0.1
 
 [![Latest Release](https://img.shields.io/github/v/release/KaRamHelal/SafeRx_Pharma?label=latest%20release&logo=github)](https://github.com/KaRamHelal/SafeRx_Pharma/releases/latest)
+[![API Docs](https://img.shields.io/badge/API%20docs-docs.saferx.online-059669)](https://docs.saferx.online)
+[![Fern Docs](https://img.shields.io/badge/Fern%20docs-saferx.docs.buildwithfern.com-059669)](https://saferx.docs.buildwithfern.com)
 
-Drug safety intelligence for Egyptian pharma and semi-pharma products. One API call, six safety domains, 33,000 Egyptian pharma + semi-pharma products.
+The MIS-owned public release of SafeRx drug-safety intelligence for Egyptian pharma and semi-pharma products. One API call covers six safety domains across more than 33,000 products.
+
+Version `2.0.1` is the first release on the MIS version line. The public contract is deliberately limited to the documented public API; private MIS contracts, raw OCR storage fields, and internal deployment details are not published here.
 
 ## What's Here
 
@@ -49,17 +53,17 @@ curl -X POST https://saferx.online/api/drug_safety/check \
 
 Returns safety data across all 6 domains in ~40ms.
 
-## Enterprise Integrations
+## Integration options
 
 These are the five supported developer entry points. Use the one that matches your stack:
 
 | Path | Package / Endpoint | Install / Call | Status |
 |------|--------------------|----------------|--------|
 | REST API | `https://saferx.online/api/drug_safety/check` | `POST` over HTTPS | Live and verified |
-| Python SDK | [`saferx-pharma`](https://pypi.org/project/saferx-pharma/) | `pip install saferx-pharma` | Published (`1.4.1`) |
-| TypeScript SDK | [`saferx-pharma-sdk`](https://www.npmjs.com/package/saferx-pharma-sdk) | `npm install saferx-pharma-sdk` | Published (`0.0.36`) |
-| C# SDK | [`SafeRx`](https://www.nuget.org/packages/SafeRx) | `dotnet add package SafeRx` | Published (`1.4.2`) |
-| MCP Server | [`@saferx_pharma/mcp-server`](https://www.npmjs.com/package/@saferx_pharma/mcp-server) | `npx @saferx_pharma/mcp-server` | Published (`1.3.3`) |
+| Python SDK | [`saferx-pharma`](https://pypi.org/project/saferx-pharma/) | `pip install saferx-pharma==2.0.1` | MIS `2.0.1` |
+| TypeScript SDK | [`saferx-pharma-sdk`](https://www.npmjs.com/package/saferx-pharma-sdk) | `npm install saferx-pharma-sdk@2.0.1` | MIS `2.0.1` |
+| C# SDK | [`SafeRx`](https://www.nuget.org/packages/SafeRx) | `dotnet add package SafeRx --version 2.0.1` | MIS `2.0.1` |
+| MCP Server | [`@saferx_pharma/mcp-server`](https://www.npmjs.com/package/@saferx_pharma/mcp-server) | `npx @saferx_pharma/mcp-server@2.0.1` | MIS `2.0.1` |
 
 ## SDKs
 
@@ -72,10 +76,10 @@ These are the five supported developer entry points. Use the one that matches yo
 ### Current SDK Status
 
 - REST API: live and verified
-- Python SDK: published and installable on PyPI (`1.4.1`)
-- TypeScript SDK: published and installable on npm (`0.0.36`)
-- MCP server: published and installable on npm (`1.3.3`)
-- C# SDK: published and verified on NuGet (`1.4.2`) with .NET 8 test coverage
+- Python SDK: MIS `2.0.1`, published on PyPI
+- TypeScript SDK: MIS `2.0.1`, published on npm
+- MCP server: MIS `2.0.1`, published on npm
+- C# SDK: MIS `2.0.1`, published on NuGet and packed with .NET 8
 
 ```python
 from saferx import SafeRxClient
@@ -125,7 +129,8 @@ Requires `SAFERX_API_KEY` environment variable. See [`mcp-server/README.md`](mcp
 
 ## Documentation
 
-- [API Reference](https://docs.saferx.online) — Interactive endpoint docs
+- [API Reference](https://docs.saferx.online) — Primary SafeRx documentation host
+- [Fern documentation mirror](https://saferx.docs.buildwithfern.com) — Fern instance for the same published site
 - [Integration Guides](https://docs.saferx.online/guides/integration-guides/pharmacy-dispensing) — Pharmacy, Hospital EHR, POS, Mobile, AI Agent
 - [OpenAPI Spec](openapi/drug-safety-v1.yaml) — Machine-readable API definition
 - [Postman Collection](postman/SafeRx-Drug-Safety-API.postman_collection.json) — Import and test in seconds

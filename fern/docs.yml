@@ -2,7 +2,7 @@ instances:
   - url: saferx.docs.buildwithfern.com
     custom-domain: docs.saferx.online
 
-title: SafeRx API Documentation
+title: SafeRx API Documentation | MIS Public Release 2.0.1
 
 logo:
   light: docs/assets/saferx-logo.svg
@@ -97,6 +97,8 @@ navigation:
             path: docs/pages/examples/postman.mdx
       - section: Changelog
         contents:
+          - page: "2026-07-26"
+            path: docs/pages/changelog/2026-07-26.mdx
           - page: "2026-03-25"
             path: docs/pages/changelog/2026-03-25.mdx
           - page: "2026-03-21"

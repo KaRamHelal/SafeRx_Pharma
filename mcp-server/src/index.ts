@@ -6,7 +6,7 @@ import { z } from "zod";
 
 const API_KEY = process.env.SAFERX_API_KEY ?? "";
 const BASE_URL = process.env.SAFERX_BASE_URL ?? "https://saferx.online";
-const USER_AGENT = "SafeRx-MCP-Server/1.3.3";
+const USER_AGENT = "SafeRx-MCP-Server/2.0.1";
 
 if (!API_KEY) {
   console.error(
@@ -27,7 +27,7 @@ function authHeaders(): Record<string, string> {
 
 const server = new McpServer({
   name: "saferx",
-  version: "1.3.3",
+  version: "2.0.1",
 });
 
 // Tool: check_drug_safety

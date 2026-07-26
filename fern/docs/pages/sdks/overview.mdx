@@ -1,27 +1,27 @@
 ---
 title: SDKs Overview
-subtitle: Official client libraries for the SafeRx Drug Safety API
+subtitle: Official MIS 2.0.1 client libraries for the SafeRx Drug Safety API
 ---
 
 ## Available SDKs
 
 | Language | Package | Install | Status |
 |----------|---------|---------|--------|
-| Python | [saferx-pharma](https://pypi.org/project/saferx-pharma/) | `pip install saferx-pharma` | Available (v1.4.1) |
-| TypeScript | [saferx-pharma-sdk](https://www.npmjs.com/package/saferx-pharma-sdk) | `npm install saferx-pharma-sdk` | Available (v0.0.36) |
-| C# | [SafeRx](https://www.nuget.org/packages/SafeRx) | `dotnet add package SafeRx` | Available (v1.4.2) |
+| Python | [saferx-pharma](https://pypi.org/project/saferx-pharma/) | `pip install saferx-pharma==2.0.1` | MIS 2.0.1 |
+| TypeScript | [saferx-pharma-sdk](https://www.npmjs.com/package/saferx-pharma-sdk) | `npm install saferx-pharma-sdk@2.0.1` | MIS 2.0.1 |
+| C# | [SafeRx](https://www.nuget.org/packages/SafeRx) | `dotnet add package SafeRx --version 2.0.1` | MIS 2.0.1 |
 | Java | `online.saferx:saferx-java` (Maven) | — | Planned |
 | Go | `github.com/KaRamHelal/saferx-go` | — | Planned |
 | Swift | `github.com/KaRamHelal/saferx-swift` | — | Planned |
 
 <Info>
-Current public package status:
+Current public package status for the MIS 2.0.1 release:
 
 - REST API: live and verified
-- Python SDK: published and installable on PyPI (`1.4.1`)
-- TypeScript SDK: published and installable on npm (`0.0.36`)
-- MCP server: published and installable on npm (`1.3.3`)
-- C# SDK: published and verified on NuGet (`1.4.2`) with .NET 8 test coverage
+- Python SDK: published and installable on PyPI (`2.0.1`)
+- TypeScript SDK: published and installable on npm (`2.0.1`)
+- MCP server: published and installable on npm (`2.0.1`)
+- C# SDK: published and verified on NuGet (`2.0.1`) with .NET 8 packaging
 </Info>
 
 ## Enterprise Integration Matrix
@@ -31,10 +31,10 @@ If you are choosing an integration path for a production system, use this matrix
 | Path | Best For | Install / Call | Status |
 |------|----------|----------------|--------|
 | REST API | Direct backend integration | `POST https://saferx.online/api/drug_safety/check` | Live and verified |
-| Python SDK | Python services and automation | `pip install saferx-pharma` | Published (`1.4.1`) |
-| TypeScript SDK | Node.js services and web apps | `npm install saferx-pharma-sdk` | Published (`0.0.36`) |
-| C# SDK | .NET / enterprise systems | `dotnet add package SafeRx` | Published (`1.4.2`) |
-| MCP Server | Claude Desktop, Claude Code, Cursor | `npx @saferx_pharma/mcp-server` | Published (`1.3.3`) |
+| Python SDK | Python services and automation | `pip install saferx-pharma==2.0.1` | Published (`2.0.1`) |
+| TypeScript SDK | Node.js services and web apps | `npm install saferx-pharma-sdk@2.0.1` | Published (`2.0.1`) |
+| C# SDK | .NET / enterprise systems | `dotnet add package SafeRx --version 2.0.1` | Published (`2.0.1`) |
+| MCP Server | Claude Desktop, Claude Code, Cursor | `npx @saferx_pharma/mcp-server@2.0.1` | Published (`2.0.1`) |
 
 ## SDK Features
 

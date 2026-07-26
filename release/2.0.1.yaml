@@ -1,0 +1,21 @@
+release_line: MIS
+release_version: 2.0.1
+release_id: mis-public-2.0.1
+status: publishable
+
+# This release line is the MIS-owned public projection of the SafeRx Drug
+# Safety API. Private MIS contracts and OCR internals are not public inputs.
+api_contract:
+  source: openapi/drug-safety-v1.yaml
+  openapi_version: 3.1.1
+  operation_count: 5
+
+artifacts:
+  python: saferx-pharma==2.0.1
+  typescript: saferx-pharma-sdk@2.0.1
+  csharp: SafeRx==2.0.1
+  mcp: '@saferx_pharma/mcp-server@2.0.1'
+
+documentation:
+  fern_instance: saferx.docs.buildwithfern.com
+  custom_domain: docs.saferx.online

@@ -2,13 +2,14 @@ name: Publish SDKs
 
 on:
   push:
-    branches: [main]
-    paths:
-      - "openapi/**"
-      - "fern/**"
-      - "mcp-server/**"
-      - ".github/workflows/sdk-publish.yml"
+    tags:
+      - "v*"
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (must be a 2.x.x MIS release)"
+        required: true
+        default: "2.0.1"
 
 concurrency:
   group: publish-sdks-${{ github.ref }}
@@ -22,13 +23,56 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Detect changed areas
-        id: changes
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            mcp:
-              - 'mcp-server/**'
+      - name: Resolve release version
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="${{ inputs.version }}"
+          fi
+          if [[ ! "$version" =~ ^2\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Release version must be a 2.x.x MIS release: $version"
+            exit 1
+          fi
+          echo "release_version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Install validation dependency
+        run: python -m pip install --disable-pip-version-check "PyYAML==6.0.2"
+
+      - name: Validate public release inputs
+        run: python scripts/release_preflight.py
+        env:
+          SAFERX_RELEASE_VERSION: ${{ steps.release.outputs.release_version }}
+
+      - name: Verify registry version is unused
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.release_version }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          version = os.environ["RELEASE_VERSION"]
+          checks = {
+              "PyPI saferx-pharma": "https://pypi.org/pypi/saferx-pharma/json",
+              "npm saferx-pharma-sdk": "https://registry.npmjs.org/saferx-pharma-sdk",
+              "npm @saferx_pharma/mcp-server": "https://registry.npmjs.org/@saferx_pharma%2fmcp-server",
+              "NuGet SafeRx": "https://api.nuget.org/v3-flatcontainer/saferx/index.json",
+          }
+          for name, url in checks.items():
+              with urllib.request.urlopen(url, timeout=20) as response:
+                  data = json.load(response)
+              versions = set(data.get("releases", {})) | set(data.get("versions", {})) | set(data.get("versions", []))
+              if version in versions:
+                  raise SystemExit(f"{name} already contains {version}; immutable publication would collide")
+              print(f"{name}: {version} is unused")
+          PY
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -47,55 +91,57 @@ jobs:
           dotnet-version: "8.0.x"
 
       - name: Install Fern CLI
-        run: npm install -g fern-api
+        run: npm install -g fern-api@5.80.2
 
       - name: Generate & Publish Python SDK
-        run: fern generate --group python-sdk --api drug-safety
+        run: fern generate --group python-sdk --api drug-safety --version "$RELEASE_VERSION"
         env:
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+          RELEASE_VERSION: ${{ steps.release.outputs.release_version }}
 
       - name: Generate & Publish TypeScript SDK
-        run: fern generate --group ts-sdk --api drug-safety
+        run: fern generate --group ts-sdk --api drug-safety --version "$RELEASE_VERSION"
         env:
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          RELEASE_VERSION: ${{ steps.release.outputs.release_version }}
 
       - name: Generate C# SDK
-        run: fern generate --group csharp-sdk --api drug-safety-csharp --force
+        run: fern generate --group csharp-sdk --api drug-safety-csharp --version "$RELEASE_VERSION" --force
         env:
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
+          RELEASE_VERSION: ${{ steps.release.outputs.release_version }}
 
       - name: Fix & Publish C# SDK
         run: |
           python scripts/fix_csharp_sdk_bug.py --pharma-root .
-          dotnet pack fern/generated/csharp-sdk/src/SaferxApi/SaferxApi.csproj -c Release
+          dotnet pack fern/generated/csharp-sdk/src/SaferxApi/SaferxApi.csproj -c Release -p:PackageVersion="$RELEASE_VERSION"
           dotnet nuget push fern/generated/csharp-sdk/src/SaferxApi/bin/Release/SafeRx.*.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          RELEASE_VERSION: ${{ steps.release.outputs.release_version }}
 
       - name: Build & Publish MCP Server
-        if: steps.changes.outputs.mcp == 'true'
         shell: bash
         run: |
+          set -euo pipefail
           cd mcp-server
-          npm install
+          npm ci
           npm run build
           LOCAL_VERSION=$(node -p "require('./package.json').version")
-          REMOTE_VERSION=$(npm view @saferx_pharma/mcp-server version 2>/dev/null || echo "none")
           echo "Local MCP version: $LOCAL_VERSION"
-          echo "Remote MCP version: $REMOTE_VERSION"
-          if [ "$LOCAL_VERSION" = "$REMOTE_VERSION" ]; then
-            echo "ERROR: MCP package version was not bumped (still $LOCAL_VERSION)."
-            echo "Please bump mcp-server/package.json version before publishing."
+          if [ "$LOCAL_VERSION" != "$RELEASE_VERSION" ]; then
+            echo "ERROR: MCP package version $LOCAL_VERSION does not match release $RELEASE_VERSION."
             exit 1
           fi
           npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          RELEASE_VERSION: ${{ steps.release.outputs.release_version }}
 
       - name: Publish Fern Docs
         timeout-minutes: 10
-        run: fern generate --docs --force --no-prompt
+        run: fern generate --docs --instance saferx.docs.buildwithfern.com --force --no-prompt --strict-broken-links
         env:
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
