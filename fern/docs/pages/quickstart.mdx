@@ -93,12 +93,6 @@ Only `drugs` is required. The `lang` parameter is optional and defaults to `"en"
       -H "User-Agent: MyApp/1.0" \
       -d '{
         "drugs": ["Augmentin 1g", "Glucophage 500mg", "Marivan"],
-        "patient_profile": {
-          "crcl": 25,
-          "age": 72,
-          "conditions": ["diabetes"],
-          "allergies": ["penicillin"]
-        },
         "lang": "en"
       }'
     ```
@@ -115,12 +109,6 @@ Only `drugs` is required. The `lang` parameter is optional and defaults to `"en"
         },
         json={
             "drugs": ["Augmentin 1g", "Glucophage 500mg", "Marivan"],
-            "patient_profile": {
-                "crcl": 25,
-                "age": 72,
-                "conditions": ["diabetes"],
-                "allergies": ["penicillin"],
-            },
             "lang": "en",
         },
     )
@@ -134,12 +122,6 @@ Only `drugs` is required. The `lang` parameter is optional and defaults to `"en"
     client = SafeRxClient(api_key=api_key)
     result = client.drug_safety.check(
         drugs=["Augmentin 1g", "Glucophage 500mg", "Marivan"],
-        patient_profile={
-            "crcl": 25,
-            "age": 72,
-            "conditions": ["diabetes"],
-            "allergies": ["penicillin"],
-        },
         lang="en",
     )
     ```
@@ -155,12 +137,6 @@ Only `drugs` is required. The `lang` parameter is optional and defaults to `"en"
       },
       body: JSON.stringify({
         drugs: ["Augmentin 1g", "Glucophage 500mg", "Marivan"],
-        patient_profile: {
-          crcl: 25,
-          age: 72,
-          conditions: ["diabetes"],
-          allergies: ["penicillin"],
-        },
         lang: "en",
       }),
     });
@@ -184,27 +160,12 @@ The response contains five top-level sections:
     "reproductive_safety": {...},  // Pregnancy & lactation by sfrx_id
     "food": {...},                 // Food interactions by sfrx_id
     "clinical": {...},             // Population & condition data
-    "dosing": {...},               // Dosing safety (dual-source) by sfrx_id
-    "allergy": {...}               // Allergy matching and family reference data
+    "dosing": {...}                // Dosing safety (dual-source) by sfrx_id
   },
   "alerts": [...],         // Critical items (check these FIRST)
   "meta": {...}            // Processing time, tier, counts
 }
 ```
-
-Resolved drugs include fields your app can display immediately: `brand_name`, `display_name`, `active_ingredient`, `form`, `strength`, `route`, `pharma_uses`, `description`, `mechanism`, `warnings`, `price_egp`, and `identity_match`.
-
-For clinical workflows:
-
-| Need | Response path |
-|------|---------------|
-| Show matched drug and route | `drugs[].brand_name`, `drugs[].display_name`, `drugs[].route`, `drugs[].form` |
-| Show public drug uses | `drugs[].pharma_uses` / `drugs[].pharma_uses_ar` |
-| Renal/hepatic/pediatric dose adjustment | `safety.clinical.population_alerts[]` and `safety.clinical.drug_specific.{sfrx_id}.populations` |
-| Dose limits and calculation caveats | `safety.dosing.{sfrx_id}.daily_limit`, `dose_limits`, `display_summary`, `dose_uncertainty` |
-| Monitoring instructions | `safety.dosing.{sfrx_id}.monitoring_display` and `safety.clinical.population_alerts[].monitoring_display` |
-| Allergy family and cross-reactivity reference | `safety.allergy.product_families.{sfrx_id}.families` |
-| Patient-specific allergy warnings | `safety.allergy.warnings[]` and top-level `alerts[]` |
 
 **Start with `alerts`** — these are the highest-priority safety issues:
 
@@ -263,7 +224,7 @@ curl https://saferx.online/api/drug_safety/metadata \
 
 ### Health Check
 
-`GET /api/drug_safety/health` returns minimal system status. No authentication required — useful for uptime monitoring. The public health response keeps `checks` empty and does not expose database counts or internal module details.
+`GET /api/drug_safety/health` returns system status. No authentication required — useful for monitoring dashboards.
 
 ```bash
 curl https://saferx.online/api/drug_safety/health
@@ -271,7 +232,7 @@ curl https://saferx.online/api/drug_safety/health
 
 ## Available Domains
 
-Use the `include` parameter to request only the safety domains you need. Omit it to run all seven. When provided, `include` must be a non-empty array of valid lowercase domain codes; unknown codes return `400 INVALID_INCLUDE_DOMAIN`.
+Use the `include` parameter to request only the safety domains you need. Omit it to run all six.
 
 | Code | Domain | Description |
 |------|--------|-------------|
@@ -279,13 +240,12 @@ Use the `include` parameter to request only the safety domains you need. Omit it
 | `ddi` | Drug Interactions | Drug-drug interactions with severity (requires 2+ drugs) |
 | `pllr` | Reproductive Safety | Pregnancy & lactation risk ratings per trimester |
 | `food` | Food Interactions | Meal timing and specific food-drug conflicts |
-| `clinical` | Clinical | Product-wide population/condition signals plus matched renal/hepatic/pediatric dose-adjustment context when patient values are supplied |
-| `dose` | Dosing | Standard dose summaries, dose limits, daily-dose references, monitoring display, and calculation caveats |
-| `allergy` | Allergy | Patient allergy matching, allergy families, and cross-reactivity warnings |
+| `clinical` | Clinical | Population & condition-specific alerts (enhanced with `patient_profile`) |
+| `dose` | Dosing | Maximum daily dose limits (dual-source: WHO DDD + OpenFDA MDD) |
 
 ## Patient Profile Options
 
-Optionally pass `patient_profile` to narrow clinical alerts and trigger patient-context matching.
+Optionally pass `patient_profile` to get population- and condition-specific alerts.
 
 **Populations** (5):
 
@@ -300,18 +260,6 @@ Optionally pass `patient_profile` to narrow clinical alerts and trigger patient-
 **Conditions** (14):
 
 `arrhythmia`, `asthma`, `bph`, `coronary`, `depression`, `diabetes`, `epilepsy`, `gi_bleeding`, `glaucoma`, `heart_failure`, `hypertension`, `hyperthyroidism`, `hypothyroidism`, `parkinsons`
-
-**Patient values for dose/monitoring context:**
-
-| Field | Use |
-|-------|-----|
-| `crcl` | Infers `renal` and returns matched renal dose-adjustment bands when available |
-| `egfr` | Accepted as fallback renal-function input when `crcl` is absent |
-| `child_pugh` | Infers `hepatic` and returns matched hepatic grade guidance |
-| `hepatic_status` | `mild`, `moderate`, or `severe` maps to hepatic context when `child_pugh` is absent |
-| `age` | Infers `pediatric` if under 18 and `geriatric` if 65+ |
-| `weight_kg` | Used for pediatric weight-based dosing context when available |
-| `allergies` | Enables patient-specific direct and cross-reactivity allergy warnings |
 
 <Callout intent="info">
 Use `GET /api/drug_safety/metadata` to programmatically discover the latest populations and conditions — values may be added in future versions.

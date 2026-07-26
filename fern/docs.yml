@@ -59,6 +59,8 @@ navigation:
     layout:
       - section: Integration Guides
         contents:
+          - page: Which Integration Should I Use?
+            path: docs/pages/guides/integration-choice.mdx
           - page: Pharmacy Dispensing
             path: docs/pages/guides/pharmacy-dispensing.mdx
           - page: Hospital EHR
@@ -95,8 +97,6 @@ navigation:
             path: docs/pages/examples/postman.mdx
       - section: Changelog
         contents:
-          - page: "2026-06-02"
-            path: docs/pages/changelog/2026-06-02.mdx
           - page: "2026-03-25"
             path: docs/pages/changelog/2026-03-25.mdx
           - page: "2026-03-21"

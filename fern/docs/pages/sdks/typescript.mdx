@@ -29,12 +29,10 @@ const client = new SafeRxClient({
 // Check drug safety
 const result = await client.drugSafety.check({
   drugs: ["Augmentin 1g", "Glucophage 500mg", "Marivan"],
-  include: ["ae", "ddi", "pllr", "food", "clinical", "dose", "allergy"],
+  include: ["ae", "ddi", "pllr", "food", "clinical", "dose"],
   patient_profile: {
-    age: 72,
-    crcl: 25,
+    populations: ["geriatric"],
     conditions: ["diabetes"],
-    allergies: ["penicillin"],
   },
   lang: "en",
 });
@@ -42,8 +40,6 @@ const result = await client.drugSafety.check({
 // Access resolved drugs (snake_case fields)
 for (const drug of result.drugs) {
   console.log(`${drug.brand_name} (${drug.active_ingredient})`);
-  console.log(`  display: ${drug.display_name}, route: ${drug.route}, form: ${drug.form}`);
-  console.log(`  uses: ${drug.pharma_uses}`);
   console.log(`  sfrx_id: ${drug.sfrx_id}, Price: ${drug.price_egp} EGP`);
 }
 
@@ -56,16 +52,6 @@ if (result.safety?.side_effects) {
 
 if (result.safety?.interactions) {
   console.log(`Interactions: ${result.safety.interactions.count}`);
-}
-
-for (const alert of result.safety?.clinical?.population_alerts ?? []) {
-  if (alert.requires_dose_adjustment) {
-    console.log(`Dose adjustment: ${alert.drug} ${alert.population} -> ${alert.dose_recommendation}`);
-  }
-}
-
-for (const warning of result.safety?.allergy?.warnings ?? []) {
-  console.log(`Allergy: ${warning.drug_name} matches ${warning.patient_allergy}`);
 }
 ```
 
@@ -110,16 +96,9 @@ All response fields use **snake_case**, matching the OpenAPI spec:
 | Field | Type | Example |
 |-------|------|---------|
 | `brand_name` | string | `"AUGMENTIN 1GM 14 TAB"` |
-| `display_name` | string | `"AUGMENTIN 1GM"` |
 | `sfrx_id` | string | `"SRX-010-004748"` |
 | `parent_sfrx_id` | string \| null | `null` |
 | `active_ingredient` | string | `"Amoxicillin + Clavulanic Acid"` |
-| `route` | string | `"oral"` |
-| `strength` | string | `"1 GM"` |
-| `pharma_uses` | string | `"Bacterial infections..."` |
-| `description` | string | Public product description |
-| `mechanism` | string | Mechanism summary |
-| `warnings` | string | Public warning summary |
 | `manufacturer_en` | string | `"GLAXOSMITHKLINE"` |
 | `supplier_en` | string | `""` |
 | `price_egp` | number | `108.0` |
@@ -128,8 +107,6 @@ All response fields use **snake_case**, matching the OpenAPI spec:
 | `interactions` | object | `{ count, summary, interactions }` |
 | `condition_alerts` | array | Clinical condition alerts |
 | `population_alerts` | array | Clinical population alerts |
-| `dosing` | object | Dose limits, display summary, monitoring display |
-| `allergy` | object | Allergy warnings and product-family reference data |
 
 ## Configuration
 
@@ -146,10 +123,9 @@ const client = new SafeRxClient({
 
 | Prefix | Tier | Limits | How to get |
 |--------|------|--------|------------|
-| `sfx_free_` | Free | 100 checks/month, 20 rpm anti-abuse | `POST /api/developers/keys/free` |
-| `sk_test_` | Free | 100 checks/month, 20 rpm anti-abuse | [Developer Portal](https://saferx.online/developer) |
-| `sk_startup_` | Startup | 100 checks/month, 20 rpm anti-abuse | Developer-group promo after email verification |
-| `sk_live_` | Pro/Enterprise | 15,000+ checks/month, 60-200 rpm | Contact support@saferx.online |
+| `sfx_free_` | Free | 20 rpm, 60 rpd | `POST /api/developers/keys/free` |
+| `sk_test_` | Free | 20 rpm, 60 rpd | [Developer Portal](https://saferx.online/developer) |
+| `sk_live_` | Pro/Enterprise | 60-200 rpm | Contact support@saferx.online |
 
 ## Node.js and Browser
 

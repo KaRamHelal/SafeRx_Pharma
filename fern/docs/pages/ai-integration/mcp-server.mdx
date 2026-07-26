@@ -11,8 +11,8 @@ The SafeRx MCP Server wraps the Drug Safety API as a Model Context Protocol serv
 
 | Tool | Description |
 |------|-------------|
-| `check_drug_safety` | Screen drugs across all seven safety domains, including clinical dose context and allergy matching |
-| `get_drug_metadata` | Get available populations, conditions, database versions, domain codes, and current tier limits |
+| `check_drug_safety` | Screen drugs across all safety domains |
+| `get_drug_metadata` | Get available populations, conditions, and database versions |
 
 ## Installation
 
@@ -39,35 +39,6 @@ Add to your Claude Desktop config (`claude_desktop_config.json`):
   }
 }
 ```
-
-## Patient Context
-
-Pass `patient_profile` when you need clinically useful output for medical, pharmacy, clinic management, or ERP workflows:
-
-```json
-{
-  "drugs": ["Augmentin 1g", "Marivan"],
-  "patient_profile": {
-    "age": 72,
-    "crcl": 25,
-    "conditions": ["hypertension"],
-    "allergies": ["penicillin"]
-  },
-  "include": ["clinical", "dose", "allergy"]
-}
-```
-
-Useful response paths:
-
-| Need | Response path |
-|------|---------------|
-| Resolved product identity | `drugs[].sfrx_id`, `drugs[].display_name`, `drugs[].route` |
-| Renal/hepatic/pediatric context applied | `safety.clinical.context_applied` |
-| Matched dose recommendations | `safety.clinical.population_alerts[].dose_recommendation` |
-| Monitoring instructions | `safety.clinical.population_alerts[].monitoring_display` |
-| Dose limits and standard-dose summaries | `safety.dosing[<sfrx_id>]` |
-| Allergy family and cross-reactivity reference | `safety.allergy.product_families` |
-| Patient allergy warnings | `safety.allergy.alerts` |
 
 ## Architecture
 

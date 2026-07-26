@@ -29,8 +29,7 @@ var response = await client.DrugSafety.CheckAsync(
         Include = new List<DomainCode>
         {
             DomainCode.Ae, DomainCode.Ddi, DomainCode.Pllr,
-            DomainCode.Food, DomainCode.Clinical, DomainCode.Dose,
-            DomainCode.Allergy
+            DomainCode.Food, DomainCode.Clinical, DomainCode.Dose
         },
         Lang = DrugSafetyCheckRequestLang.En,
     }
@@ -68,20 +67,16 @@ var response = await client.DrugSafety.CheckAsync(
         Drugs = new List<string> { "Augmentin 1g", "Marivan" },
         PatientProfile = new PatientProfile
         {
-            Age = 72,
-            Crcl = 25,
+            Populations = new List<Population> { Population.Geriatric, Population.Renal },
             Conditions = new List<Condition> { Condition.Diabetes, Condition.Hypertension },
-            Allergies = new List<string> { "penicillin" },
         },
-        Include = new List<DomainCode> { DomainCode.Clinical, DomainCode.Dose, DomainCode.Allergy },
+        Include = new List<DomainCode> { DomainCode.Clinical, DomainCode.Dose },
         Lang = DrugSafetyCheckRequestLang.En,
     }
 );
 ```
 
 Available populations: `Pediatric`, `Geriatric`, `Cardiac`, `Hepatic`, `Renal`
-
-Patient values such as `Crcl`, `Age`, `WeightKg`, `ChildPugh`, and `HepaticStatus` trigger matched renal/hepatic/pediatric context when the generated SDK version includes those fields.
 
 ## Error Handling
 
@@ -103,10 +98,10 @@ catch (TooManyRequestsError e)
     Console.WriteLine($"Rate limited: {e.Body?.LimitPerMinute} rpm, used {e.Body?.RequestsThisMinute}");
     Console.WriteLine($"Tier: {e.Body?.Tier}");
 
-    // Monthly quota (only present on monthly quota errors)
-    if (e.Body?.MonthlyLimit != null)
+    // Daily limit (only present on daily limit errors)
+    if (e.Body?.DailyLimit != null)
     {
-        Console.WriteLine($"Monthly quota: {e.Body?.MonthlyLimit}, used {e.Body?.RequestsThisMonth}");
+        Console.WriteLine($"Daily limit: {e.Body?.DailyLimit} rpd, used {e.Body?.RequestsToday}");
     }
 }
 catch (UnauthorizedError e)
@@ -131,8 +126,7 @@ catch (BadRequestError e)
 | `response.Safety.ReproductiveSafety` | `Dictionary<string, ReproductiveSafetyData>?` | PLLR data |
 | `response.Safety.Food` | `Dictionary<string, FoodData>?` | Food-drug conflicts |
 | `response.Safety.Clinical` | `ClinicalData?` | Population/condition alerts |
-| `response.Safety.Dosing` | `Dictionary<string, DosingData>?` | Dose limits, display summary, monitoring display |
-| `response.Safety.Allergy` | `AllergyData?` | Allergy warnings and product-family reference data |
+| `response.Safety.Dosing` | `Dictionary<string, DosingData>?` | Max daily dose data |
 | `response.Alerts` | `IEnumerable<Alert>` | High-priority alerts with `Severity`, `Type`, `Message` |
 | `response.Meta` | `Meta` | `ProcessingTimeMs`, `Tier`, `DrugCount`, `ResolvedCount` |
 
@@ -144,10 +138,9 @@ C# property names use **PascalCase** (standard .NET convention) while JSON seria
 
 | Prefix | Tier | Limits | How to get |
 |--------|------|--------|------------|
-| `sfx_free_` | Free | 100 checks/month, 20 rpm anti-abuse | `POST /api/developers/keys/free` |
-| `sk_test_` | Free | 100 checks/month, 20 rpm anti-abuse | [Developer Portal](https://saferx.online/developer) |
-| `sk_startup_` | Startup | 100 checks/month, 20 rpm anti-abuse | Developer-group promo after email verification |
-| `sk_live_` | Pro/Enterprise | 15,000+ checks/month, 60-200 rpm | Contact support@saferx.online |
+| `sfx_free_` | Free | 20 rpm, 60 rpd | `POST /api/developers/keys/free` |
+| `sk_test_` | Free | 20 rpm, 60 rpd | [Developer Portal](https://saferx.online/developer) |
+| `sk_live_` | Pro/Enterprise | 60-200 rpm | Contact support@saferx.online |
 
 ## Status
 

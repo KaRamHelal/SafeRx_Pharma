@@ -59,7 +59,7 @@ print(f"Resolved: {result['meta']['resolved_count']}/{result['meta']['drug_count
 
 ## 3. Patient Profile with Populations and Conditions
 
-Pass `patient_profile` to get population- and condition-specific safety alerts. Patient values such as `crcl`, `age`, `weight_kg`, and `child_pugh` also infer clinical-dose context so you can show matched renal/hepatic/pediatric dose guidance from the same `/check` response.
+Pass `patient_profile` to get population- and condition-specific safety alerts.
 
 **Populations** (5): `pediatric`, `geriatric`, `cardiac`, `hepatic`, `renal`
 
@@ -72,23 +72,11 @@ resp = httpx.post(
     json={
         "drugs": ["Augmentin 1g", "Glucophage 500mg"],
         "patient_profile": {
-            "age": 72,
-            "crcl": 25,
+            "populations": ["geriatric", "renal"],
             "conditions": ["diabetes", "hypertension"],
-            "allergies": ["penicillin"],
         },
     },
 )
-
-result = resp.json()
-clinical = result["safety"].get("clinical", {})
-for alert in clinical.get("population_alerts", []):
-    if alert.get("requires_dose_adjustment"):
-        print(alert["drug"], alert.get("population"), alert.get("dose_recommendation"))
-
-allergy = result["safety"].get("allergy", {})
-for warning in allergy.get("warnings", []):
-    print(f"ALLERGY {warning['severity_label']}: {warning['drug_name']} vs {warning['patient_allergy']}")
 ```
 
 ## 4. Selective Domain Inclusion
@@ -101,11 +89,10 @@ Use `include` to request only the safety domains you need. This reduces response
 | `ddi` | Drug Interactions | Severity-rated interactions with management advice (needs 2+ drugs) |
 | `pllr` | Reproductive Safety | Pregnancy & lactation risk per trimester |
 | `food` | Food Interactions | Meal timing, specific food conflicts |
-| `clinical` | Clinical | Product-wide population/condition signals plus matched renal/hepatic/pediatric context when patient values are supplied |
-| `dose` | Dosing | Standard dose summaries, dose limits, monitoring display, and calculation caveats |
-| `allergy` | Allergy | Patient allergy matching, allergy families, and cross-reactivity warnings |
+| `clinical` | Clinical | Population & condition alerts (enhanced with `patient_profile`) |
+| `dose` | Dosing | Max daily dose with WHO DDD + OpenFDA MDD dual-source data |
 
-Omit `include` to run all seven domains. If supplied, `include` must contain at least one valid lowercase domain code. Unknown codes return `400 INVALID_INCLUDE_DOMAIN`; duplicates are ignored.
+Omit `include` to run all six domains.
 
 ```python
 # DDI-only check (fastest, smallest response)
@@ -170,21 +157,9 @@ for sfx_id, pllr in result["safety"].get("reproductive_safety", {}).items():
 | `MODERATE` | Moderate concern, clinical attention advised | Informational display |
 | `LOW` | Minor concern, generally safe | Log only, optional display |
 
-**Alert types:** `ae_bbw` (Black Box Warning), `ddi` (Drug Interaction), `pllr_pregnancy`, `pllr_lactation`, `clinical_condition`, `clinical_population`, `allergy_direct`, `allergy_cross_reactivity`
+**Alert types:** `ae_bbw` (Black Box Warning), `ddi` (Drug Interaction), `pllr_pregnancy`, `pllr_lactation`, `clinical_condition`, `clinical_population`
 
-## 8. What to Render in Your App
-
-| Application need | Response path |
-|------------------|---------------|
-| Medication label/search match | `drugs[].brand_name`, `drugs[].display_name`, `drugs[].active_ingredient`, `drugs[].route` |
-| Public drug information | `drugs[].pharma_uses`, `drugs[].description`, `drugs[].mechanism`, `drugs[].warnings` |
-| Renal or hepatic dose adjustment | `safety.clinical.population_alerts[]` and `safety.clinical.drug_specific.{sfrx_id}.populations` |
-| Dose limits | `safety.dosing.{sfrx_id}.daily_limit`, `dose_limits`, `display_summary` |
-| Monitoring instructions | `safety.dosing.{sfrx_id}.monitoring_display` or `population_alerts[].monitoring_display` |
-| Allergy family data | `safety.allergy.product_families.{sfrx_id}.families` |
-| Patient-specific allergy warnings | `safety.allergy.warnings[]` and top-level `alerts[]` |
-
-## 9. Parsing and Displaying Alerts
+## 8. Parsing and Displaying Alerts
 
 ```python
 result = safe_check(["Augmentin 1g", "Marivan"])

@@ -2,7 +2,7 @@
 
 [![Latest Release](https://img.shields.io/github/v/release/KaRamHelal/SafeRx_Pharma?label=latest%20release&logo=github)](https://github.com/KaRamHelal/SafeRx_Pharma/releases/latest)
 
-Drug safety intelligence for Egyptian pharmaceutical products. One API call, seven safety domains, 66,704 products.
+Drug safety intelligence for Egyptian pharma and semi-pharma products. One API call, six safety domains, 33,000 Egyptian pharma + semi-pharma products.
 
 ## What's Here
 
@@ -47,7 +47,19 @@ curl -X POST https://saferx.online/api/drug_safety/check \
   -d '{"drugs": ["Augmentin 1g", "Marivan", "Glucophage 500"]}'
 ```
 
-Returns safety data across all 7 domains in ~40ms.
+Returns safety data across all 6 domains in ~40ms.
+
+## Enterprise Integrations
+
+These are the five supported developer entry points. Use the one that matches your stack:
+
+| Path | Package / Endpoint | Install / Call | Status |
+|------|--------------------|----------------|--------|
+| REST API | `https://saferx.online/api/drug_safety/check` | `POST` over HTTPS | Live and verified |
+| Python SDK | [`saferx-pharma`](https://pypi.org/project/saferx-pharma/) | `pip install saferx-pharma` | Published (`1.4.1`) |
+| TypeScript SDK | [`saferx-pharma-sdk`](https://www.npmjs.com/package/saferx-pharma-sdk) | `npm install saferx-pharma-sdk` | Published (`0.0.36`) |
+| C# SDK | [`SafeRx`](https://www.nuget.org/packages/SafeRx) | `dotnet add package SafeRx` | Published (`1.4.2`) |
+| MCP Server | [`@saferx_pharma/mcp-server`](https://www.npmjs.com/package/@saferx_pharma/mcp-server) | `npx @saferx_pharma/mcp-server` | Published (`1.3.3`) |
 
 ## SDKs
 
@@ -56,6 +68,14 @@ Returns safety data across all 7 domains in ~40ms.
 | Python | [`saferx-pharma`](https://pypi.org/project/saferx-pharma/) | `pip install saferx-pharma` |
 | TypeScript | [`saferx-pharma-sdk`](https://www.npmjs.com/package/saferx-pharma-sdk) | `npm install saferx-pharma-sdk` |
 | C# | [`SafeRx`](https://www.nuget.org/packages/SafeRx) | `dotnet add package SafeRx` |
+
+### Current SDK Status
+
+- REST API: live and verified
+- Python SDK: published and installable on PyPI (`1.4.1`)
+- TypeScript SDK: published and installable on npm (`0.0.36`)
+- MCP server: published and installable on npm (`1.3.3`)
+- C# SDK: published and verified on NuGet (`1.4.2`) with .NET 8 test coverage
 
 ```python
 from saferx import SafeRxClient
@@ -90,19 +110,17 @@ Requires `SAFERX_API_KEY` environment variable. See [`mcp-server/README.md`](mcp
 | Pregnancy & Lactation | `pllr` | 24K+ products, 0-7 risk scale |
 | Food Interactions | `food` | 38K+ interactions |
 | Clinical Considerations | `clinical` | 5 populations, 14 conditions |
-| Dosing | `dose` | Dose limits and calculation caveats |
-| Allergy | `allergy` | Patient allergy matching and cross-reactivity |
+| Dosing | `dose` | 19K+ products, dual-source |
 
 ## API Tiers
 
 | | Free | Pro | Enterprise |
 |---|------|-----|------------|
-| Monthly quota | 100 checks | 15,000+ checks | Custom |
-| Requests/min | 20 anti-abuse | 60 anti-abuse | Custom |
-| Requests/day | 60 safety cap | 500 safety cap | Custom |
+| Requests/min | 20 | 60 | Custom |
+| Requests/day | 60 | 500 | Custom |
 | Max drugs/request | 20 | 20 | 50 |
 | Auth | API Key | API Key | API Key |
-| Database | Full (66,704 products) | Full | Full |
+| Database | Full (33,000 Egyptian pharma + semi-pharma products) | Full | Full |
 | Support | Email | Priority | Dedicated |
 
 ## Documentation

@@ -7,12 +7,34 @@ subtitle: Official client libraries for the SafeRx Drug Safety API
 
 | Language | Package | Install | Status |
 |----------|---------|---------|--------|
-| Python | [saferx-pharma](https://pypi.org/project/saferx-pharma/) | `pip install saferx-pharma` | Generated from API contract v1.3.0 |
-| TypeScript | [saferx-pharma-sdk](https://www.npmjs.com/package/saferx-pharma-sdk) | `npm install saferx-pharma-sdk` | Generated from API contract v1.3.0 |
-| C# | [SafeRx](https://www.nuget.org/packages/SafeRx) | `dotnet add package SafeRx` | Generated from API contract v1.3.0 |
+| Python | [saferx-pharma](https://pypi.org/project/saferx-pharma/) | `pip install saferx-pharma` | Available (v1.4.1) |
+| TypeScript | [saferx-pharma-sdk](https://www.npmjs.com/package/saferx-pharma-sdk) | `npm install saferx-pharma-sdk` | Available (v0.0.36) |
+| C# | [SafeRx](https://www.nuget.org/packages/SafeRx) | `dotnet add package SafeRx` | Available (v1.4.2) |
 | Java | `online.saferx:saferx-java` (Maven) | — | Planned |
 | Go | `github.com/KaRamHelal/saferx-go` | — | Planned |
 | Swift | `github.com/KaRamHelal/saferx-swift` | — | Planned |
+
+<Info>
+Current public package status:
+
+- REST API: live and verified
+- Python SDK: published and installable on PyPI (`1.4.1`)
+- TypeScript SDK: published and installable on npm (`0.0.36`)
+- MCP server: published and installable on npm (`1.3.3`)
+- C# SDK: published and verified on NuGet (`1.4.2`) with .NET 8 test coverage
+</Info>
+
+## Enterprise Integration Matrix
+
+If you are choosing an integration path for a production system, use this matrix:
+
+| Path | Best For | Install / Call | Status |
+|------|----------|----------------|--------|
+| REST API | Direct backend integration | `POST https://saferx.online/api/drug_safety/check` | Live and verified |
+| Python SDK | Python services and automation | `pip install saferx-pharma` | Published (`1.4.1`) |
+| TypeScript SDK | Node.js services and web apps | `npm install saferx-pharma-sdk` | Published (`0.0.36`) |
+| C# SDK | .NET / enterprise systems | `dotnet add package SafeRx` | Published (`1.4.2`) |
+| MCP Server | Claude Desktop, Claude Code, Cursor | `npx @saferx_pharma/mcp-server` | Published (`1.3.3`) |
 
 ## SDK Features
 
@@ -47,10 +69,9 @@ Or register at the [Developer Portal](https://saferx.online/developer) for a por
 
 | Prefix | Tier | Limits | How to get |
 |--------|------|--------|------------|
-| `sfx_free_` | Free | 100 checks/month, 20 rpm anti-abuse | `POST /api/developers/keys/free` → verify email |
-| `sk_test_` | Free | 100 checks/month, 20 rpm anti-abuse | [Developer Portal](https://saferx.online/developer) |
-| `sk_startup_` | Startup | 100 checks/month, 20 rpm anti-abuse | Developer-group promo after email verification |
-| `sk_live_` | Pro/Enterprise | 15,000+ checks/month, 60-200 rpm | Contact support@saferx.online |
+| `sfx_free_` | Free | 20 rpm, 60 rpd | `POST /api/developers/keys/free` → verify email |
+| `sk_test_` | Free | 20 rpm, 60 rpd | [Developer Portal](https://saferx.online/developer) |
+| `sk_live_` | Pro/Enterprise | 60-200 rpm | Contact support@saferx.online |
 
 ## Field Name Convention
 

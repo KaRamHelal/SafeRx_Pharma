@@ -49,54 +49,14 @@ jobs:
       - name: Install Fern CLI
         run: npm install -g fern-api
 
-      - name: Resolve SDK package versions
-        id: sdk_versions
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY' >> "$GITHUB_OUTPUT"
-          import json
-          import urllib.request
-
-          def bump_patch(version: str) -> str:
-              parts = version.strip().split(".")
-              if len(parts) != 3 or not all(part.isdigit() for part in parts):
-                  raise SystemExit(f"Cannot bump non-semver package version: {version}")
-              parts[2] = str(int(parts[2]) + 1)
-              return ".".join(parts)
-
-          def latest_semver(versions):
-              parsed = []
-              for version in versions:
-                  parts = version.strip().split(".")
-                  if len(parts) == 3 and all(part.isdigit() for part in parts):
-                      parsed.append((tuple(int(part) for part in parts), version))
-              if not parsed:
-                  raise SystemExit("No numeric semver package versions found")
-              return sorted(parsed)[-1][1]
-
-          pypi = json.load(urllib.request.urlopen("https://pypi.org/pypi/saferx-pharma/json", timeout=20))
-          python_version = bump_patch(pypi["info"]["version"])
-
-          npm = json.load(urllib.request.urlopen("https://registry.npmjs.org/saferx-pharma-sdk", timeout=20))
-          ts_version = bump_patch(latest_semver(npm["versions"]))
-
-          nuget = json.load(urllib.request.urlopen("https://api.nuget.org/v3-flatcontainer/saferx/index.json", timeout=20))
-          csharp_version = bump_patch(latest_semver(nuget["versions"]))
-
-          print(f"python={python_version}")
-          print(f"typescript={ts_version}")
-          print(f"csharp={csharp_version}")
-          PY
-
       - name: Generate & Publish Python SDK
-        run: fern generate --group python-sdk --api drug-safety --version "${{ steps.sdk_versions.outputs.python }}"
+        run: fern generate --group python-sdk --api drug-safety
         env:
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
 
       - name: Generate & Publish TypeScript SDK
-        run: fern generate --group ts-sdk --api drug-safety --version "${{ steps.sdk_versions.outputs.typescript }}"
+        run: fern generate --group ts-sdk --api drug-safety
         env:
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -107,35 +67,10 @@ jobs:
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
 
       - name: Fix & Publish C# SDK
-        shell: bash
         run: |
-          set -euo pipefail
           python scripts/fix_csharp_sdk_bug.py --pharma-root .
-          SDK_VERSION="${{ steps.sdk_versions.outputs.csharp }}"
-          export SDK_VERSION
-          echo "Packing C# SDK as SafeRx ${SDK_VERSION}"
-          dotnet pack fern/generated/csharp-sdk/src/SaferxApi/SaferxApi.csproj -c Release -p:Version="$SDK_VERSION"
-          dotnet nuget push "fern/generated/csharp-sdk/src/SaferxApi/bin/Release/SafeRx.${SDK_VERSION}.nupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
-          echo "Checking NuGet registry visibility for SafeRx ${SDK_VERSION}"
-          python - <<'PY'
-          import json
-          import os
-          import time
-          import urllib.request
-
-          expected = os.environ["SDK_VERSION"]
-          url = "https://api.nuget.org/v3-flatcontainer/saferx/index.json"
-          for attempt in range(1, 31):
-              data = json.load(urllib.request.urlopen(url, timeout=20))
-              versions = data.get("versions", [])
-              if expected.lower() in [v.lower() for v in versions]:
-                  print(f"SafeRx {expected} is visible on NuGet")
-                  break
-              print(f"SafeRx {expected} not indexed yet (attempt {attempt}/30); waiting...")
-              time.sleep(20)
-          else:
-              print(f"::warning::SafeRx {expected} was pushed successfully but is not visible in the NuGet flat-container index yet. Continuing so MCP/docs publish is not skipped by NuGet indexing lag.")
-          PY
+          dotnet pack fern/generated/csharp-sdk/src/SaferxApi/SaferxApi.csproj -c Release
+          dotnet nuget push fern/generated/csharp-sdk/src/SaferxApi/bin/Release/SafeRx.*.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 

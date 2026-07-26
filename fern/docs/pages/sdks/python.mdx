@@ -22,12 +22,10 @@ client = SafeRxClient(
 # Check drug safety
 result = client.drug_safety.check(
     drugs=["Augmentin 1g", "Glucophage 500mg", "Marivan"],
-    include=["ae", "ddi", "pllr", "food", "clinical", "dose", "allergy"],
+    include=["ae", "ddi", "pllr", "food", "clinical", "dose"],
     patient_profile={
-        "age": 72,
-        "crcl": 25,
+        "populations": ["geriatric"],
         "conditions": ["diabetes"],
-        "allergies": ["penicillin"],
     },
     lang="en",
 )
@@ -35,8 +33,6 @@ result = client.drug_safety.check(
 # Access resolved drugs (typed Pydantic models)
 for drug in result.drugs:
     print(f"{drug.brand_name} ({drug.active_ingredient})")
-    print(f"  display: {drug.display_name}, route: {drug.route}, form: {drug.form}")
-    print(f"  uses: {drug.pharma_uses}")
     print(f"  sfrx_id: {drug.sfrx_id}, Price: {drug.price_egp} EGP")
 
 # Check safety data
@@ -49,15 +45,6 @@ if result.safety and result.safety.side_effects:
 
 if result.safety and result.safety.interactions:
     print(f"Interactions: {result.safety.interactions.count}")
-
-if result.safety and result.safety.clinical:
-    for alert in result.safety.clinical.population_alerts or []:
-        if getattr(alert, "requires_dose_adjustment", False):
-            print(f"Dose adjustment: {alert.drug} {alert.population} -> {alert.dose_recommendation}")
-
-if result.safety and result.safety.allergy:
-    for warning in result.safety.allergy.warnings or []:
-        print(f"Allergy: {warning.drug_name} matches {warning.patient_allergy}")
 ```
 
 ## Get Your API Key
@@ -116,16 +103,9 @@ The Python SDK uses **snake_case** attribute names with typed Pydantic models:
 | Attribute | Type | Example |
 |-----------|------|---------|
 | `brand_name` | str | `"AUGMENTIN 1GM 14 TAB"` |
-| `display_name` | str | `"AUGMENTIN 1GM"` |
 | `sfrx_id` | str | `"SRX-010-004748"` |
 | `parent_sfrx_id` | str \| None | `None` |
 | `active_ingredient` | str | `"Amoxicillin + Clavulanic Acid"` |
-| `route` | str | `"oral"` |
-| `strength` | str | `"1 GM"` |
-| `pharma_uses` | str | `"Bacterial infections..."` |
-| `description` | str | Public product description |
-| `mechanism` | str | Mechanism summary |
-| `warnings` | str | Public warning summary |
 | `manufacturer_en` | str | `"GLAXOSMITHKLINE"` |
 | `supplier_en` | str | `""` |
 | `price_egp` | float | `108.0` |
@@ -134,8 +114,6 @@ The Python SDK uses **snake_case** attribute names with typed Pydantic models:
 | `interactions` | InteractionsData | `{ count, summary, interactions }` |
 | `condition_alerts` | List[ClinicalAlert] | Clinical condition alerts |
 | `population_alerts` | List[ClinicalAlert] | Clinical population alerts |
-| `dosing` | Dict[str, DosingData] | Dose limits, display summary, monitoring display |
-| `allergy` | AllergyData | Allergy warnings and product-family reference data |
 
 ## Configuration
 
@@ -151,10 +129,9 @@ client = SafeRxClient(
 
 | Prefix | Tier | Limits | How to get |
 |--------|------|--------|------------|
-| `sfx_free_` | Free | 100 checks/month, 20 rpm anti-abuse | `POST /api/developers/keys/free` |
-| `sk_test_` | Free | 100 checks/month, 20 rpm anti-abuse | [Developer Portal](https://saferx.online/developer) |
-| `sk_startup_` | Startup | 100 checks/month, 20 rpm anti-abuse | Developer-group promo after email verification |
-| `sk_live_` | Pro/Enterprise | 15,000+ checks/month, 60-200 rpm | Contact support@saferx.online |
+| `sfx_free_` | Free | 20 rpm, 60 rpd | `POST /api/developers/keys/free` |
+| `sk_test_` | Free | 20 rpm, 60 rpd | [Developer Portal](https://saferx.online/developer) |
+| `sk_live_` | Pro/Enterprise | 60-200 rpm | Contact support@saferx.online |
 
 ## Requirements
 
