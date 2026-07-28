@@ -55,6 +55,11 @@ def test_public_response_schemas_are_closed() -> None:
     serialized = (ROOT / "openapi/components.yaml").read_text()
     assert "additionalProperties: true" not in serialized
     assert components["components"]["securitySchemes"]["enterpriseApiKey"]["name"] == "X-SafeRx-API-Key"
+    public_surface_values = components["components"]["schemas"]["SafetyCheckResponse"]["properties"]["surface"]["enum"]
+    assert set(public_surface_values) == {"browser", "enterprise_api", "partner_api"}
+    assert "enterprise_mcp" not in serialized
+    assert "admin_console" not in serialized
+    assert "private" not in public_surface_values
 
 
 def test_signature_binds_the_full_enterprise_path() -> None:

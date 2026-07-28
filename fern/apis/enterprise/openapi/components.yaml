@@ -684,10 +684,7 @@ components:
           enum:
           - browser
           - enterprise_api
-          - enterprise_mcp
           - partner_api
-          - admin_console
-          - private
         locale:
           type: string
           enum:

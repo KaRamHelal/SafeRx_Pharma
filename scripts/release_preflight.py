@@ -47,6 +47,7 @@ FORBIDDEN_PUBLIC_PATTERNS = (
     r"(?i)internal\.svc",
     r"(?i)(private[_-]?key|client[_-]?secret|password|credential)",
     r"(?i)(person[_-]?specific|raw[_-]?pipeline|model[_-]?private)",
+    r"(?i)(enterprise_mcp|admin_console)",
 )
 
 

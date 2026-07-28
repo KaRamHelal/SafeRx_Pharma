@@ -1,12 +1,12 @@
 ---
-title: MCP adapter
-subtitle: Bounded tool access for AI hosts
+title: MCP integration
+subtitle: A separately controlled integration surface
 ---
 
-The MCP adapter exposes only the approved Enterprise tool projection. It forwards calls to Enterprise routes, preserves typed problem outcomes, and must not invent safety conclusions from missing or unavailable domains.
+MCP is not part of the public authenticated Enterprise REST release described by
+this documentation. Public integrations should use the signed REST API and its
+published SDKs.
 
-```bash
-SAFERX_API_KEY=YOUR_ENTERPRISE_KEY npx @saferx_pharma/mcp-server
-```
-
-The adapter signs the Enterprise request. Keep the key in the host environment, not in the MCP configuration committed to a repository. Tool names and input shapes are bound to the checked-in contract.
+MCP access, implementation details, and release artifacts are controlled
+separately for approved internal consumers. This page intentionally does not
+publish internal tool names, routes, schemas, package commands, or credentials.

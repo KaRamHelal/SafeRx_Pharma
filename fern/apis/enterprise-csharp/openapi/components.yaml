@@ -684,10 +684,7 @@ components:
           enum:
           - browser
           - enterprise_api
-          - enterprise_mcp
           - partner_api
-          - admin_console
-          - private
         locale:
           type: string
           enum:
@@ -782,3 +779,81 @@ components:
           items:
             $ref: '#/components/schemas/Locale'
           minItems: 2
+    AllergyResolution:
+      type: object
+      additionalProperties: false
+      required: [request_id, schema_version, locale, items]
+      properties:
+        request_id: {type: string}
+        schema_version: {type: string}
+        locale: {$ref: '#/components/schemas/Locale'}
+        items:
+          type: array
+          items: {type: object, additionalProperties: false}
+        source_provenance: {$ref: '#/components/schemas/SourceProvenance'}
+        display_obligations: {$ref: '#/components/schemas/DisplayObligations'}
+    AllergyFamilyList:
+      type: object
+      additionalProperties: false
+      required: [items, pagination]
+      properties:
+        items: {type: array, items: {type: object, additionalProperties: false}}
+        pagination: {$ref: '#/components/schemas/Pagination'}
+        locale: {type: string}
+        source_provenance: {$ref: '#/components/schemas/SourceProvenance'}
+    AllergySubstanceList:
+      type: object
+      additionalProperties: false
+      required: [items, pagination]
+      properties:
+        items: {type: array, items: {type: object, additionalProperties: false}}
+        pagination: {$ref: '#/components/schemas/Pagination'}
+        locale: {type: string}
+        source_provenance: {$ref: '#/components/schemas/SourceProvenance'}
+    PrescriptionUploadRequest:
+      type: object
+      additionalProperties: false
+      required: [file]
+      properties:
+        file: {type: string, format: binary}
+        pipeline_profile: {type: string, enum: [v5_fast, v7_smart, auto], default: auto}
+        source: {type: string, default: web}
+        device_id: {type: string}
+        include_ddi: {type: boolean, default: true}
+        include_allergy: {type: boolean, default: true}
+        include_food: {type: boolean, default: false}
+        include_meal: {type: boolean, default: false}
+        include_dose: {type: boolean, default: false}
+        include_clinical: {type: boolean, default: false}
+        include_pllr: {type: boolean, default: false}
+    PrescriptionCreated:
+      type: object
+      additionalProperties: false
+      required: [request_id, prescription_id, status, educational_context, source_provenance, review]
+      properties:
+        request_id: {type: string}
+        prescription_id: {type: string}
+        status: {type: string, enum: [accepted, processing]}
+        educational_context: {$ref: '#/components/schemas/EducationalContext'}
+        source_provenance: {$ref: '#/components/schemas/SourceProvenance'}
+        review: {$ref: '#/components/schemas/ReviewState'}
+    PrescriptionResult:
+      type: object
+      additionalProperties: false
+      required: [request_id, prescription_id, workflow_id, status, created_at, updated_at, transitions, locale, educational_context, source_provenance, review, candidate_medications, display_obligations]
+      properties:
+        request_id: {type: string}
+        prescription_id: {type: string}
+        workflow_id: {type: string}
+        status: {type: string}
+        pipeline_profile: {type: [string, 'null']}
+        reason_code: {type: [string, 'null']}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+        transitions: {type: array, items: {type: object, additionalProperties: false}}
+        locale: {type: string}
+        educational_context: {$ref: '#/components/schemas/EducationalContext'}
+        source_provenance: {$ref: '#/components/schemas/SourceProvenance'}
+        review: {$ref: '#/components/schemas/ReviewState'}
+        candidate_medications: {type: array, items: {type: object, additionalProperties: false}}
+        display_obligations: {$ref: '#/components/schemas/DisplayObligations'}
