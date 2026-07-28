@@ -1,0 +1,72 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "predicate": {
+    "buildType": "saferx.mis/enterprise-sdk-generator",
+    "generator": "scripts/generate_enterprise_sdks.py",
+    "materials": [
+      {
+        "digest": {
+          "sha256": "63907d3efab02d7d3d53d76263c57ee71179ebb9f1815a00d4c01b0419d92f20"
+        },
+        "uri": "openapi/components.yaml"
+      },
+      {
+        "digest": {
+          "sha256": "c8e83084dd7b4904f59ae658258c0bc2c573aee42b41e699e764c877f108e670"
+        },
+        "uri": "openapi/enterprise-v1.yaml"
+      }
+    ]
+  },
+  "predicateType": "https://slsa.dev/provenance/v1",
+  "subject": [
+    {
+      "digest": {
+        "sha256": "06810d434aab8fc8c8854fd59f283d29e45d54f782002c0d679b861d3d3fd841"
+      },
+      "name": "sdks/csharp/SafeRx.csproj"
+    },
+    {
+      "digest": {
+        "sha256": "5ba7fe41e772eac1dc0872b397a8a7233d3a7c7437f068e4029e6796c04aaf56"
+      },
+      "name": "sdks/csharp/SafeRxClient.cs"
+    },
+    {
+      "digest": {
+        "sha256": "6babfacb7ecf9b3c350c29d8315d1aa8547c501aa4ac7d20ce52cd5af2439a16"
+      },
+      "name": "sdks/python/pyproject.toml"
+    },
+    {
+      "digest": {
+        "sha256": "07bec7e0f872f0462f00be1e705c7b1b69b35a3d6fd8d343bebdefa428580fe9"
+      },
+      "name": "sdks/python/src/saferx_pharma/__init__.py"
+    },
+    {
+      "digest": {
+        "sha256": "40535b38c91c8a51ebcb1cfe0ff39e8cbe3b4c45947fcd8b6150afed96d5d145"
+      },
+      "name": "sdks/python/src/saferx_pharma/client.py"
+    },
+    {
+      "digest": {
+        "sha256": "92cd9cbc964ee522ed26ebd3d063f7d05fd312e6aa7848c05c467f8de7e2307e"
+      },
+      "name": "sdks/typescript/package.json"
+    },
+    {
+      "digest": {
+        "sha256": "d5ef623f51a9424ff5e8e9e77c5a45fde5ffa5959046934a79adad787b03ac3f"
+      },
+      "name": "sdks/typescript/src/client.ts"
+    },
+    {
+      "digest": {
+        "sha256": "1dfaa085edc28800c8dbccf0c8093b855158371f8ee63da1395ec3de5b575d78"
+      },
+      "name": "sdks/typescript/tsconfig.json"
+    }
+  ]
+}

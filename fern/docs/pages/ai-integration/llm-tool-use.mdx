@@ -1,119 +1,14 @@
 ---
-title: LLM Tool Use
-subtitle: Ready-to-use function calling schemas for OpenAI, Anthropic, and Google
+title: Tool use
+subtitle: A safe calling pattern for agents
 ---
 
-## OpenAI Function Calling
+A useful tool wrapper should:
 
-```json
-{
-  "type": "function",
-  "function": {
-    "name": "check_drug_safety",
-    "description": "Screen drugs for safety issues including adverse effects, drug interactions, pregnancy/lactation risks, food interactions, clinical considerations, and dosing. Covers 33,000 Egyptian pharma and semi-pharma products.",
-    "strict": true,
-    "parameters": {
-      "type": "object",
-      "required": ["drugs"],
-      "additionalProperties": false,
-      "properties": {
-        "drugs": {
-          "type": "array",
-          "items": {"type": "string"},
-          "description": "Drug names (trade or generic, max 20)"
-        },
-        "patient_profile": {
-          "type": "object",
-          "properties": {
-            "populations": {
-              "type": "array",
-              "items": {"type": "string", "enum": ["pediatric", "geriatric", "cardiac", "hepatic", "renal"]}
-            },
-            "conditions": {
-              "type": "array",
-              "items": {"type": "string", "enum": ["arrhythmia", "asthma", "bph", "coronary", "depression", "diabetes", "epilepsy", "gi_bleeding", "glaucoma", "heart_failure", "hypertension", "hyperthyroidism", "hypothyroidism", "parkinsons"]}
-            }
-          },
-          "additionalProperties": false
-        },
-        "include": {
-          "type": "array",
-          "items": {"type": "string", "enum": ["ae", "ddi", "pllr", "food", "clinical", "dose"]},
-          "description": "Safety domains to check (omit for all)"
-        },
-        "lang": {
-          "type": "string",
-          "enum": ["en", "ar"],
-          "description": "Response language"
-        }
-      }
-    }
-  }
-}
-```
+1. validate medication inputs before the request;
+2. request only the domains required by the workflow;
+3. preserve `request_id`, `result_id`, review state, limitations, and source metadata;
+4. render critical signals before explanatory prose;
+5. stop and request professional review when the response requires it.
 
-## Anthropic Claude Tool Use
-
-```json
-{
-  "name": "check_drug_safety",
-  "description": "Screen drugs for safety issues including adverse effects, drug interactions, pregnancy/lactation risks, food interactions, clinical considerations, and dosing. Covers 33,000 Egyptian pharma and semi-pharma products.",
-  "input_schema": {
-    "type": "object",
-    "required": ["drugs"],
-    "properties": {
-      "drugs": {
-        "type": "array",
-        "items": {"type": "string"},
-        "description": "Drug names (trade or generic, max 20)"
-      },
-      "patient_profile": {
-        "type": "object",
-        "properties": {
-          "populations": {
-            "type": "array",
-            "items": {"type": "string", "enum": ["pediatric", "geriatric", "cardiac", "hepatic", "renal"]}
-          },
-          "conditions": {
-            "type": "array",
-            "items": {"type": "string", "enum": ["arrhythmia", "asthma", "bph", "coronary", "depression", "diabetes", "epilepsy", "gi_bleeding", "glaucoma", "heart_failure", "hypertension", "hyperthyroidism", "hypothyroidism", "parkinsons"]}
-          }
-        }
-      },
-      "include": {
-        "type": "array",
-        "items": {"type": "string", "enum": ["ae", "ddi", "pllr", "food", "clinical", "dose"]}
-      },
-      "lang": {
-        "type": "string",
-        "enum": ["en", "ar"]
-      }
-    }
-  }
-}
-```
-
-## Google Gemini Function Declaration
-
-```json
-{
-  "name": "check_drug_safety",
-  "description": "Screen drugs for safety issues including adverse effects, drug interactions, pregnancy/lactation risks, food interactions, clinical considerations, and dosing. Covers 33,000 Egyptian pharma and semi-pharma products.",
-  "parameters": {
-    "type": "OBJECT",
-    "required": ["drugs"],
-    "properties": {
-      "drugs": {
-        "type": "ARRAY",
-        "items": {"type": "STRING"},
-        "description": "Drug names (trade or generic, max 20)"
-      },
-      "lang": {
-        "type": "STRING",
-        "enum": ["en", "ar"],
-        "description": "Response language"
-      }
-    }
-  }
-}
-```
+The API does not authorize autonomous dispensing or treatment changes.

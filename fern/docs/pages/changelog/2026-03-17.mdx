@@ -1,49 +1,20 @@
-# March 17, 2026
-
-## Conditions Enum Fix — All SDKs + MCP Server
-
-**Affected packages:** Python v0.0.10, TypeScript v0.0.11, C# v0.0.6, MCP Server v1.0.2
-
-The `conditions` enum was out of sync across all SDKs and the MCP server. Corrected to match the 14 conditions supported by the live API.
-
-**Before (7 stale values):**
-
-```
-diabetes, hypertension, renal_impairment, hepatic_impairment,
-cardiac_disease, peptic_ulcer, thyroid_disorder
-```
-
-**After (14 correct values):**
-
-```
-diabetes, hypertension, renal_impairment, hepatic_impairment,
-cardiac_disease, peptic_ulcer, thyroid_disorder,
-asthma, epilepsy, depression, anxiety, obesity, anemia, osteoporosis
-```
-
-**Upgrade:**
-
-```bash
-# Python
-pip install --upgrade saferx-pharma
-
-# TypeScript
-npm install saferx-pharma-sdk@latest
-
-# C#
-dotnet add package SafeRx --version 0.0.6
-
-# MCP Server
-npx @saferx_pharma/mcp-server@latest
-```
-
+---
+title: 2026 03 17
+subtitle: SafeRx Enterprise release notes
 ---
 
-## API Bug Fixes
+This page records the current MIS Enterprise documentation history. Use the [Enterprise API reference](/api-reference) and the checked-in [OpenAPI contract](https://github.com/KaRamHelal/SafeRx_Pharma/blob/main/openapi/enterprise-v1.yaml) for the authoritative operation and schema definitions.
 
-**Fixed:** `POST /api/drug_safety/check` was returning a 500 error on every request due to an internal argument error introduced in a recent security refactor. The endpoint is now fully operational.
+Every Enterprise request is signed with `saferx-hmac-sha256-v1`. Send these headers:
 
-**No Breaking Changes:**
+| Header | Purpose |
+|---|---|
+| `X-SafeRx-API-Key` | Enterprise key identifier and signing secret input |
+| `X-SafeRx-Timestamp` | UTC timestamp with an explicit offset |
+| `X-SafeRx-Nonce` | One-use replay protection value |
+| `X-SafeRx-Signature` | Base64url HMAC-SHA256 signature |
 
-- Request and response structure unchanged
-- All SDK clients compatible with the fix
+The signed canonical message is the uppercase method, escaped path, sorted query, lowercase SHA-256 body digest, timestamp, and nonce joined by newlines. The SDK clients implement this exactly. Never place credentials in source control or logs.
+
+
+Production availability and package publication remain controlled by the MIS release gate.

@@ -1,0 +1,5 @@
+[project]
+name = "saferx-pharma"
+version = "0.1.0rc1"
+requires-python = ">=3.11"
+dependencies = []

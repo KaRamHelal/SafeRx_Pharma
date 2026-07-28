@@ -1,68 +1,10 @@
 ---
-title: Which Integration Should I Use?
-subtitle: Pick the right SafeRx integration path for your team and stack
+title: Choose an integration
+subtitle: Pick the smallest Enterprise integration surface
 ---
 
-## Overview
+- Use REST when your platform already owns HTTP signing and typed models.
+- Use Python, TypeScript, or C# when you want signing and retry behavior in a client.
+- Use MCP when an AI host needs the bounded tool projection.
 
-SafeRx exposes five developer entry points for enterprise use:
-
-- REST API
-- Python SDK
-- TypeScript SDK
-- C# SDK
-- MCP Server
-
-All five are valid. The right choice depends on the developer’s stack and workflow.
-
-## Recommended By Use Case
-
-| Developer / Product Type | Recommended Path | Why |
-|---|---|---|
-| AI assistants and agent products | MCP Server | Best fit for Claude Desktop, Claude Code, Cursor, and other MCP clients |
-| .NET hospital or enterprise systems | C# SDK | Natural fit for ASP.NET, desktop, and enterprise .NET stacks |
-| Pharmacy dispensing and POS systems | C# SDK or TypeScript SDK | Use C# for Windows/.NET POS; use TypeScript for web-based or browser-hosted POS |
-| Mobile health apps | REST API | Works cleanly from Android and iOS without platform-specific SDK overhead |
-| Python automation and internal tools | Python SDK | Best fit for scripts, automation, and clinical workflows in Python |
-| Node.js / web backends | TypeScript SDK | Best fit for JS/TS services and server-side web apps |
-
-## Quick Rules
-
-1. Use the **MCP Server** if the product is an AI assistant or an LLM-first workflow.
-2. Use the **SDK that matches your backend stack** if you want typed clients.
-3. Use the **REST API** if you want the most portable integration or you are building mobile.
-4. If your team is split across stacks, standardize on the **REST API** first and add SDKs where they reduce friction.
-
-## When To Choose REST API
-
-Choose the REST API when:
-
-- you need one integration surface across multiple languages
-- you are building mobile or cross-platform clients
-- you want the smallest possible dependency footprint
-- you are creating a custom integration layer that may later feed SDKs or MCP
-
-## When To Choose An SDK
-
-Choose an SDK when:
-
-- your team works in one language and wants typed models
-- you want easier request/response handling
-- you prefer generated clients over manual HTTP calls
-- you want SDK docs and examples to match your language ecosystem
-
-## When To Choose MCP
-
-Choose MCP when:
-
-- the user experience is assistant-first
-- the integration target is Claude Desktop, Claude Code, Cursor, or another MCP client
-- you want to expose SafeRx as a tool rather than a raw API
-
-## Start Here
-
-If you are still unsure:
-
-1. Read the [SDKs Overview](/sdks/client-libraries/overview)
-2. Read the [AI Integration Overview](/guides/ai-integration/overview)
-3. Pick the path that matches your production stack
+All three routes share the same operation IDs and response policy.

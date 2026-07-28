@@ -1,92 +1,16 @@
 ---
-title: SDKs Overview
-subtitle: Official MIS 2.0.1 client libraries for the SafeRx Drug Safety API
+title: SDKs
+subtitle: Signing-aware Enterprise client sources
 ---
 
-## Available SDKs
+The repository clients are generated from `openapi/enterprise-v1.yaml` and use the same operation IDs and HMAC request contract as the REST surface.
 
-| Language | Package | Install | Status |
-|----------|---------|---------|--------|
-| Python | [saferx-pharma](https://pypi.org/project/saferx-pharma/) | `pip install saferx-pharma==2.0.1` | MIS 2.0.1 |
-| TypeScript | [saferx-pharma-sdk](https://www.npmjs.com/package/saferx-pharma-sdk) | `npm install saferx-pharma-sdk@2.0.1` | MIS 2.0.1 |
-| C# | [SafeRx](https://www.nuget.org/packages/SafeRx) | `dotnet add package SafeRx --version 2.0.1` | MIS 2.0.1 |
-| Java | `online.saferx:saferx-java` (Maven) | — | Planned |
-| Go | `github.com/KaRamHelal/saferx-go` | — | Planned |
-| Swift | `github.com/KaRamHelal/saferx-swift` | — | Planned |
+| Language | Source | Release state |
+|---|---|---|
+| Python | `sdks/python` | Internal release source |
+| TypeScript | `sdks/typescript` | Internal release source |
+| C# | `sdks/csharp` | Internal release source |
 
-<Info>
-Current public package status for the MIS 2.0.1 release:
-
-- REST API: live and verified
-- Python SDK: published and installable on PyPI (`2.0.1`)
-- TypeScript SDK: published and installable on npm (`2.0.1`)
-- MCP server: published and installable on npm (`2.0.1`)
-- C# SDK: published and verified on NuGet (`2.0.1`) with .NET 8 packaging
-</Info>
-
-## Enterprise Integration Matrix
-
-If you are choosing an integration path for a production system, use this matrix:
-
-| Path | Best For | Install / Call | Status |
-|------|----------|----------------|--------|
-| REST API | Direct backend integration | `POST https://saferx.online/api/drug_safety/check` | Live and verified |
-| Python SDK | Python services and automation | `pip install saferx-pharma==2.0.1` | Published (`2.0.1`) |
-| TypeScript SDK | Node.js services and web apps | `npm install saferx-pharma-sdk@2.0.1` | Published (`2.0.1`) |
-| C# SDK | .NET / enterprise systems | `dotnet add package SafeRx --version 2.0.1` | Published (`2.0.1`) |
-| MCP Server | Claude Desktop, Claude Code, Cursor | `npx @saferx_pharma/mcp-server@2.0.1` | Published (`2.0.1`) |
-
-## SDK Features
-
-All SDKs include:
-- Typed models for all request and response objects
-- Auto-retry with exponential backoff on 429 and 5xx responses
-- Async/await support where applicable
-- Full database access on all tiers
-
-## Authentication
-
-All SDKs require one credential:
-- **API Key** (`X-SafeRx-API-Key` header) — identifies your application and tier
-
-Get a free API key via email verification:
-```bash
-# Step 1: Request verification code
-curl -X POST https://saferx.online/api/developers/keys/free \
-  -H "Content-Type: application/json" \
-  -d '{"email":"you@example.com"}'
-# Check your email for 6-digit code
-
-# Step 2: Verify and receive key
-curl -X POST https://saferx.online/api/developers/keys/free/verify \
-  -H "Content-Type: application/json" \
-  -d '{"email":"you@example.com","code":"123456"}'
-```
-
-Or register at the [Developer Portal](https://saferx.online/developer) for a portal-managed key.
-
-## API Key Tiers
-
-| Prefix | Tier | Limits | How to get |
-|--------|------|--------|------------|
-| `sfx_free_` | Free | 20 rpm, 60 rpd | `POST /api/developers/keys/free` → verify email |
-| `sk_test_` | Free | 20 rpm, 60 rpd | [Developer Portal](https://saferx.online/developer) |
-| `sk_live_` | Pro/Enterprise | 60-200 rpm | Contact support@saferx.online |
-
-## Field Name Convention
-
-| SDK | Convention | Example |
-|-----|-----------|---------|
-| Python | snake_case (Pydantic) | `drug.brand_name`, `drug.sfrx_id` |
-| TypeScript | snake_case (matches spec) | `drug.brand_name`, `drug.sfrx_id` |
-| C# | PascalCase (.NET convention) | `drug.BrandName`, `drug.SfrxId` |
-| cURL / HTTP | snake_case (JSON) | `"brand_name"`, `"sfrx_id"` |
-
-<Warning>
-The TypeScript SDK does **not** convert field names to camelCase. All field names match the OpenAPI spec exactly using snake_case.
-</Warning>
-
-## Direct HTTP Integration
-
-If an SDK isn't available for your language, integrate directly using HTTP.
-The API uses standard JSON over HTTPS — see the [Quickstart](/api-reference/getting-started/quickstart) for examples in cURL, Python, TypeScript, and Java.
+These checked-in sources are generated integration artifacts. They are not
+published package availability claims; use the raw signed REST contract unless
+your organization has received an SDK release through the MIS release process.

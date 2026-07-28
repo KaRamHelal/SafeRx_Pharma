@@ -1,84 +1,22 @@
 ---
-title: SafeRx Drug Safety API
-subtitle: One API call. Six safety domains. 33,000 Egyptian pharma + semi-pharma products.
+title: Welcome
+subtitle: SafeRx Enterprise authenticated API documentation
 ---
 
-The SafeRx Drug Safety API provides real-time drug safety screening for Egyptian pharmaceuticals. Submit drug names, get back comprehensive safety data across six clinical domains in a single response.
+This page describes the current MIS Enterprise API. Use the [Enterprise API reference](/api-reference) and the checked-in [OpenAPI contract](https://github.com/KaRamHelal/SafeRx_Pharma/blob/main/openapi/enterprise-v1.yaml) for the authoritative operation and schema definitions.
 
-<Callout intent="info">
-This is the MIS public release line. The current release is **2.0.1**. Use [docs.saferx.online](https://docs.saferx.online) as the primary host or [saferx.docs.buildwithfern.com](https://saferx.docs.buildwithfern.com) as the Fern host; both publish the same documentation site.
-</Callout>
+Every Enterprise request is signed with `saferx-hmac-sha256-v1`. Send these headers:
 
-## What You Can Do
+| Header | Purpose |
+|---|---|
+| `X-SafeRx-API-Key` | Enterprise key identifier and signing secret input |
+| `X-SafeRx-Timestamp` | UTC timestamp with an explicit offset |
+| `X-SafeRx-Nonce` | One-use replay protection value |
+| `X-SafeRx-Signature` | Base64url HMAC-SHA256 signature |
 
-<Cards>
-  <Card title="Adverse Effects" icon="fa-solid fa-triangle-exclamation">
-    Black Box Warnings, severe and common side effects, monitoring parameters, and dose-response classification for 33,000 Egyptian pharma + semi-pharma products with 98.2% coverage.
-  </Card>
-  <Card title="Drug Interactions" icon="fa-solid fa-arrows-split-up-and-left">
-    337,000+ interaction pairs with severity scoring (Minor → Contraindicated), clinical descriptions, and monitoring recommendations in English and Arabic.
-  </Card>
-  <Card title="Pregnancy & Lactation" icon="fa-solid fa-baby">
-    0–7 risk scale for both pregnancy and lactation across 24,512 mapped products, with clinical rationale and Black Box Warning data.
-  </Card>
-  <Card title="Food Interactions" icon="fa-solid fa-utensils">
-    38,000+ food-drug interactions including meal timing recommendations, food conflict severity, and Egyptian-specific food considerations.
-  </Card>
-  <Card title="Clinical Considerations" icon="fa-solid fa-stethoscope">
-    Population-specific safety data (pediatric, geriatric, cardiac, hepatic, renal) and condition-drug interaction alerts for 14 comorbidities.
-  </Card>
-  <Card title="Dosing" icon="fa-solid fa-pills">
-    Dual-source dosing safety with international reference standards and regulatory label data. 19,000+ products with max daily dose calculations and combo drug handling.
-  </Card>
-</Cards>
+The signed canonical message is the uppercase method, escaped path, sorted query, lowercase SHA-256 body digest, timestamp, and nonce joined by newlines. The SDK clients implement this exactly. Never place credentials in source control or logs.
 
-## How It Works
 
-```
-POST /api/drug_safety/check
-    │
-    ├── Drug Resolution (fuzzy matching)
-    │
-    ├── Parallel Safety Screening
-    │   ├── Adverse Effects
-    │   ├── Drug Interactions
-    │   ├── Pregnancy & Lactation
-    │   ├── Food Interactions
-    │   ├── Clinical Considerations
-    │   └── Dosing
-    │
-    ├── Alert Generation (critical items bubbled up)
-    │
-    └── Response (~40ms average)
-```
-
-## Key Numbers
-
-| Metric | Value |
-|--------|-------|
-| Products covered | 33,000 |
-| Interaction pairs | 337,000+ |
-| Side effects | 1.4M+ |
-| AE coverage | 98.2% |
-| Languages | English + Arabic |
-| Avg response time | ~40ms |
-
-## Get Started
-
-<Cards>
-  <Card title="Quickstart" icon="fa-solid fa-rocket" href="/api-reference/getting-started/quickstart">
-    Make your first API call in 60 seconds.
-  </Card>
-  <Card title="API Reference" icon="fa-solid fa-code" href="/api-reference/getting-started/quickstart">
-    Full endpoint documentation with interactive examples.
-  </Card>
-  <Card title="Choose Integration" icon="fa-solid fa-compass" href="/guides/integration-guides/which-integration-should-i-use">
-    Pick the right path for AI, mobile, POS, Python, TypeScript, or C#.
-  </Card>
-  <Card title="Authentication" icon="fa-solid fa-key" href="/api-reference/authentication/overview">
-    Set up token auth or API keys.
-  </Card>
-  <Card title="System Status" icon="fa-solid fa-signal" href="https://saferx.instatus.com">
-    Real-time API uptime and health monitoring.
-  </Card>
-</Cards>
+Enterprise REST access is available only to approved customers with an issued
+API key and the required route entitlement. MCP tools and package publication
+remain separate internal release surfaces.

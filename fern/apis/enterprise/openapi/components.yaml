@@ -1,0 +1,862 @@
+openapi: 3.1.1
+info:
+  title: SafeRx Enterprise Public Components
+  version: 2.0.2-preview.1
+paths: {}
+components:
+  securitySchemes:
+    enterpriseApiKey:
+      type: apiKey
+      in: header
+      name: X-SafeRx-API-Key
+      description: API key used as the HMAC signing secret. X-SafeRx-Timestamp, X-SafeRx-Nonce,
+        and X-SafeRx-Signature are also required.
+  parameters:
+    cursor:
+      name: cursor
+      in: query
+      required: false
+      schema:
+        type: string
+    idempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 200
+    limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 25
+    sfrxId:
+      name: sfrx_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^SRX-[0-9]{3}-[0-9]{6}$
+    signedNonce:
+      name: X-SafeRx-Nonce
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 256
+    signedSignature:
+      name: X-SafeRx-Signature
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    signedTimestamp:
+      name: X-SafeRx-Timestamp
+      in: header
+      required: true
+      schema:
+        type: string
+        format: date-time
+  schemas:
+    ClientSafetyCheckRequest:
+      type: object
+      required:
+      - medications
+      - locale
+      - requested_domains
+      properties:
+        locale:
+          type: string
+          enum:
+          - ar-EG
+          - ar
+          - en
+          - mixed
+        medications:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - input_text
+            properties:
+              client_medication_id:
+                type:
+                - string
+                - 'null'
+              input_text:
+                type: string
+                minLength: 1
+              sfrx_id:
+                type:
+                - string
+                - 'null'
+                pattern: ^SRX-[0-9]{3}-[0-9]{6}$
+              dose_text:
+                type:
+                - string
+                - 'null'
+              route:
+                type:
+                - string
+                - 'null'
+              frequency_text:
+                type:
+                - string
+                - 'null'
+        profile_context_mode:
+          type:
+          - string
+          - 'null'
+          enum:
+          - merge_saved_profile
+          - ignore_saved_profile
+          - saved_profile_only
+          - null
+        include_saved_current_medications:
+          type:
+          - boolean
+          - 'null'
+        requested_domains:
+          type: array
+          items:
+            type: string
+            enum:
+            - pllr
+            - ddi
+            - clinical_dose
+            - food_interactions
+            - meal_timing
+            - allergy
+          uniqueItems: true
+        idempotency_key:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+    IngredientList:
+      type: object
+      required:
+      - request_id
+      - schema_version
+      - locale
+      - educational_context
+      - source_provenance
+      - display_obligations
+      - items
+      - pagination
+      properties:
+        request_id:
+          type: string
+        schema_version:
+          type: string
+          pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
+        locale:
+          type: string
+          enum:
+          - ar-EG
+          - ar
+          - en
+          - mixed
+        educational_context:
+          $ref: '#/components/schemas/EducationalContext'
+        source_provenance:
+          $ref: '#/components/schemas/SourceProvenance'
+        display_obligations:
+          $ref: '#/components/schemas/DisplayObligations'
+        items:
+          type: array
+          items:
+            type: object
+            required:
+            - ingredient_id
+            - ingredient_type
+            - display_name
+            - linked_product_count
+            - linked_sfrx_ids
+            properties:
+              ingredient_id:
+                type: string
+              ingredient_type:
+                type: string
+                enum:
+                - active
+                - generic_component
+                - therapeutic_class
+              display_name:
+                $ref: '#/components/schemas/LocalizedString'
+              linked_product_count:
+                type: integer
+                minimum: 0
+              linked_sfrx_ids:
+                type: array
+                items:
+                  type: string
+              correction_anchors:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: false
+            additionalProperties: false
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+      additionalProperties: false
+    MedicationResolutionList:
+      type: object
+      required:
+      - request_id
+      - schema_version
+      - locale
+      - educational_context
+      - source_provenance
+      - items
+      properties:
+        request_id:
+          type: string
+        schema_version:
+          type: string
+          pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
+        locale:
+          type: string
+          enum:
+          - ar-EG
+          - ar
+          - en
+          - mixed
+        educational_context:
+          $ref: '#/components/schemas/EducationalContext'
+        source_provenance:
+          $ref: '#/components/schemas/SourceProvenance'
+        display_obligations:
+          $ref: '#/components/schemas/DisplayObligations'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MedicationResolution'
+      additionalProperties: false
+    MedicationResolutionRequest:
+      type: object
+      required:
+      - request_id
+      - schema_version
+      - educational_context
+      - source_provenance
+      - locale
+      properties:
+        request_id:
+          type: string
+        schema_version:
+          type: string
+          pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
+        locale:
+          type: string
+          enum:
+          - ar-EG
+          - ar
+          - en
+          - mixed
+        educational_context:
+          $ref: '#/components/schemas/EducationalContext'
+        source_provenance:
+          $ref: '#/components/schemas/SourceProvenance'
+        review:
+          $ref: '#/components/schemas/ReviewState'
+        display_name:
+          $ref: '#/components/schemas/LocalizedString'
+        summary:
+          $ref: '#/components/schemas/LocalizedString'
+        items:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+        display_obligations:
+          $ref: '#/components/schemas/DisplayObligations'
+      additionalProperties: false
+    ProblemDetails:
+      type: object
+      required:
+      - type
+      - title
+      - status
+      - request_id
+      - code
+      properties:
+        type:
+          type: string
+          format: uri-reference
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+        instance:
+          type: string
+        request_id:
+          type: string
+        code:
+          type: string
+        retry_after_seconds:
+          type:
+          - integer
+          - 'null'
+        retry_after:
+          description: Compatibility projection of Retry-After in seconds for existing
+            web clients.
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        quota_metric:
+          type:
+          - string
+          - 'null'
+        rate_limit:
+          type:
+          - object
+          - 'null'
+          additionalProperties: false
+          properties:
+            limit:
+              type:
+              - integer
+              - 'null'
+              minimum: 0
+            remaining:
+              type:
+              - integer
+              - 'null'
+              minimum: 0
+            reset:
+              type:
+              - integer
+              - 'null'
+              minimum: 0
+        quota:
+          type:
+          - object
+          - 'null'
+          additionalProperties: false
+          properties:
+            metric:
+              type:
+              - string
+              - 'null'
+            limit:
+              type:
+              - integer
+              - 'null'
+              minimum: 0
+            remaining:
+              type:
+              - integer
+              - 'null'
+              minimum: 0
+            reset_at:
+              type:
+              - string
+              - 'null'
+              format: date-time
+            window_seconds:
+              type:
+              - integer
+              - 'null'
+              minimum: 0
+        safe_to_retry:
+          type: boolean
+      additionalProperties: false
+    RegistryProductDetail:
+      type: object
+      required:
+      - request_id
+      - schema_version
+      - locale
+      - educational_context
+      - source_provenance
+      - display_obligations
+      - sfrx_id
+      - product_tier
+      - display_name
+      - display_name_origin
+      - generic_components
+      - dosage_form
+      - route
+      - domain_availability
+      properties:
+        request_id:
+          type: string
+        schema_version:
+          type: string
+          pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
+        locale:
+          type: string
+          enum:
+          - ar-EG
+          - ar
+          - en
+          - mixed
+        educational_context:
+          $ref: '#/components/schemas/EducationalContext'
+        source_provenance:
+          $ref: '#/components/schemas/SourceProvenance'
+        display_obligations:
+          $ref: '#/components/schemas/DisplayObligations'
+        sfrx_id:
+          type: string
+        parent_sfrx_id:
+          type:
+          - string
+          - 'null'
+        product_tier:
+          type: string
+          enum:
+          - pharma
+          - semi
+          - non_pharma
+        display_name:
+          $ref: '#/components/schemas/LocalizedString'
+        display_name_origin:
+          $ref: '#/components/schemas/MedicationContentOrigin'
+        trade_name:
+          oneOf:
+          - $ref: '#/components/schemas/LocalizedString'
+          - type: 'null'
+        primary_name:
+          oneOf:
+          - $ref: '#/components/schemas/LocalizedString'
+          - type: 'null'
+        generic_name:
+          oneOf:
+          - $ref: '#/components/schemas/LocalizedString'
+          - type: 'null'
+        generic_components:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocalizedString'
+        strength:
+          type:
+          - string
+          - 'null'
+        dosage_form:
+          $ref: '#/components/schemas/LocalizedString'
+        route:
+          $ref: '#/components/schemas/LocalizedString'
+        manufacturer:
+          oneOf:
+          - $ref: '#/components/schemas/LocalizedString'
+          - type: 'null'
+        package:
+          oneOf:
+          - $ref: '#/components/schemas/LocalizedString'
+          - type: 'null'
+        barcode:
+          type:
+          - string
+          - 'null'
+        category_trail:
+          type: array
+          items:
+            type: object
+            required:
+            - level
+            - label
+            properties:
+              level:
+                type: string
+              label:
+                $ref: '#/components/schemas/LocalizedString'
+            additionalProperties: false
+        facts:
+          type: object
+          additionalProperties: false
+        clinical_uses:
+          oneOf:
+          - $ref: '#/components/schemas/LocalizedString'
+          - type: 'null'
+        pharmacology:
+          type: object
+          additionalProperties: false
+        prose_details:
+          type: object
+          additionalProperties: false
+        warnings:
+          type: object
+          additionalProperties: false
+        domain_availability:
+          type: object
+          additionalProperties:
+            type: string
+            enum:
+            - available
+            - not_available
+            - not_covered
+            - unknown
+        catalogue_filter_memberships:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogueFilterMembership'
+      additionalProperties: false
+    RegistryProductSummaryList:
+      type: object
+      required:
+      - request_id
+      - schema_version
+      - locale
+      - educational_context
+      - source_provenance
+      - items
+      - pagination
+      - display_obligations
+      properties:
+        request_id:
+          type: string
+        schema_version:
+          type: string
+          pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
+        locale:
+          type: string
+        educational_context:
+          $ref: '#/components/schemas/EducationalContext'
+        source_provenance:
+          $ref: '#/components/schemas/SourceProvenance'
+        items:
+          type: array
+          items:
+            type: object
+            required:
+            - sfrx_id
+            - display_name
+            - display_name_origin
+            - generic_name
+            - strength
+            - route
+            - dosage_form
+            properties:
+              sfrx_id:
+                type: string
+              display_name:
+                $ref: '#/components/schemas/LocalizedString'
+              display_name_origin:
+                $ref: '#/components/schemas/MedicationContentOrigin'
+              generic_name:
+                $ref: '#/components/schemas/LocalizedString'
+              strength:
+                type:
+                - string
+                - 'null'
+              route:
+                $ref: '#/components/schemas/LocalizedString'
+              dosage_form:
+                $ref: '#/components/schemas/LocalizedString'
+              catalogue_filter_memberships:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CatalogueFilterMembership'
+            additionalProperties: false
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        display_obligations:
+          $ref: '#/components/schemas/DisplayObligations'
+      additionalProperties: false
+    RegistrySuggestionList:
+      type: object
+      required:
+      - request_id
+      - schema_version
+      - locale
+      - educational_context
+      - source_provenance
+      - items
+      - display_obligations
+      properties:
+        request_id:
+          type: string
+        schema_version:
+          type: string
+          pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
+        locale:
+          type: string
+        educational_context:
+          $ref: '#/components/schemas/EducationalContext'
+        source_provenance:
+          $ref: '#/components/schemas/SourceProvenance'
+        items:
+          type: array
+          items:
+            type: object
+            required:
+            - sfrx_id
+            - display_name
+            - match_reason
+            - score
+            properties:
+              sfrx_id:
+                type: string
+              display_name:
+                $ref: '#/components/schemas/LocalizedString'
+              match_reason:
+                $ref: '#/components/schemas/LocalizedString'
+              score:
+                type: number
+            additionalProperties: false
+        display_obligations:
+          $ref: '#/components/schemas/DisplayObligations'
+      additionalProperties: false
+    SafetyCapabilities:
+      type: object
+      required:
+      - request_id
+      - schema_version
+      - educational_context
+      - source_provenance
+      - locale
+      properties:
+        request_id:
+          type: string
+        schema_version:
+          type: string
+          pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
+        locale:
+          type: string
+          enum:
+          - ar-EG
+          - ar
+          - en
+          - mixed
+        educational_context:
+          $ref: '#/components/schemas/EducationalContext'
+        source_provenance:
+          $ref: '#/components/schemas/SourceProvenance'
+        review:
+          $ref: '#/components/schemas/ReviewState'
+        display_name:
+          $ref: '#/components/schemas/LocalizedString'
+        summary:
+          $ref: '#/components/schemas/LocalizedString'
+        items:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+        display_obligations:
+          $ref: '#/components/schemas/DisplayObligations'
+      additionalProperties: false
+    SafetyCheckResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - request_id
+      - result_id
+      - schema_version
+      - surface
+      - locale
+      - educational_context
+      - source_provenance
+      - review
+      - summary
+      - signals
+      - domain_coverage
+      - unavailable_domains
+      - limitations
+      - display_obligations
+      - correction_anchors
+      properties:
+        request_id:
+          type: string
+        result_id:
+          type: string
+        schema_version:
+          type: string
+        surface:
+          type: string
+          enum:
+          - browser
+          - enterprise_api
+          - enterprise_mcp
+          - partner_api
+          - admin_console
+          - private
+        locale:
+          type: string
+          enum:
+          - ar-EG
+          - ar
+          - en
+          - mixed
+        educational_context:
+          $ref: '#/components/schemas/EducationalContext'
+        source_provenance:
+          $ref: '#/components/schemas/SourceProvenance'
+        review:
+          $ref: '#/components/schemas/ReviewState'
+        summary:
+          $ref: '#/components/schemas/LocalizedString'
+        signals:
+          type: array
+          items:
+            $ref: '#/components/schemas/SafetySignal'
+        domain_coverage:
+          type: array
+          items:
+            $ref: '#/components/schemas/SafetyBoardDomainState'
+          default: []
+        unavailable_domains:
+          type: array
+          items:
+            $ref: '#/components/schemas/SafetyBoardDomainState'
+          default: []
+        limitations:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocalizedString'
+          default: []
+        display_obligations:
+          $ref: '#/components/schemas/DisplayObligations'
+        correction_anchors:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+          default: []
+    EnterpriseStatus:
+      type: object
+      additionalProperties: false
+      required:
+      - request_id
+      - schema_version
+      - status
+      - capabilities
+      - supported_locales
+      properties:
+        request_id:
+          type: string
+        schema_version:
+          type: string
+          pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
+        status:
+          type: string
+        capabilities:
+          type: array
+          items:
+            type: string
+        supported_locales:
+          type: array
+          items:
+            $ref: '#/components/schemas/Locale'
+          minItems: 2
+    EnterpriseCapabilities:
+      type: object
+      additionalProperties: false
+      required:
+      - request_id
+      - schema_version
+      - status
+      - capabilities
+      - supported_locales
+      properties:
+        request_id:
+          type: string
+        schema_version:
+          type: string
+          pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
+        status:
+          type: string
+        capabilities:
+          type: array
+          items:
+            type: string
+        supported_locales:
+          type: array
+          items:
+            $ref: '#/components/schemas/Locale'
+          minItems: 2
+    AllergyResolution:
+      type: object
+      additionalProperties: false
+      required: [request_id, schema_version, locale, items]
+      properties:
+        request_id: {type: string}
+        schema_version: {type: string}
+        locale: {$ref: '#/components/schemas/Locale'}
+        items:
+          type: array
+          items: {type: object, additionalProperties: false}
+        source_provenance: {$ref: '#/components/schemas/SourceProvenance'}
+        display_obligations: {$ref: '#/components/schemas/DisplayObligations'}
+    AllergyFamilyList:
+      type: object
+      additionalProperties: false
+      required: [items, pagination]
+      properties:
+        items: {type: array, items: {type: object, additionalProperties: false}}
+        pagination: {$ref: '#/components/schemas/Pagination'}
+        locale: {type: string}
+        source_provenance: {$ref: '#/components/schemas/SourceProvenance'}
+    AllergySubstanceList:
+      type: object
+      additionalProperties: false
+      required: [items, pagination]
+      properties:
+        items: {type: array, items: {type: object, additionalProperties: false}}
+        pagination: {$ref: '#/components/schemas/Pagination'}
+        locale: {type: string}
+        source_provenance: {$ref: '#/components/schemas/SourceProvenance'}
+    PrescriptionUploadRequest:
+      type: object
+      additionalProperties: false
+      required: [file]
+      properties:
+        file: {type: string, format: binary}
+        pipeline_profile: {type: string, enum: [v5_fast, v7_smart, auto], default: auto}
+        source: {type: string, default: web}
+        device_id: {type: string}
+        include_ddi: {type: boolean, default: true}
+        include_allergy: {type: boolean, default: true}
+        include_food: {type: boolean, default: false}
+        include_meal: {type: boolean, default: false}
+        include_dose: {type: boolean, default: false}
+        include_clinical: {type: boolean, default: false}
+        include_pllr: {type: boolean, default: false}
+    PrescriptionCreated:
+      type: object
+      additionalProperties: false
+      required: [request_id, prescription_id, status, educational_context, source_provenance, review]
+      properties:
+        request_id: {type: string}
+        prescription_id: {type: string}
+        status: {type: string, enum: [accepted, processing]}
+        educational_context: {$ref: '#/components/schemas/EducationalContext'}
+        source_provenance: {$ref: '#/components/schemas/SourceProvenance'}
+        review: {$ref: '#/components/schemas/ReviewState'}
+    PrescriptionResult:
+      type: object
+      additionalProperties: false
+      required: [request_id, prescription_id, workflow_id, status, created_at, updated_at, transitions, locale, educational_context, source_provenance, review, candidate_medications, display_obligations]
+      properties:
+        request_id: {type: string}
+        prescription_id: {type: string}
+        workflow_id: {type: string}
+        status: {type: string}
+        pipeline_profile: {type: [string, 'null']}
+        reason_code: {type: [string, 'null']}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+        transitions: {type: array, items: {type: object, additionalProperties: false}}
+        locale: {type: string}
+        educational_context: {$ref: '#/components/schemas/EducationalContext'}
+        source_provenance: {$ref: '#/components/schemas/SourceProvenance'}
+        review: {$ref: '#/components/schemas/ReviewState'}
+        candidate_medications: {type: array, items: {type: object, additionalProperties: false}}
+        display_obligations: {$ref: '#/components/schemas/DisplayObligations'}

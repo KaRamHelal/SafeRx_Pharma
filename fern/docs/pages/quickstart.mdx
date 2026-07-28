@@ -1,284 +1,64 @@
 ---
 title: Quickstart
-subtitle: Make your first drug safety check in 60 seconds
+subtitle: Make a signed Enterprise request
 ---
 
-## Step 1: Get Your API Key
+## 1. Configure an approved Enterprise key
 
-### Step 1a: Request Verification Code
+Access is provisioned through the MIS Enterprise release process. There is no self-service key-issuance endpoint in this contract.
 
-<CodeBlocks>
-  <CodeBlock title="cURL">
-    ```bash
-    curl -X POST https://saferx.online/api/developers/keys/free \
-      -H "Content-Type: application/json" \
-      -d '{"email":"you@example.com"}'
-    ```
-  </CodeBlock>
-  <CodeBlock title="Python">
-    ```python
-    import httpx
+## 2. Sign and send a request
 
-    resp = httpx.post(
-        "https://saferx.online/api/developers/keys/free",
-        json={"email": "you@example.com"},
-    )
-    print(resp.json()["message"])  # "Verification code sent to your email"
-    ```
-  </CodeBlock>
-  <CodeBlock title="TypeScript">
-    ```typescript
-    const resp = await fetch("https://saferx.online/api/developers/keys/free", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: "you@example.com" }),
-    });
-    const { message } = await resp.json();
-    console.log(message); // "Verification code sent to your email"
-    ```
-  </CodeBlock>
-</CodeBlocks>
+Every Enterprise request is signed with `saferx-hmac-sha256-v1`. Send these headers:
 
-**Check your email** for a 6-digit verification code. It expires in 30 minutes.
+| Header | Purpose |
+|---|---|
+| `X-SafeRx-API-Key` | Enterprise key identifier and signing secret input |
+| `X-SafeRx-Timestamp` | UTC timestamp with an explicit offset |
+| `X-SafeRx-Nonce` | One-use replay protection value |
+| `X-SafeRx-Signature` | Base64url HMAC-SHA256 signature |
 
-### Step 1b: Verify and Receive Your Key
+The signed canonical message is the uppercase method, escaped path, sorted query, lowercase SHA-256 body digest, timestamp, and nonce joined by newlines. The SDK clients implement this exactly. Never place credentials in source control or logs.
 
-<CodeBlocks>
-  <CodeBlock title="cURL">
-    ```bash
-    curl -X POST https://saferx.online/api/developers/keys/free/verify \
-      -H "Content-Type: application/json" \
-      -d '{"email":"you@example.com","code":"123456"}'
-    ```
-  </CodeBlock>
-  <CodeBlock title="Python">
-    ```python
-    resp = httpx.post(
-        "https://saferx.online/api/developers/keys/free/verify",
-        json={"email": "you@example.com", "code": "123456"},  # Code from email
-    )
-    api_key = resp.json()["api_key"]  # sfx_free_...
-    ```
-  </CodeBlock>
-  <CodeBlock title="TypeScript">
-    ```typescript
-    const resp = await fetch("https://saferx.online/api/developers/keys/free/verify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: "you@example.com", code: "123456" }),
-    });
-    const { api_key } = await resp.json(); // sfx_free_...
-    ```
-  </CodeBlock>
-</CodeBlocks>
 
-**Save your API key** — it's persistent and tied to your email. Same email always returns the same key.
+The generated SDK is the safest starting point:
 
-<Callout intent="info">
-**Already have a key?** If your email is already verified, step 1a will return your existing key immediately (no verification needed).
-</Callout>
+```python
+from saferx_pharma import SafeRxClient
 
-## Step 2: Check Drug Safety
+client = SafeRxClient(
+    base_url="https://saferx.online/api/enterprise/v1",
+    api_key="YOUR_ENTERPRISE_KEY",
+)
 
-<Callout intent="info">
-Only `drugs` is required. The `lang` parameter is optional and defaults to `"en"`. Use `"ar"` for Arabic responses.
-</Callout>
-
-<CodeBlocks>
-  <CodeBlock title="cURL">
-    ```bash
-    curl -X POST https://saferx.online/api/drug_safety/check \
-      -H "Content-Type: application/json" \
-      -H "X-SafeRx-API-Key: YOUR_API_KEY" \
-      -H "User-Agent: MyApp/1.0" \
-      -d '{
-        "drugs": ["Augmentin 1g", "Glucophage 500mg", "Marivan"],
-        "lang": "en"
-      }'
-    ```
-  </CodeBlock>
-  <CodeBlock title="Python">
-    ```python
-    import httpx
-
-    resp = httpx.post(
-        "https://saferx.online/api/drug_safety/check",
-        headers={
-            "X-SafeRx-API-Key": api_key,
-            "User-Agent": "MyApp/1.0",
-        },
-        json={
-            "drugs": ["Augmentin 1g", "Glucophage 500mg", "Marivan"],
-            "lang": "en",
-        },
-    )
-    data = resp.json()
-    ```
-  </CodeBlock>
-  <CodeBlock title="Python SDK">
-    ```python
-    from saferx import SafeRxClient
-
-    client = SafeRxClient(api_key=api_key)
-    result = client.drug_safety.check(
-        drugs=["Augmentin 1g", "Glucophage 500mg", "Marivan"],
-        lang="en",
-    )
-    ```
-  </CodeBlock>
-  <CodeBlock title="TypeScript">
-    ```typescript
-    const resp = await fetch("https://saferx.online/api/drug_safety/check", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-SafeRx-API-Key": api_key,
-        "User-Agent": "MyApp/1.0",
-      },
-      body: JSON.stringify({
-        drugs: ["Augmentin 1g", "Glucophage 500mg", "Marivan"],
-        lang: "en",
-      }),
-    });
-    const data = await resp.json();
-    ```
-  </CodeBlock>
-</CodeBlocks>
-
-## Step 3: Parse the Response
-
-The response contains five top-level sections:
-
-```json
-{
-  "status": "success",
-  "drugs": [...],          // Resolved drug details (sfrx_id, name, form, price)
-  "unresolved": [...],     // Drug names that couldn't be matched
-  "safety": {
-    "side_effects": {...},         // Adverse effects by sfrx_id
-    "interactions": {...},         // Drug-drug interactions
-    "reproductive_safety": {...},  // Pregnancy & lactation by sfrx_id
-    "food": {...},                 // Food interactions by sfrx_id
-    "clinical": {...},             // Population & condition data
-    "dosing": {...}                // Dosing safety (dual-source) by sfrx_id
-  },
-  "alerts": [...],         // Critical items (check these FIRST)
-  "meta": {...}            // Processing time, tier, counts
-}
+result = client.enterprise_safety_check(
+    body={
+        "locale": "en",
+        "medications": [{"input_text": "Augmentin 1g"}],
+        "requested_domains": ["ddi", "food_interactions"],
+    },
+    idempotency_key="integration-check-001",
+)
 ```
 
-**Start with `alerts`** — these are the highest-priority safety issues:
+## 3. Read the bounded result
 
-<CodeBlocks>
-  <CodeBlock title="Python">
-    ```python
-    # Check critical alerts first
-    for alert in data["alerts"]:
-        if alert["severity"] == "CRITICAL":
-            print(f"CRITICAL: {alert['message']}")
-        elif alert["severity"] == "HIGH":
-            print(f"WARNING: {alert['message']}")
+A safety response contains `request_id`, `result_id`, `schema_version`, `surface`, `locale`, `summary`, `signals`, `domain_coverage`, `unavailable_domains`, `limitations`, `review`, `source_provenance`, and `display_obligations`. A client must preserve the review and limitation states; an empty signal list is not a universal safety guarantee.
 
-    # Example output:
-    # CRITICAL: Black Box Warning for MARIVAN 2MG 30 TAB
-    # CRITICAL: Pregnancy: Absolutely Contraindicated — MARIVAN 2MG 30 TAB
-    # WARNING: Major interaction: AUGMENTIN 1GM 14 TAB + MARIVAN 2MG 30 TAB
-    ```
-  </CodeBlock>
-  <CodeBlock title="TypeScript">
-    ```typescript
-    // Check critical alerts first
-    for (const alert of data.alerts) {
-      if (alert.severity === "CRITICAL") {
-        console.log(`CRITICAL: ${alert.message}`);
-      } else if (alert.severity === "HIGH") {
-        console.log(`WARNING: ${alert.message}`);
-      }
-    }
-    ```
-  </CodeBlock>
-</CodeBlocks>
+## 4. Explore the registry
 
-## Arabic Support
+Use `enterprise_registry_autocomplete`, `enterprise_registry_search`,
+`enterprise_registry_resolve`, and `enterprise_registry_product_detail` to
+resolve and display registry-owned medication content. Registry requests need
+the `registry_basic` entitlement.
 
-Set `lang: "ar"` to receive Arabic safety descriptions. You can also submit drug names in Arabic:
+## 5. Use OCR when the account is entitled
 
-```json
-{
-  "drugs": ["اوجمنتين 1 جم", "جلوكوفاج 500"],
-  "lang": "ar"
-}
-```
+Prescription OCR is a native multipart Enterprise workflow, not a local eRx
+OCR service. It requires the `ocr_prescription` entitlement and exposes upload,
+status, events, medication resolution, safety, and review operations. Preserve
+the returned `request_id`, `prescription_id`, review state, provenance, and
+limitations in the integrating application.
 
-## Explore the API
-
-### Metadata
-
-`GET /api/drug_safety/metadata` returns all valid populations, conditions, domain codes, database versions, and your current tier limits. Cache this response for up to 24 hours.
-
-```bash
-curl https://saferx.online/api/drug_safety/metadata \
-  -H "X-SafeRx-API-Key: YOUR_API_KEY" \
-  -H "User-Agent: MyApp/1.0"
-```
-
-### Health Check
-
-`GET /api/drug_safety/health` returns system status. No authentication required — useful for monitoring dashboards.
-
-```bash
-curl https://saferx.online/api/drug_safety/health
-```
-
-## Available Domains
-
-Use the `include` parameter to request only the safety domains you need. Omit it to run all six.
-
-| Code | Domain | Description |
-|------|--------|-------------|
-| `ae` | Adverse Effects | Black Box Warnings, side effects, monitoring parameters |
-| `ddi` | Drug Interactions | Drug-drug interactions with severity (requires 2+ drugs) |
-| `pllr` | Reproductive Safety | Pregnancy & lactation risk ratings per trimester |
-| `food` | Food Interactions | Meal timing and specific food-drug conflicts |
-| `clinical` | Clinical | Population & condition-specific alerts (enhanced with `patient_profile`) |
-| `dose` | Dosing | Maximum daily dose limits (dual-source: WHO DDD + OpenFDA MDD) |
-
-## Patient Profile Options
-
-Optionally pass `patient_profile` to get population- and condition-specific alerts.
-
-**Populations** (5):
-
-| Value | Description |
-|-------|-------------|
-| `pediatric` | Children and adolescents (&lt; 18) |
-| `geriatric` | Elderly patients (65+) |
-| `cardiac` | Patients with cardiac conditions (NYHA Class II+) |
-| `hepatic` | Patients with liver impairment (Child-Pugh B/C) |
-| `renal` | Patients with kidney impairment (eGFR &lt; 60) |
-
-**Conditions** (14):
-
-`arrhythmia`, `asthma`, `bph`, `coronary`, `depression`, `diabetes`, `epilepsy`, `gi_bleeding`, `glaucoma`, `heart_failure`, `hypertension`, `hyperthyroidism`, `hypothyroidism`, `parkinsons`
-
-<Callout intent="info">
-Use `GET /api/drug_safety/metadata` to programmatically discover the latest populations and conditions — values may be added in future versions.
-</Callout>
-
-## Alert Severity Levels
-
-Alerts have four severity levels:
-
-| Severity | Meaning | Recommended Action |
-|----------|---------|-------------------|
-| `CRITICAL` | Life-threatening risk (Black Box Warning, pregnancy contraindication) | Hard stop, require override |
-| `HIGH` | Major interaction or significant risk | Warning, require acknowledgment |
-| `MODERATE` | Moderate concern, clinical attention advised | Informational display |
-| `LOW` | Minor concern, generally safe | Log only, optional display |
-
-## What's Next
-
-- **[Authentication](/api-reference/authentication/overview)** — API key tiers, rate limits
-- **[Rate Limits](/api-reference/authentication/rate-limits)** — Tier limits, retry strategies
-- **[SDKs](/sdks/client-libraries/overview)** — Python, TypeScript, C# client libraries
-- **[Pharmacy Guide](/guides/integration-guides/pharmacy-dispensing)** — End-to-end integration tutorial
+The eRx integration uses the same public routes and does not share OCR files,
+databases, or private service addresses with MIS.

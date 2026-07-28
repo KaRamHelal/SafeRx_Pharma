@@ -1,19 +1,20 @@
 ---
-title: "2026-07-26 — MIS 2.0.1"
-subtitle: First public release on the MIS version line
+title: 2026 07 26
+subtitle: SafeRx Enterprise release notes
 ---
 
-## MIS public release line
+This page records the current MIS Enterprise documentation history. Use the [Enterprise API reference](/api-reference) and the checked-in [OpenAPI contract](https://github.com/KaRamHelal/SafeRx_Pharma/blob/main/openapi/enterprise-v1.yaml) for the authoritative operation and schema definitions.
 
-SafeRx Pharma is now published from the MIS-owned public repository on version `2.0.1`. The version is coordinated across the public API contract, Python SDK, TypeScript SDK, C# SDK, MCP server, and documentation.
+Every Enterprise request is signed with `saferx-hmac-sha256-v1`. Send these headers:
 
-## What is included
+| Header | Purpose |
+|---|---|
+| `X-SafeRx-API-Key` | Enterprise key identifier and signing secret input |
+| `X-SafeRx-Timestamp` | UTC timestamp with an explicit offset |
+| `X-SafeRx-Nonce` | One-use replay protection value |
+| `X-SafeRx-Signature` | Base64url HMAC-SHA256 signature |
 
-- The stable five-operation Drug Safety API remains available under the documented public contract.
-- Python, TypeScript, and C# clients are generated from the same OpenAPI source.
-- The MCP server is released as `@saferx_pharma/mcp-server@2.0.1`.
-- Documentation is published to both [docs.saferx.online](https://docs.saferx.online) and [saferx.docs.buildwithfern.com](https://saferx.docs.buildwithfern.com).
+The signed canonical message is the uppercase method, escaped path, sorted query, lowercase SHA-256 body digest, timestamp, and nonce joined by newlines. The SDK clients implement this exactly. Never place credentials in source control or logs.
 
-## Public-surface boundary
 
-This release does not publish private MIS contracts, raw OCR storage fields, internal identifiers, or deployment configuration. Those remain outside the public SDK and documentation inputs.
+Production availability and package publication remain controlled by the MIS release gate.

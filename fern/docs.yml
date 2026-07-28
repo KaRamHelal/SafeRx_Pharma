@@ -2,7 +2,7 @@ instances:
   - url: saferx.docs.buildwithfern.com
     custom-domain: docs.saferx.online
 
-title: SafeRx API Documentation | MIS Public Release 2.0.1
+title: SafeRx Enterprise API Documentation | MIS Preview Contract
 
 logo:
   light: docs/assets/saferx-logo.svg
@@ -52,8 +52,8 @@ navigation:
             path: docs/pages/authentication/rate-limits.mdx
           - page: Developer Portal
             path: docs/pages/authentication/developer-portal.mdx
-      - api: Drug Safety API
-        api-name: drug-safety
+      - api: Enterprise API
+        api-name: enterprise
 
   - tab: guides
     layout:

@@ -1,0 +1,13 @@
+{
+  "bomFormat": "CycloneDX",
+  "components": [],
+  "metadata": {
+    "component": {
+      "name": "saferx-enterprise-sdks",
+      "type": "application",
+      "version": "0.1.0-rc.1"
+    }
+  },
+  "specVersion": "1.6",
+  "version": 1
+}
