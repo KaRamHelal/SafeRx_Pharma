@@ -1,6 +1,39 @@
 ---
 title: Compliance boundaries
-subtitle: Keep the public contract narrow
+subtitle: What's in scope, and what stays yours
 ---
 
-The public projection is allowlist-based and closed-schema. It excludes credentials, private topology, storage representations, and person-specific fields. Integrators remain responsible for their own access control, retention, audit, and professional review procedures.
+The public contract is allowlist-based and closed-schema: every response
+schema in this documentation is exactly what you'll receive, with
+`additionalProperties: false` enforced. It excludes credentials, private
+service topology, internal storage identifiers, and person-specific
+routing or accounting fields. See [Security overview](/security/overview)
+for what that means for logging on your side.
+
+## What SafeRx provides
+
+- A closed, versioned response contract (`schema_version` on every response).
+- `educational_context` and `display_obligations` on every response,
+  establishing that results are pharmaceutical education, not medical
+  advice or a dispensing authorization.
+- `review` state and `source_provenance` so you can trace and gate on
+  professional-review requirements.
+
+## What remains your responsibility
+
+- **Access control** — who in your organization/application can trigger a
+  safety check or view a result.
+- **Retention** — how long you keep request/response data, and where.
+  SafeRx does not dictate your retention policy; align it with your own
+  regulatory obligations.
+- **Professional review workflows** — enforcing `review.required` and
+  `review.minimum_reviewer_role` in your own application logic before
+  relying on a result. The API tells you review is required; it doesn't
+  enforce that your integration honors it.
+- **Audit** — logging your own access and decisions, without capturing raw
+  patient data or credentials (see [Prohibited logging](/security/overview)).
+
+This API is a bounded, closed-schema medical-education reference contract.
+It is not a substitute for your own compliance program, and using it does
+not by itself satisfy any regulatory requirement your application is
+subject to.

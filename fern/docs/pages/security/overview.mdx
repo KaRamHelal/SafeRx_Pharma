@@ -1,6 +1,57 @@
 ---
 title: Security overview
-subtitle: Fail-closed Enterprise access
+subtitle: Credential handling, testing, and reporting
 ---
 
-The Enterprise boundary validates signed requests, nonce replay, timestamp freshness, entitlement, quota, and response policy before dispatch. Unsupported authentication modes and unavailable security dependencies are denied.
+The Enterprise boundary validates signed requests, nonce replay, timestamp
+freshness, entitlement, quota, and response policy before dispatch.
+Unsupported authentication modes and unavailable security dependencies are
+denied. See [Authentication](/authentication/overview) for the exact
+signing contract and [Limits and retries](/authentication/rate-limits) for
+quota/retry behavior.
+
+## Credential storage
+
+Your API key is also your HMAC signing secret — there is no separate
+signing key. Store it in a secrets manager or environment variable, never
+in source control, client-side code, or logs. It's shown exactly once at
+issuance (see [Developer access](/authentication/developer-portal)) and
+cannot be retrieved again — only rotated.
+
+## Server-side-only use
+
+Every official SDK signs requests using your API key as the HMAC secret.
+**Never embed a SafeRx SDK, or a hand-rolled signer, in code that runs in a
+browser, mobile WebView, or any other client-controlled environment** —
+doing so exposes the signing secret to anyone who opens dev tools. Call the
+Enterprise API from your backend, then serve only the results to the
+browser. The TypeScript SDK carries this warning directly (see
+[TypeScript SDK](/sdks/typescript)) since it's the language most likely to
+be reached for in a frontend context by mistake.
+
+## Prohibited logging
+
+Never log full request/response bodies containing `patient_context`,
+resolved medication PHI-adjacent detail, or the API key/signature headers.
+`request_id` is safe and recommended to log — it's designed for exactly this
+purpose (see [Request IDs](/authentication/rate-limits)). If you need to
+debug a specific failure, use `request_id` to reference it rather than
+capturing the raw payload.
+
+## Synthetic-data testing
+
+Test your integration with synthetic patient data and synthetic
+medications, not real patient records — this API is a bounded,
+closed-schema contract designed to be exercised safely with made-up input;
+nothing about signature or schema validation requires real data. The
+[worked signing example](/authentication/overview) and the fixtures in this
+repository's `examples/` directory use exactly this pattern.
+
+## Incident reporting
+
+If you suspect a credential has been exposed, rotate it immediately through
+your Partner account rather than waiting to confirm the exposure — rotation
+is fast and a delayed report is strictly worse than a false alarm. For
+suspected API-level security issues (not an exposed key, which you can
+self-remediate by rotating), contact
+[support@saferx.online](mailto:support@saferx.online).
