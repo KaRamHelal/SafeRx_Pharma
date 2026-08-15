@@ -9,7 +9,7 @@
     "packages/python/src/saferx_pharma/__init__.py": "4953ad16ce5dd43405180adb88766ac93fdfadcb88537659168f3714fbc4c3d2",
     "packages/python/src/saferx_pharma/client.py": "ec9425fa1a2dda37e80573378f8b4b1b77675e3ca5b2c1aa72dd8165fc8bc7de",
     "packages/typescript/README.md": "9537b13b5fe69bd033cb1c9664dc14b319eb9a7f6e70655b00d584058b32a159",
-    "packages/typescript/package.json": "780f2948b090ddbd89b76bab291b8f40eb36179b9b354ed8cddf4f06a119b43a",
+    "packages/typescript/package.json": "6e724b4bdcca6c47515ec25b0e87286e93e609d795ff4f5af5305f2fffb43a42",
     "packages/typescript/src/client.ts": "4dd2b1da4e57e0de4d16dad2cc0d70ccfc159e2be51fdd5dc2d2436067972995",
     "packages/typescript/tsconfig.json": "1dfaa085edc28800c8dbccf0c8093b855158371f8ee63da1395ec3de5b575d78"
   },
