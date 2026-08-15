@@ -65,6 +65,14 @@ FORBIDDEN_PUBLIC_PATTERNS = (
     r"(?i)mis-enterprise",
     r"(?i)authenticated_enterprise_customers",
     r"(?i)route_entitlements",
+    # Browser-only saved-profile session controls: Enterprise is request-scoped
+    # patient_context only and must never accept or echo these, at any nesting
+    # depth or in any schema this repo ships (see plan v2 section 3.4).
+    r"(?i)profile_context_mode",
+    r"(?i)include_saved_current_medications",
+    r"(?i)saved_profile_applied",
+    r"(?i)resolver[_-]?candidate",
+    r"(?i)(storage|model|resolver)[_-]?id\b",
 )
 
 # Everything else in this repo that actually ships to a public registry or docs host
@@ -102,6 +110,9 @@ FORBIDDEN_SHIPPED_PATTERNS = (
     r"(?i)mis-enterprise",
     r"(?i)authenticated_enterprise_customers",
     r"(?i)route_entitlements",
+    r"(?i)profile_context_mode",
+    r"(?i)include_saved_current_medications",
+    r"(?i)saved_profile_applied",
     # a lowercase letter AND a digit rules out documentation placeholders like
     # "YOUR_ENTERPRISE_KEY" / "<API_KEY>" while still catching real secret-shaped values
     r"(?i)(api[_-]?key|client[_-]?secret|password)\s*[:=]\s*['\"](?=[^'\"]*[a-z])(?=[^'\"]*[0-9])[A-Za-z0-9_\-]{12,}['\"]",
