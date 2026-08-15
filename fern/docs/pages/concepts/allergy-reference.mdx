@@ -6,9 +6,10 @@ subtitle: Not yet available
 `enterprise_allergy_resolve`, `enterprise_allergy_families`, and
 `enterprise_allergy_substances` are documented in the
 [API reference](/api-reference) for contract completeness, but none of them
-have a live success response yet — each currently returns `501`. They will
-be documented here as usable operations once they have a real, evidence-backed
-success contract.
+have a live success response yet — no backend implements them and no API key
+is entitled to call them, so each currently returns `403` (policy-denied), not
+`501`. They will be documented here as usable operations once they have a
+real, evidence-backed success contract.
 
 **Allergy state can still be considered today** via
 `patient_context.allergy_state` and `patient_context.allergies` on

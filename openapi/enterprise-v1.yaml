@@ -69,12 +69,14 @@ paths:
       operationId: enterprise_capabilities
       summary: 'Deferred: account/key capability metadata'
       description: Not yet available. This operation is documented for contract
-        completeness but returns a `501` upstream; it has no success response yet
-        and must not be relied on. Use `enterprise_safety_capabilities` for current
-        safety-domain readiness metadata instead.
+        completeness, but no backend implements it and no key on any plan is
+        entitled to call it -- it returns `403` (policy-denied) for every caller,
+        not a `501`. It has no success response yet and must not be relied on.
+        Use `enterprise_safety_capabilities` for current safety-domain readiness
+        metadata instead.
       x-status: deferred
       responses:
-        '501':
+        '403':
           $ref: '#/components/responses/Problem'
         default:
           $ref: '#/components/responses/Problem'
@@ -173,11 +175,12 @@ paths:
       operationId: enterprise_status
       summary: 'Deferred: current account/key status'
       description: Not yet available. This operation is documented for contract
-        completeness but returns a `501` upstream; it has no success response yet
-        and must not be relied on.
+        completeness, but no backend implements it and no key on any plan is
+        entitled to call it -- it returns `403` (policy-denied) for every caller,
+        not a `501`. It has no success response yet and must not be relied on.
       x-status: deferred
       responses:
-        '501':
+        '403':
           $ref: '#/components/responses/Problem'
         default:
           $ref: '#/components/responses/Problem'
@@ -286,12 +289,13 @@ paths:
       operationId: enterprise_safety_check_read
       summary: 'Deferred: read back a previously created safety check'
       description: Not yet available. This operation is documented for contract
-        completeness but returns a `501` upstream; it has no success response yet.
-        Callers should retain the response from `enterprise_safety_check` directly
-        rather than expecting to read it back later.
+        completeness, but no backend implements it and no key on any plan is
+        entitled to call it -- it returns `403` (policy-denied) for every caller,
+        not a `501`. Callers should retain the response from `enterprise_safety_check`
+        directly rather than expecting to read it back later.
       x-status: deferred
       responses:
-        '501':
+        '403':
           $ref: '#/components/responses/Problem'
         default:
           $ref: '#/components/responses/Problem'
@@ -300,8 +304,10 @@ paths:
       operationId: enterprise_safety_check_batch
       summary: 'Deferred: run multiple safety checks in one call'
       description: Not yet available. This operation is documented for contract
-        completeness but returns a `501` upstream; it has no success response yet.
-        Run individual `enterprise_safety_check` calls until this is promoted.
+        completeness, but no backend implements it and no key on any plan is
+        entitled to call it -- it returns `403` (policy-denied) for every caller,
+        not a `501`. Run individual `enterprise_safety_check` calls until this is
+        promoted.
       x-status: deferred
       x-idempotency-required: true
       requestBody:
@@ -312,7 +318,7 @@ paths:
               type: object
               additionalProperties: false
       responses:
-        '501':
+        '403':
           $ref: '#/components/responses/Problem'
         default:
           $ref: '#/components/responses/Problem'
@@ -349,8 +355,9 @@ paths:
       operationId: enterprise_allergy_resolve
       summary: 'Deferred: resolve free-text allergy entries'
       description: Not yet available. This operation is documented for contract
-        completeness but returns a `501` upstream; it has no success response yet.
-        Allergy state can still be supplied on a safety check via
+        completeness, but no backend implements it and no key on any plan is
+        entitled to call it -- it returns `403` (policy-denied) for every caller,
+        not a `501`. Allergy state can still be supplied on a safety check via
         `patient_context.allergies` even though this dedicated resolver is deferred.
       x-status: deferred
       requestBody:
@@ -361,7 +368,7 @@ paths:
               type: object
               additionalProperties: false
       responses:
-        '501':
+        '403':
           $ref: '#/components/responses/Problem'
         default:
           $ref: '#/components/responses/Problem'
@@ -370,10 +377,12 @@ paths:
       operationId: enterprise_allergy_families
       summary: 'Deferred: list allergy families'
       description: Not yet available. This operation is documented for contract
-        completeness but returns a `501` upstream; it has no success response yet.
+        completeness, but no backend implements it and no key on any plan is
+        entitled to call it -- it returns `403` (policy-denied) for every caller,
+        not a `501`.
       x-status: deferred
       responses:
-        '501':
+        '403':
           $ref: '#/components/responses/Problem'
         default:
           $ref: '#/components/responses/Problem'
@@ -382,7 +391,9 @@ paths:
       operationId: enterprise_allergy_substances
       summary: 'Deferred: search allergy substances'
       description: Not yet available. This operation is documented for contract
-        completeness but returns a `501` upstream; it has no success response yet.
+        completeness, but no backend implements it and no key on any plan is
+        entitled to call it -- it returns `403` (policy-denied) for every caller,
+        not a `501`.
       x-status: deferred
       parameters:
       - name: q
@@ -392,7 +403,7 @@ paths:
           type: string
           minLength: 2
       responses:
-        '501':
+        '403':
           $ref: '#/components/responses/Problem'
         default:
           $ref: '#/components/responses/Problem'

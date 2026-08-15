@@ -31,8 +31,10 @@ EXPECTED_OPERATIONS = {
 }
 
 # Present in the OpenAPI (documented, honestly marked x-status: deferred) but must
-# never carry a success response or ship in a generated SDK client -- the maintained
-# backend OpenAPI only defines 501 for these operations today.
+# never carry a success response or ship in a generated SDK client -- no backend
+# implements these operations and no key on any plan is entitled to call them; live
+# reverification (2026-08-15) confirmed 403 (policy-denied), not the previously
+# documented 501, for every one of them.
 DEFERRED_OPERATIONS = {
     "enterprise_capabilities",
     "enterprise_status",

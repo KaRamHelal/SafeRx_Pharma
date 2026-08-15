@@ -41,10 +41,12 @@ EXPECTED_AVAILABLE_OPERATION_IDS = {
     "enterprise_ocr_prescription_safety",
     "enterprise_ocr_prescription_review",
 }
-# These operations exist in the maintained backend OpenAPI with no non-501 success
-# response yet. They stay present in the public spec (so the API surface and its
-# migration state are honestly documented) but must never carry an invented 200/202
-# and must never appear as available in the release manifest, SDKs, or docs.
+# These operations exist in the maintained backend OpenAPI with no non-403 success
+# response yet (live-confirmed 2026-08-15: no backend implements them and no key on
+# any plan is entitled to call them). They stay present in the public spec (so the
+# API surface and its migration state are honestly documented) but must never carry
+# an invented 200/202 and must never appear as available in the release manifest,
+# SDKs, or docs.
 EXPECTED_DEFERRED_OPERATION_IDS = {
     "enterprise_capabilities",
     "enterprise_status",

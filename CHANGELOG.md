@@ -28,6 +28,14 @@ Entries below are not a backfilled reconstruction of that history.
   contract and are not stripped as a mixed bag of clinical- and
   commercial-looking data pending a deliberate decision on what (if any) of
   it belongs in a future public release.
+- `enterprise_capabilities`, `enterprise_status`, `enterprise_safety_check_read`,
+  `enterprise_safety_check_batch`, `enterprise_allergy_resolve`,
+  `enterprise_allergy_families`, and `enterprise_allergy_substances` were
+  documented as returning `501` once reached. Live-confirmed this was never
+  true: no backend implements any of them and no API key on any plan is
+  entitled to call them, so every caller gets `403` (policy-denied) instead
+  -- the `501` code path was unreachable. Corrected the documented response
+  for all seven.
 
 ### Added
 - `RegistryProductSummaryList` and `RegistrySuggestionList` items were
