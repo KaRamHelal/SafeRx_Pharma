@@ -136,3 +136,25 @@ def test_mcp_adapter_uses_only_signed_enterprise_operations() -> None:
         assert header in source
     assert "/api/enterprise/v1" in source
     assert "drug_safety" not in source
+
+
+def test_hosted_mcp_release_manifest_matches_the_three_promoted_tools() -> None:
+    release = yaml.safe_load((ROOT / "release/current.yaml").read_text())
+    hosted_mcp = release["hosted_mcp"]
+    assert hosted_mcp["status"] == "preview"
+    assert hosted_mcp["endpoint"] == "https://saferx.online/api/enterprise-mcp/v1/mcp"
+    assert set(hosted_mcp["tools"]) == {
+        "resolve_medications",
+        "check_medication_safety",
+        "get_safety_capabilities",
+    }
+    assert hosted_mcp["resources"] == []
+    assert hosted_mcp["prompts"] == []
+    doc = (ROOT / "fern/docs/pages/ai-integration/mcp-server.mdx").read_text()
+    for forbidden in (
+        "X-SafeRx-Actor-Class",
+        "X-SafeRx-Partner-ID",
+        "X-SafeRx-Organization-ID",
+        "X-SafeRx-Quota-Reservation-ID",
+    ):
+        assert forbidden not in doc

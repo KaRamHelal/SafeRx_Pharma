@@ -1,15 +1,17 @@
-# SafeRx Enterprise MCP integration
+# SafeRx Enterprise MCP integration (legacy)
 
-> **Being superseded.** This stdio MCP adapter is scheduled to be replaced by
-> SafeRx's hosted MCP surface. It is not the intended long-term MCP
-> integration path — treat it as a legacy stopgap, not a stable target to
-> build against.
+> **Deprecated.** This stdio MCP adapter has been superseded by SafeRx's
+> [hosted MCP server](https://docs.saferx.online/ai-integration/mcp-server), a
+> Streamable HTTP endpoint at `/api/enterprise-mcp/v1/mcp` with the same three
+> tools. Use the hosted endpoint for new integrations — it requires no local
+> process and stays in sync with the Enterprise API automatically.
 
-This directory is `internal_only` per `contracts/public-availability-state-machine.yaml`
-in the SafeRx-MIS repository — it is not part of the supported Enterprise API
-surface and is not a substitute for the published authenticated Enterprise
-REST contract. The source in `src/` is visible in this repository (it is not
-secret), but it is not a supported public integration: no compatibility,
+This package remains `internal_only` per
+`contracts/public-availability-state-machine.yaml` in the SafeRx-MIS repository
+— it is not part of the supported Enterprise API surface and is not a
+substitute for the published authenticated Enterprise REST contract or the
+hosted MCP endpoint. The source in `src/` is visible in this repository (it is
+not secret), but it is not a supported public integration: no compatibility,
 versioning, or support commitments apply to it.
 
 ## Build

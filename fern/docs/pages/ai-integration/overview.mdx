@@ -5,4 +5,4 @@ subtitle: Use bounded Enterprise results in agent workflows
 
 Treat the Enterprise API as a typed tool, not as an autonomous clinical decision-maker. An agent should surface `review`, `limitations`, `domain_coverage`, and `display_obligations` alongside signals and should ask for professional review when the response says so.
 
-Use the MCP adapter or the signing-aware SDK. Do not expose credentials to model prompts, and do not infer a positive safety outcome from an unavailable domain.
+Use the signing-aware SDK, or the [hosted MCP server](/ai-integration/mcp-server) if your agent framework speaks MCP, to call the Enterprise API from your agent's tool layer. Do not expose credentials to model prompts, and do not infer a positive safety outcome from an unavailable domain.

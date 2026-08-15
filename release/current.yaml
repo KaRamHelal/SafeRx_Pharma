@@ -16,6 +16,16 @@ artifacts:
   typescript: saferx-pharma-sdk@2.0.1
   csharp: SafeRx==2.0.1
 
+hosted_mcp:
+  status: preview
+  endpoint: https://saferx.online/api/enterprise-mcp/v1/mcp
+  protocol_version: '2025-06-18'
+  transport: streamable_http
+  tools: [resolve_medications, check_medication_safety, get_safety_capabilities]
+  resources: []
+  prompts: []
+  promoted_at: '2026-08-15'
+
 documentation:
   fern_instance: saferx.docs.buildwithfern.com
   custom_domain: docs.saferx.online
@@ -29,7 +39,10 @@ notes:
     contract; deferred_operation_count lists operations still returning 501 upstream
     and therefore excluded from the public bundle, SDK clients, and docs until they
     have a real success schema and evidence (see openapi/enterprise-v1.yaml x-status).
-  - Hosted MCP is not included in this release; it has not been promoted past
-    internal_only in the availability state machine.
+  - Hosted MCP was promoted from internal_only to preview on 2026-08-15 in
+    SafeRx-MIS's public-availability-state-machine.yaml and documentation-bindings.yaml.
+    It exposes exactly the three tools listed above with no resources or prompts.
+  - The legacy stdio @saferx_pharma/mcp-server package remains internal_only and
+    deprecated; it is not the supported MCP integration path.
   - This manifest is the public release identity only. It does not describe any
     account, plan, or entitlement other than the existing self-service free plan.

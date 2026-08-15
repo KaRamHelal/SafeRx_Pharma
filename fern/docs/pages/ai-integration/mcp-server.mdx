@@ -1,12 +1,138 @@
 ---
-title: MCP integration
-subtitle: A separately controlled integration surface
+title: MCP Server
+subtitle: Hosted Streamable HTTP MCP for the Enterprise API
 ---
 
-MCP is not part of the public authenticated Enterprise REST release described by
-this documentation. Public integrations should use the signed REST API and its
-published SDKs.
+The hosted SafeRx MCP is a preview-availability, gateway-routed Streamable HTTP
+facade over three Enterprise API operations. It is not a general-purpose
+registry browser and does not expose resources or prompts.
 
-MCP access, implementation details, and release artifacts are controlled
-separately for approved internal consumers. This page intentionally does not
-publish internal tool names, routes, schemas, package commands, or credentials.
+## Endpoint and transport
+
+- Transport: MCP Streamable HTTP, stateless (`mode: stateless_json_response`)
+- Protocol version: `2025-06-18`
+- Base URL: `https://saferx.online/api/enterprise-mcp/v1/mcp`
+- Methods: `POST` (tool calls, `tools/list`) and `GET`
+
+The server advertises no MCP resources and no MCP prompts. A client that
+expects `resources/list` or `prompts/list` to return content should treat an
+empty response as correct, not as an error.
+
+## Authentication
+
+The hosted MCP is reached through the same gateway as the REST API and is
+authenticated the same way: a signed Enterprise API key
+(`saferx-hmac-sha256-v1`, see [Authentication](/authentication/overview)) with
+the `mcp_standard` entitlement enabled on the key. OAuth/OIDC is the preferred
+long-term credential mode for hosted MCP clients; API-key compatibility is
+supported today.
+
+A key without `mcp_standard` can authenticate to the gateway but every tool
+call is denied with a policy error — `tools/list` returns only the tools the
+caller's entitlements allow, which may be an empty list.
+
+## The three tools
+
+<Note>
+SafeRx does not expose registry enumeration, raw interaction-pair dumps, or
+partner administration through MCP. Tool names outside this list (for example
+`dump_registry`, `export_all_drugs`, `get_raw_database`) are not implemented
+and are treated as a policy violation if requested.
+</Note>
+
+### `resolve_medications`
+
+Bounded medication-name resolution. It cannot search, enumerate, or export the
+registry.
+
+- Backend operation: `POST /registry/resolve` (same contract as
+  `enterprise_registry_resolve`)
+- Output: `MedicationResolutionList`
+
+```json title="Input"
+{
+  "locale": "en",
+  "medications": [
+    { "input_text": "amoxicillin" }
+  ]
+}
+```
+
+### `check_medication_safety`
+
+Generic medication safety check. The hosted MCP never reads a saved profile —
+every patient factor considered must be supplied on the call, exactly as with
+the REST [`enterprise_safety_check`](/api-reference) operation.
+
+- Backend operation: `POST /safety/checks` (same contract as
+  `enterprise_safety_check`)
+- Output: `SafetyCheckResponse`
+- Requires `idempotency_key`
+
+```json title="Input"
+{
+  "locale": "en",
+  "medications": [
+    { "input_text": "amoxicillin" }
+  ],
+  "requested_domains": ["ddi", "allergy"],
+  "idempotency_key": "mcp-example-1"
+}
+```
+
+Treat the response the same way you would a REST safety-check response: surface
+`review`, `limitations`, `domain_coverage`, and `display_obligations` to the
+end user, and never reduce it to a bare `safe: true/false` claim. See
+[Safety results](/safety/results) for the full response shape.
+
+### `get_safety_capabilities`
+
+Release and domain readiness metadata only. It makes no patient-specific
+clinical claim.
+
+- Backend operation: `GET /safety/capabilities` (same contract as
+  `enterprise_safety_capabilities`)
+- Output: `SafetyCapabilities`
+- Input: none
+
+## Structured output
+
+Every tool call returns MCP `structuredContent` as the authoritative payload,
+matching the same public schema (`MedicationResolutionList`,
+`SafetyCheckResponse`, `SafetyCapabilities`) as the equivalent REST operation.
+The accompanying MCP `text` content is a short human-readable status only
+(for example `"check_medication_safety completed through the SafeRx
+Enterprise API."`) — do not parse it for data; read `structuredContent`.
+
+## Quotas, timeouts, and retries
+
+MCP calls draw from the same daily `mcp_calls` allowance as your plan (see
+[Rate limits](/authentication/rate-limits)); each tool call counts as one
+unit regardless of which tool. `tools/list` calls are metadata reads and do
+not draw down that allowance. On a transient upstream failure the tool
+returns an MCP error result rather than a partial clinical answer — no
+clinical conclusion is returned on failure. Apply the same bounded-retry and
+`Idempotency-Key` guidance as the REST API for `check_medication_safety`.
+
+## What is intentionally absent
+
+- No MCP resources or prompts capability.
+- No raw pipeline, model, provider, or storage metadata in any response.
+- No tenant, gateway, or internal routing header is ever surfaced to the
+  client.
+- No arguments or structured results are logged with identifying detail —
+  only hashed identifiers appear in operational telemetry.
+
+## Client configuration
+
+Point any MCP-Streamable-HTTP-capable client at the endpoint above with your
+signed Enterprise API key. Keep the key and its signing material server-side
+only — never place it in a prompt, a client-side agent configuration synced to
+a browser, or logged tool output.
+
+## Legacy stdio package
+
+The previously published `@saferx_pharma/mcp-server` stdio adapter is
+deprecated in favor of this hosted endpoint. It is not the supported MCP
+integration path going forward; new integrations should use the hosted
+Streamable HTTP endpoint documented above.
