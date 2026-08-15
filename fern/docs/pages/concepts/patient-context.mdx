@@ -1,0 +1,97 @@
+---
+title: Patient context
+subtitle: Request-scoped patient factors for safety evaluation
+---
+
+`patient_context` on [`enterprise_safety_check`](/api-reference) (and the
+hosted MCP's `check_medication_safety`) lets you supply patient factors that
+sharpen safety evaluation beyond a bare medication list. It's optional on
+every request.
+
+<Warning>
+Enterprise has no saved profile. There is nothing to opt into or out of —
+every field you want considered must be present on the request itself. A
+field omitted this time is not remembered from a previous call, and is not
+inferred from account history.
+</Warning>
+
+## Omitted means unknown, not "no risk"
+
+If you don't send `pregnancy_status`, the evaluator treats it as unknown —
+not as "not pregnant." The same applies to every field. Send `unknown`
+explicitly (where the field supports it, like `pregnancy_status` and
+`allergy_state`) when you've asked the patient and they don't know, rather
+than omitting the field, since some evaluators distinguish "asked and
+unknown" from "never asked."
+
+## Age
+
+Two ways to express age, and they behave differently over time:
+
+- **`date_of_birth`** (preferred) — the server derives current age at
+  evaluation time. Send this once; it stays correct on every future request
+  without updating anything.
+- **`age_years` + `age_reference_date`** — a snapshot age as of a specific
+  date, for when you only have "the patient is 34" without a birth date.
+  Age is advanced from `age_reference_date` server-side, so a stale snapshot
+  still produces a roughly-correct current age rather than a frozen one.
+
+## Pregnancy and lactation
+
+`pregnancy_status` / `lactation_status` take `pregnant`/`lactating`,
+`not_pregnant`/`not_lactating`, `unknown`, or `not_applicable`.
+`not_applicable` and `unknown` are deliberately distinct — use
+`not_applicable` when the status genuinely doesn't apply (e.g. `sex: male`),
+and `unknown` when it could apply but you don't know.
+
+For pregnancy detail, `pregnancy_context.lmp_date` is preferred; if you only
+have a gestational-age snapshot, pair `gestational_age_weeks` (or
+`_months_approx`) with `gestational_age_reference_date` so the server can
+advance gestational age correctly over time, the same pattern as age. Do not
+compute trimester client-side and send only that — send the underlying dates
+or weeks and let the server derive it.
+
+For lactation detail, `lactation_context` follows the same shape with infant
+age instead of gestational age.
+
+## Renal and hepatic function
+
+Prefer numeric values (`renal.crcl_ml_min` or `renal.egfr_ml_min_1_73m2`;
+`hepatic.child_pugh`) when you have them. Fall back to the categorical
+`status` field (`normal`/`mild`/`moderate`/`severe`/...) when you only have a
+clinical impression rather than a lab value.
+
+## Conditions and allergies
+
+`conditions` is a closed list of normalized clinical-dose condition
+identifiers (see the request schema for the current set) — free text isn't
+accepted here.
+
+`allergy_state` distinguishes `unknown` from `confirmed_none` — always send
+one explicitly when you know it, since "no entries in `allergies`" alone is
+ambiguous between "not asked" and "asked, no allergies." When
+`allergy_state` is `has_entries`, populate `allergies[]` with free-text
+entries; `entry_type` tags each as `free_text`, `family`, or `product` to
+help matching.
+
+## Diet, supplements, and fasting
+
+`diet_profile` covers diet patterns, fasting patterns, and specific
+food/supplement exposures — relevant to the `food_interactions` and
+`meal_timing` safety domains. Currently source-backed diet patterns are
+`vegan`, `keto_low_carb`, `high_protein_fitness`, `mediterranean`,
+`intermittent_fasting`, and `ramadan_fasting`; others are accepted as
+non-signaling context. Individual exposures (`food_exposures`,
+`supplement_exposures`) let you report specific items (e.g. grapefruit,
+creatine) with a confidence level (`confirmed_current`, `frequent`,
+`occasional`, `avoids`, `unknown`) rather than a blanket pattern.
+
+## Reading it back
+
+The response's `context_summary` tells you whether any of this was actually
+used: `status: request_context_applied` means at least one `patient_context`
+field was supplied and used; `baseline_only` means none was, so only
+medication-level evaluation ran. `missing_context_count`,
+`stale_context_count`, and `contradiction_count` flag gaps and problems —
+see [Safety results](/concepts/safety-results) for the full response shape.
+`context_summary` never echoes your raw `patient_context` values back.

@@ -1,0 +1,99 @@
+---
+title: Safety results
+subtitle: Reading a safety-check response correctly
+---
+
+<Warning>
+Never reduce a safety-check response to a bare `safe: true`/`false` claim.
+There is no such field, and collapsing the response to one is the single
+most common way to misrepresent what the API actually told you. Read
+`signals`, `domain_coverage`, `unavailable_domains`, and `review` together.
+</Warning>
+
+## The six domains
+
+Every safety evaluation is scoped to one or more of six domains, requested
+via `requested_domains` on the check:
+
+| Domain | Covers |
+|---|---|
+| `ddi` | Drug-drug interactions |
+| `pllr` | Pregnancy and lactation |
+| `clinical_dose` | Dose appropriateness for patient context |
+| `food_interactions` | Food/supplement interactions |
+| `meal_timing` | Meal-timing-sensitive dosing |
+| `allergy` | Allergy cross-reactivity |
+
+A domain you don't request is never evaluated and never appears in either
+`domain_coverage` or `unavailable_domains` — it's simply absent.
+
+## domain_coverage vs. unavailable_domains
+
+For each domain you *did* request, it lands in exactly one of these two
+arrays:
+
+- **`domain_coverage`** — domains that were actually evaluated
+  (`status: evaluated`). This is the set you can treat as "checked."
+- **`unavailable_domains`** — domains that were requested but could not be
+  evaluated, with a `status` explaining why: `not_applicable`, `unknown`,
+  `unmapped`, `not_enough_context`, `unavailable`, or `failed`.
+
+**Treat every domain in `unavailable_domains` as unknown, not as clear.** A
+domain landing here because of `not_enough_context` (e.g. you requested
+`clinical_dose` but sent no patient context) is not the same as "evaluated,
+no issues found" — no evaluation happened at all.
+
+## Signals
+
+`signals[]` holds every safety signal actually raised, across all evaluated
+domains. **An empty `signals` array does not mean "safe"** — it means no
+signal was raised across whatever was actually evaluated per
+`domain_coverage`. Combine it with `domain_coverage`/`unavailable_domains`
+to know what "empty" is actually telling you.
+
+Each signal carries:
+
+- **`severity`** — `informational` / `low` / `moderate` / `high` / `critical`.
+- **`action_bucket`** — `urgent_review` / `clarify_first` / `counsel` /
+  `monitor` / `reference`. **Use this, not severity alone, to decide UI
+  treatment.** A `moderate` severity signal in `urgent_review` warrants
+  stronger presentation than a `high` severity one in `reference`.
+- **`title` / `reason` / `justification`** — bilingual, human-readable
+  explanation of what was flagged and why.
+- **`evidence_refs[]`** — the citations backing this signal. Each entry has
+  its own `citation_label`, `reason`, `justification`, and `evidence_grade`
+  (`curated_reference` / `primary_label` / `secondary_reference` /
+  `local_policy` / `inferred_mapping`). These are meaningful records to
+  surface, not opaque IDs — use them to explain *why* a signal exists.
+- **`confidence`** — confidence in this specific signal, 0–1.
+- **`equivalent_options[]`** — suggested alternatives, when available.
+
+## Review
+
+`review` (result-level) and each signal's `review_required` (signal-level)
+are independent. A result can require review overall even if no individual
+signal does, and vice versa. `review.minimum_reviewer_role` and
+`review.review_deadline_policy` tell you who must review and by when
+relative to relying on the output — `before_relying_on_output` is the
+strictest: don't act on the result until reviewed.
+
+## context_summary
+
+Tells you whether `patient_context` was actually applied — see
+[Patient context](/concepts/patient-context) for the full field-by-field
+breakdown.
+
+## display_obligations
+
+Every response carries fixed display requirements
+(`must_show_educational_boundary`, `must_show_source_snapshot`,
+`must_preserve_arabic_text`, `may_not_describe_as_medical_advice`, all
+always `true`). If you build a UI on top of this API, these aren't optional
+— they describe what you're contractually required to show alongside the
+result.
+
+## limitations
+
+Caveats about the result's scope or confidence that should be surfaced
+alongside signals, at both the result level (`SafetyCheckResponse.limitations`)
+and the signal level (`SafetySignal.limitations`).

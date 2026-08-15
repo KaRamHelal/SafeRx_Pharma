@@ -1,0 +1,62 @@
+---
+title: Medication identity
+subtitle: Free text, SFRX IDs, and resolution
+---
+
+Medications can be identified two ways across the API, and most operations
+accept both.
+
+## Free text
+
+Send whatever text you have — a prescription line, a patient-reported name,
+an OCR-extracted string — as `input_text`. This is the right choice whenever
+you don't already have a resolved registry identifier. Every medication list
+input across the API (`enterprise_registry_resolve`,
+`enterprise_safety_check`'s `medications[]`, the hosted MCP's
+`resolve_medications`/`check_medication_safety`) accepts `input_text`.
+
+## SFRX IDs
+
+Once a medication has been resolved, you get back an `sfrx_id`
+(format `SRX-NNN-NNNNNN`) — a stable registry identifier. Passing `sfrx_id`
+on a later call (alongside or instead of `input_text`) skips ambiguous
+free-text matching and resolves directly to that registry entry. On
+`enterprise_registry_resolve`, `sfrx_id` takes precedence over `input_text`
+when both are supplied.
+
+Use `enterprise_registry_product_detail` with a known `sfrx_id` to fetch the
+full product record directly, rather than re-resolving from text.
+
+## Resolution ambiguity
+
+`enterprise_registry_resolve` returns `candidates[]` — ranked possible
+matches, each with a `score` (0–1, **not comparable across different
+queries**). `selected_candidate_id` is populated only when resolution is
+confident enough to auto-select one candidate; when it's `null`, your
+integration should present the candidates for the caller to choose, rather
+than assuming the first one.
+
+An empty `candidates` array means no confident match was found — it does
+not mean "no such product exists in the registry." Consider prompting for
+more specific input (dose, form) before concluding the medication is truly
+unknown.
+
+## current vs. target medication roles
+
+On `enterprise_safety_check`'s `medications[]`, each entry has a `role`:
+
+- **`target_medication`** (default) — the medication under review.
+- **`current_medication`** — a medication the patient is already taking,
+  supplied so it's considered for interaction checking against the target.
+
+Send every concurrently-taken medication you know about as
+`current_medication` entries on the same request — Enterprise never reads a
+saved list of current medications; it only sees what's on this request.
+
+## Review behavior
+
+Resolution results carry their own `review` state (`ReviewState`), separate
+from a safety check's review state. A resolution that's ambiguous or
+low-confidence may require review before you rely on the selected candidate
+— check `review.required` on the resolution result, not just on a
+downstream safety check.

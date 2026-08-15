@@ -52,6 +52,14 @@ navigation:
             path: docs/pages/authentication/rate-limits.mdx
           - page: Developer Portal
             path: docs/pages/authentication/developer-portal.mdx
+      - section: Core Concepts
+        contents:
+          - page: Medication Identity
+            path: docs/pages/concepts/medication-identity.mdx
+          - page: Patient Context
+            path: docs/pages/concepts/patient-context.mdx
+          - page: Safety Results
+            path: docs/pages/concepts/safety-results.mdx
       - api: Enterprise API
         api-name: enterprise
 
