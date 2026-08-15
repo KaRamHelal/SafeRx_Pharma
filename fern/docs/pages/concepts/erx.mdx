@@ -1,0 +1,46 @@
+---
+title: eRx safety integration
+subtitle: Safety checks from an electronic-prescription payload
+---
+
+`enterprise_erx_safety_check` runs the same six-domain safety evaluation as
+[`enterprise_safety_check`](/concepts/safety-results), but takes the
+prescription as an eRx-system payload instead of a free-text medication
+list.
+
+## Request shape
+
+```json
+{
+  "locale": "en",
+  "erx_payload": { "...": "integration-specific eRx document" },
+  "idempotency_key": "erx-2026-08-15-0001"
+}
+```
+
+`erx_payload` is intentionally not further constrained by this API — its
+shape is specific to your eRx integration. `locale` and `idempotency_key`
+are the only fields this operation defines outside the payload itself.
+
+<Warning>
+`erx_payload` is a different shape from `ClientSafetyCheckRequest`'s
+`medications[]` array used by `enterprise_safety_check`. Don't reuse a
+`enterprise_safety_check` request body here — this operation has its own
+request schema.
+</Warning>
+
+## Idempotency
+
+`Idempotency-Key` is required, same as `enterprise_safety_check`. Retried
+submissions of the same eRx prescription (same key, same body) return the
+original result instead of re-evaluating — important for eRx systems that
+may resend on their own retry/timeout logic. Use a key derived from the
+prescription's own identity (e.g. its eRx system reference) so a genuine
+resend from the eRx system naturally reuses the same key, rather than a
+random key that would let a resend double-evaluate.
+
+## Response
+
+Identical shape to `enterprise_safety_check`'s response — see
+[Safety results](/concepts/safety-results) for the full field-by-field
+breakdown. The same "never reduce to safe:true/false" rule applies.

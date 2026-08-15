@@ -1,8 +1,77 @@
 ---
 title: Limits and retries
-subtitle: Predictable behavior for production clients
+subtitle: Quotas, retries, idempotency, pagination, and request IDs
 ---
 
-Quota and entitlement decisions are server-authoritative. Clients should treat `429`, `502`, `503`, and `504` as typed outcomes and honor `Retry-After` when present.
+## Quota classes
 
-Retry only requests marked safe to retry. Safety writes require an idempotency key; reuse the same key when retrying the same logical request. Do not retry a request with a new idempotency key unless it is a new logical operation.
+Every operation draws from one of six daily quota classes shared with
+SafeRx's other surfaces (so, for example, autocomplete traffic never eats
+into your search budget):
+
+| Class | Operations |
+|---|---|
+| `drug_lookups` | `enterprise_registry_search`, `enterprise_registry_product_detail`, `enterprise_registry_resolve`, `enterprise_registry_ingredients` |
+| `autocomplete` | `enterprise_registry_autocomplete` |
+| `safety_boards` | `enterprise_safety_check`, `enterprise_ocr_prescription_safety` |
+| `ocr_prescriptions` | `enterprise_ocr_prescription_create` (the reads/resolve/review/events that follow one upload draw 0 additional units — you're not billed again for reading back work already paid for) |
+| `mcp_calls` | Every hosted MCP tool call (see [MCP Server](/ai-integration/mcp-server)); `tools/list` is a metadata read and draws 0 |
+| `erx_snapshots` | `enterprise_erx_safety_check` |
+
+The existing self-service **`enterprise_free`** plan's daily allowances:
+
+| Class | Daily allowance |
+|---|---|
+| `drug_lookups` | 180 |
+| `autocomplete` | 1,200 |
+| `safety_boards` | 180 |
+| `ocr_prescriptions` | 30 |
+| `mcp_calls` | 180 |
+| `erx_snapshots` | 30 |
+
+Quota resets on a fixed daily window. Overage is denied, not billed —
+`enterprise_free` has no overage charge; requests past the allowance return
+`429` until the window resets.
+
+## Reading a quota error
+
+A `429` (or a quota-exhausted `403`) carries `quota` in the problem
+response: `metric` (which class), `limit`, `remaining`, `reset_at`, and
+`window_seconds`. Use `reset_at` to schedule a retry rather than polling.
+
+## Retry-After and safe retries
+
+Treat `429`, `502`, `503`, and `504` as typed, retryable outcomes and honor
+the `Retry-After` header (also mirrored as `retry_after_seconds` in the
+problem body) when present — it reflects the server's actual state, not a
+guess. All three SDKs already do this (bounded exponential backoff for
+502/503/504, honoring `Retry-After` for 429 up to a 60-second sanity
+ceiling).
+
+Only retry a request marked `safe_to_retry: true` in its error response, or
+a request that failed before any side effect occurred. Never retry a
+side-effecting request with a *new* idempotency key hoping for a different
+outcome — that creates a second logical operation.
+
+## Idempotency
+
+`enterprise_safety_check`, `enterprise_erx_safety_check`, and
+`enterprise_ocr_prescription_create` require `Idempotency-Key`. Reuse the
+exact same key (and the exact same request body) when retrying the same
+logical request — the API returns the original result instead of
+re-evaluating. A new key means a new logical operation; don't generate a
+fresh key on every retry attempt.
+
+## Pagination
+
+`enterprise_registry_search` paginates via `cursor`/`limit` on the request
+and `pagination.next_cursor`/`has_more` on the response. Stop paginating
+when `has_more` is `false`; `next_cursor` is `null` at that point.
+`enterprise_registry_autocomplete` does not paginate — it returns a single
+bounded page, sized by `limit` (max 20).
+
+## Request IDs
+
+Every response and error carries a `request_id`. Include it when contacting
+support about a specific request — it's the fastest way to locate what
+happened server-side for that exact call.
