@@ -1,10 +1,22 @@
 ---
 title: Developer access
-subtitle: How to request Enterprise access
+subtitle: Self-service signup for the existing free plan
 ---
 
-The `/developers` page is the public information and access-request surface. It does not replace Enterprise request signing and it does not issue a credential directly from the API contract.
+Enterprise access for the existing self-service **`enterprise_free`** plan
+is self-service: sign in with a verified identity through the Partner
+portal, then complete signup. No manual approval step is required for the
+free plan.
 
-When access is approved, the organization receives the credential and allowed
-route entitlements through the MIS admin partner/key workflow. Use the exact
-base URL and operation IDs in this documentation after access is enabled.
+Your organization is provisioned on `enterprise_free` and issued an API key
+immediately on signup. **The key is shown exactly once at issuance** — store
+it securely right away; it cannot be retrieved again later, only rotated.
+Signup is limited to one free-tier organization per verified identity.
+
+Larger plans (Starter, Growth, Scale, Custom) are admin-assigned rather than
+self-service today — contact SafeRx to discuss those.
+
+Use the exact base URL and operation IDs in this documentation once your key
+is issued. See [Authentication overview](/authentication/overview) for exact
+request signing and [Limits and retries](/authentication/rate-limits) for
+`enterprise_free`'s quota allowances.

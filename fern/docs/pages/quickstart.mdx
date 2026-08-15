@@ -3,9 +3,11 @@ title: Quickstart
 subtitle: Make a signed Enterprise request
 ---
 
-## 1. Configure an approved Enterprise key
+## 1. Get an Enterprise key
 
-Access is provisioned through the MIS Enterprise release process. There is no self-service key-issuance endpoint in this contract.
+The existing `enterprise_free` plan is self-service — see
+[Developer access](/authentication/developer-portal). Your key is shown
+exactly once at issuance; store it securely right away.
 
 ## 2. Sign and send a request
 
@@ -47,22 +49,21 @@ result = client.enterprise_safety_check(
 
 ## 3. Read the bounded result
 
-A safety response contains `request_id`, `result_id`, `schema_version`, `surface`, `locale`, `summary`, `signals`, `domain_coverage`, `unavailable_domains`, `limitations`, `review`, `source_provenance`, and `display_obligations`. A client must preserve the review and limitation states; an empty signal list is not a universal safety guarantee.
+A safety response contains `request_id`, `result_id`, `schema_version`, `surface`, `locale`, `summary`, `context_summary`, `signals`, `domain_coverage`, `unavailable_domains`, `limitations`, `review`, `source_provenance`, `display_obligations`, and `correction_anchors`. Never reduce this to a bare `safe: true/false` claim — read `signals` alongside `domain_coverage`/`unavailable_domains` and preserve `review`. See [Safety results](/concepts/safety-results) for the full breakdown.
 
 ## 4. Explore the registry
 
 Use `enterprise_registry_autocomplete`, `enterprise_registry_search`,
-`enterprise_registry_resolve`, and `enterprise_registry_product_detail` to
-resolve and display registry-owned medication content. Registry requests need
-the `registry_basic` entitlement.
+`enterprise_registry_resolve`, `enterprise_registry_product_detail`, and
+`enterprise_registry_ingredients` to resolve and display registry medication
+content. See [Registry operations](/concepts/registry) for which one to use.
 
-## 5. Use OCR when the account is entitled
+## 5. Use OCR prescription intake
 
-Prescription OCR is a native multipart Enterprise workflow, not a local eRx
-OCR service. It requires the `ocr_prescription` entitlement and exposes upload,
-status, events, medication resolution, safety, and review operations. Preserve
-the returned `request_id`, `prescription_id`, review state, provenance, and
-limitations in the integrating application.
+Prescription OCR is an asynchronous, multi-step Enterprise workflow starting
+with `enterprise_ocr_prescription_create` (a `multipart/form-data` upload).
+See [OCR prescription lifecycle](/concepts/ocr-lifecycle) for the full
+create → read/events → resolve → safety → review sequence.
 
-The eRx integration uses the same public routes and does not share OCR files,
-databases, or private service addresses with MIS.
+eRx integrations use `enterprise_erx_safety_check` — see
+[eRx safety integration](/concepts/erx).
