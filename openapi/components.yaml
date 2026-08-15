@@ -1550,9 +1550,15 @@ components:
         source_provenance: {$ref: '#/components/schemas/SourceProvenance'}
         review: {$ref: '#/components/schemas/ReviewState'}
     PrescriptionResult:
+      description: candidate_medications and document_context were corrected
+        against the real backend contract (SafeRx-MIS api/openapi/components.yaml,
+        x-contract-status implementation_ready) -- candidate_medications was
+        typed as an always-empty object, which would have rejected every real
+        response once resolution had actually run, and document_context was
+        missing entirely despite being required.
       type: object
       additionalProperties: false
-      required: [request_id, prescription_id, workflow_id, status, created_at, updated_at, transitions, locale, educational_context, source_provenance, review, candidate_medications, display_obligations]
+      required: [request_id, prescription_id, workflow_id, status, created_at, updated_at, transitions, locale, educational_context, source_provenance, review, candidate_medications, document_context, display_obligations]
       properties:
         request_id: {description: 'Echo of the request identifier for correlation.', type: string}
         prescription_id: {description: 'Identifier for this prescription workflow.', type: string}
@@ -1567,7 +1573,144 @@ components:
         educational_context: {$ref: '#/components/schemas/EducationalContext'}
         source_provenance: {$ref: '#/components/schemas/SourceProvenance'}
         review: {$ref: '#/components/schemas/ReviewState'}
-        candidate_medications: {description: 'Medications resolved from this prescription so far. Empty until resolution has run.', type: array, items: {type: object, additionalProperties: false}}
+        document_context:
+          description: Classification of the uploaded document itself, before
+            per-line medication resolution.
+          type: object
+          additionalProperties: false
+          properties:
+            document_type:
+              description: What kind of document this was classified as.
+              type: [string, 'null']
+            is_prescription:
+              description: Whether the uploaded image was classified as a
+                prescription.
+              type: [boolean, 'null']
+            medications_present:
+              description: Whether any medications were detected in the
+                document.
+              type: [boolean, 'null']
+            medication_section:
+              description: Which part of the document the medication list was
+                found in, when applicable.
+              type: [string, 'null']
+        candidate_medications:
+          description: One entry per recognized medication line on the
+            prescription. Empty until OCR/resolution has run.
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [line_id, position, raw_span, ocr_candidates, alternatives, review_required, review_state]
+            properties:
+              line_id:
+                description: Identifier for this recognized line.
+                type: string
+              position:
+                description: Position of this line within the document.
+                type: integer
+                minimum: 0
+              raw_span:
+                description: Raw OCR text span this line was recognized from.
+                type: string
+              winner:
+                description: The selected medication for this line, once
+                  resolution has chosen one.
+                oneOf:
+                - type: object
+                  additionalProperties: false
+                  required: [display_name, review_state]
+                  properties:
+                    sfrx_id:
+                      description: Registry identifier, when resolved to a known
+                        product.
+                      type: [string, 'null']
+                    display_name:
+                      $ref: '#/components/schemas/LocalizedString'
+                    generic:
+                      description: Generic/INN name, when known.
+                      oneOf:
+                      - $ref: '#/components/schemas/LocalizedString'
+                      - type: 'null'
+                    final_score:
+                      description: Confidence this is the correct match, 0-1.
+                      type: [number, 'null']
+                      minimum: 0
+                      maximum: 1
+                    confidence:
+                      description: OCR recognition confidence for this line, 0-1.
+                      type: [number, 'null']
+                      minimum: 0
+                      maximum: 1
+                    review_state:
+                      description: Review state for this specific line.
+                      type: string
+                - type: 'null'
+              ocr_candidates:
+                description: Raw OCR readings for this line, ranked.
+                type: array
+                items:
+                  type: object
+                  additionalProperties: false
+                  required: [rank, recognized_text]
+                  properties:
+                    rank:
+                      description: Rank of this OCR reading for the line.
+                      type: integer
+                      minimum: 1
+                    recognized_text:
+                      description: Text as recognized by OCR.
+                      type: string
+                    locale:
+                      description: Locale of the recognized text, when detected.
+                      type: [string, 'null']
+                    confidence:
+                      description: OCR recognition confidence, 0-1.
+                      type: [number, 'null']
+                      minimum: 0
+                      maximum: 1
+              alternatives:
+                description: Alternative medication matches for this line, ranked.
+                type: array
+                items:
+                  type: object
+                  additionalProperties: false
+                  required: [rank, display_name, selection_reason]
+                  properties:
+                    rank:
+                      description: Rank of this alternative.
+                      type: integer
+                      minimum: 1
+                    sfrx_id:
+                      description: Registry identifier, when known.
+                      type: [string, 'null']
+                    display_name:
+                      $ref: '#/components/schemas/LocalizedString'
+                    generic:
+                      description: Generic/INN name, when known.
+                      oneOf:
+                      - $ref: '#/components/schemas/LocalizedString'
+                      - type: 'null'
+                    final_score:
+                      description: Confidence this alternative matches, 0-1.
+                      type: [number, 'null']
+                      minimum: 0
+                      maximum: 1
+                    selection_reason:
+                      description: Why this alternative was surfaced.
+                      type: string
+                      enum: [ocr_alternative_match, same_generic_name]
+              review_required:
+                description: Whether this specific line requires professional
+                  review.
+                type: boolean
+              review_state:
+                description: Current review state for this line.
+                type: string
+              correction_anchor_id:
+                description: Opaque anchor for reporting a correction against
+                  this line.
+                type: [string, 'null']
         display_obligations: {$ref: '#/components/schemas/DisplayObligations'}
     Locale:
       type: string

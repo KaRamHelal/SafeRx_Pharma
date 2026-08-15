@@ -268,6 +268,24 @@ def test_registry_response_field_names_match_the_real_backend() -> None:
     assert set(suggestion_item["required"]) == {"sfrx_id", "tradename", "dosage_form", "route", "match_reason", "score"}
 
 
+def test_prescription_result_matches_the_real_backend_contract() -> None:
+    # candidate_medications was typed as an always-empty object and
+    # document_context was missing entirely, despite both being real,
+    # required fields of PrescriptionResult (SafeRx-MIS api/openapi/
+    # components.yaml, x-contract-status implementation_ready). A client
+    # built against the old schema would have failed to parse any real
+    # response once OCR/resolution had actually produced content.
+    components = yaml.safe_load((ROOT / "openapi/components.yaml").read_text())
+    schema = components["components"]["schemas"]["PrescriptionResult"]
+    assert "document_context" in schema["required"]
+    candidate_item = schema["properties"]["candidate_medications"]["items"]
+    assert set(candidate_item["required"]) == {
+        "line_id", "position", "raw_span", "ocr_candidates", "alternatives",
+        "review_required", "review_state",
+    }
+    assert candidate_item["properties"]["ocr_candidates"]["items"]["properties"]
+
+
 def test_mcp_adapter_uses_only_signed_enterprise_operations() -> None:
     source = (ROOT / "packages/mcp-server/src/index.ts").read_text()
     for header in (
