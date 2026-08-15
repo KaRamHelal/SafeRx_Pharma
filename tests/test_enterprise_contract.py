@@ -286,6 +286,22 @@ def test_prescription_result_matches_the_real_backend_contract() -> None:
     assert candidate_item["properties"]["ocr_candidates"]["items"]["properties"]
 
 
+def test_prescription_transitions_and_evidence_refs_are_not_always_empty() -> None:
+    # Same always-empty-object bug: PrescriptionResult.transitions and
+    # SafetySignal.evidence_refs were both additionalProperties: false with
+    # zero declared properties, which would reject any real, populated entry
+    # (SafeRx-MIS EnterprisePrescriptionEvent, EvidenceReference).
+    components = yaml.safe_load((ROOT / "openapi/components.yaml").read_text())
+    schemas = components["components"]["schemas"]
+    transition_item = schemas["PrescriptionResult"]["properties"]["transitions"]["items"]
+    assert set(transition_item["required"]) == {"event_type", "payload", "occurred_at"}
+    evidence_item = schemas["SafetySignal"]["properties"]["evidence_refs"]["items"]
+    assert set(evidence_item["required"]) == {
+        "evidence_id", "domain", "source_snapshot_id", "evidence_grade",
+        "citation_label", "reason", "justification",
+    }
+
+
 def test_mcp_adapter_uses_only_signed_enterprise_operations() -> None:
     source = (ROOT / "packages/mcp-server/src/index.ts").read_text()
     for header in (

@@ -1568,7 +1568,38 @@ components:
         reason_code: {description: 'Machine-readable reason for the current status, when applicable (e.g. why processing failed).', type: [string, 'null']}
         created_at: {description: 'When this prescription workflow was created.', type: string, format: date-time}
         updated_at: {description: 'When this prescription workflow last changed state.', type: string, format: date-time}
-        transitions: {description: 'History of workflow state transitions.', type: array, items: {type: object, additionalProperties: false}}
+        transitions:
+          description: History of workflow state transitions.
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [event_type, payload, occurred_at]
+            properties:
+              event_type:
+                description: What kind of transition this was.
+                type: string
+              from_state:
+                description: Workflow status before this transition, when
+                  applicable.
+                type: [string, 'null']
+              to_state:
+                description: Workflow status after this transition, when
+                  applicable.
+                type: [string, 'null']
+              reason_code:
+                description: Machine-readable reason for this transition, when
+                  applicable.
+                type: [string, 'null']
+              payload:
+                description: Additional detail specific to this event_type. Shape
+                  varies by event_type and is not further specified.
+                type: object
+                additionalProperties: false
+              occurred_at:
+                description: When this transition occurred.
+                type: string
+                format: date-time
         locale: {description: 'Locale used for localized text in this response.', type: string}
         educational_context: {$ref: '#/components/schemas/EducationalContext'}
         source_provenance: {$ref: '#/components/schemas/SourceProvenance'}
@@ -2090,13 +2121,50 @@ components:
                 $ref: '#/components/schemas/LocalizedString'
           default: []
         evidence_refs:
-          description: References backing this signal. Opaque identifiers, not
-            fetchable content.
+          description: Evidence backing this signal. Each entry carries its own
+            citation and evidence grade; use these to explain why a signal was
+            raised, not just that it was.
           type: array
           minItems: 1
           items:
             type: object
             additionalProperties: false
+            required: [evidence_id, domain, source_snapshot_id, evidence_grade, citation_label, reason, justification]
+            properties:
+              evidence_id:
+                description: Stable identifier for this evidence entry.
+                type: string
+                minLength: 1
+              domain:
+                description: Which safety domain this evidence supports.
+                type: string
+                minLength: 1
+              source_snapshot_id:
+                description: Reference-data snapshot this evidence was drawn
+                  from.
+                type: string
+                minLength: 1
+              evidence_grade:
+                description: Strength/kind of this evidence.
+                type: string
+                enum:
+                - curated_reference
+                - primary_label
+                - secondary_reference
+                - local_policy
+                - inferred_mapping
+              citation_label:
+                $ref: '#/components/schemas/LocalizedString'
+              reason:
+                $ref: '#/components/schemas/LocalizedString'
+              justification:
+                $ref: '#/components/schemas/LocalizedString'
+              limitations:
+                description: Caveats specific to this evidence entry.
+                type: array
+                items:
+                  $ref: '#/components/schemas/LocalizedString'
+                default: []
         confidence:
           description: Confidence in this specific signal, 0-1.
           type: number
