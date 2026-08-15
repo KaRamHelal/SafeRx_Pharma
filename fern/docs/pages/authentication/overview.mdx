@@ -1,17 +1,108 @@
 ---
 title: Authentication
-subtitle: Signed Enterprise requests
+subtitle: Exact HMAC request signing for the Enterprise API
 ---
 
-Every Enterprise request is signed with `saferx-hmac-sha256-v1`. Send these headers:
+Every Enterprise request is signed with `saferx-hmac-sha256-v1`: an
+HMAC-SHA256 over a canonical representation of the request, using your API
+key as the signing secret. There is no separate "signing secret" distinct
+from the API key -- the key you were issued is used directly as the HMAC key.
+
+## Required headers
 
 | Header | Purpose |
 |---|---|
-| `X-SafeRx-API-Key` | Enterprise key identifier and signing secret input |
-| `X-SafeRx-Timestamp` | UTC timestamp with an explicit offset |
-| `X-SafeRx-Nonce` | One-use replay protection value |
-| `X-SafeRx-Signature` | Base64url HMAC-SHA256 signature |
+| `X-SafeRx-API-Key` | Your Enterprise API key. Also the HMAC signing secret. |
+| `X-SafeRx-Timestamp` | Request time, ISO 8601 with an explicit UTC offset (e.g. `2026-08-15T12:00:00+00:00`). |
+| `X-SafeRx-Nonce` | A fresh, unique value for every request. Never reuse a nonce with the same key. |
+| `X-SafeRx-Signature` | Base64url (no padding) HMAC-SHA256 signature, computed as below. |
 
-The signed canonical message is the uppercase method, escaped path, sorted query, lowercase SHA-256 body digest, timestamp, and nonce joined by newlines. The SDK clients implement this exactly. Never place credentials in source control or logs.
+## The canonical string
 
-The API denies unsigned requests, replayed nonces, stale timestamps, unsupported authentication modes, and credentials that do not have the required Enterprise entitlement. Denials use the documented problem response shape.
+The signed payload is six fields joined by `\n` (newline), in this exact order:
+
+```text
+{METHOD}
+{ESCAPED_PATH}
+{SORTED_QUERY_STRING}
+{BODY_SHA256_HEX}
+{TIMESTAMP}
+{NONCE}
+```
+
+- **METHOD** — uppercase HTTP method (`POST`, `GET`).
+- **ESCAPED_PATH** — the request path, percent-escaped, with `/` left
+  unescaped (e.g. `/api/enterprise/v1/safety/checks`). Include the full path
+  as sent on the wire, not just the operation's route suffix.
+- **SORTED_QUERY_STRING** — query parameters percent-encoded and sorted by
+  encoded key then value, joined as `key=value&key=value`. Empty string if
+  there is no query. Multiple values for the same key each get their own
+  `key=value` pair before sorting.
+- **BODY_SHA256_HEX** — lowercase hex SHA-256 digest of the exact raw request
+  body bytes. For a request with no body, this is the digest of an empty
+  byte string. This applies to every content type, including
+  `multipart/form-data` (`enterprise_ocr_prescription_create`) — hash the
+  exact multipart bytes you send, not a JSON re-encoding of the fields.
+- **TIMESTAMP** — the same value as `X-SafeRx-Timestamp`.
+- **NONCE** — the same value as `X-SafeRx-Nonce`.
+
+## Computing the signature
+
+```text
+signature = base64url_no_padding( HMAC_SHA256( key = api_key, message = canonical_string ) )
+```
+
+### Worked example
+
+Request: `POST /api/enterprise/v1/safety/checks` with query `""`, body:
+
+```json
+{"locale":"en","medications":[{"input_text":"amoxicillin 500mg"}],"requested_domains":["ddi"],"idempotency_key":"example-0001"}
+```
+
+<Note>
+This example uses a synthetic, non-functional key (`sk_test_example_not_a_real_key`) so the exact bytes below can be reproduced and checked against your own implementation. It is not a live credential.
+</Note>
+
+With `X-SafeRx-Timestamp: 2026-08-15T12:00:00+00:00` and
+`X-SafeRx-Nonce: b4f6b1f8e2a94e2c9c3d7e6f1a2b3c4d`:
+
+```text
+body_sha256 = 129ce0d8a0d58cd625d8ad7c1c58f1e78e15ce1e305281d57df4a8cf8777ad4c
+
+canonical_string =
+POST
+/api/enterprise/v1/safety/checks
+
+129ce0d8a0d58cd625d8ad7c1c58f1e78e15ce1e305281d57df4a8cf8777ad4c
+2026-08-15T12:00:00+00:00
+b4f6b1f8e2a94e2c9c3d7e6f1a2b3c4d
+
+signature (with api_key = "sk_test_example_not_a_real_key") =
+zVPg2grjSvuOxmKO4WJePVzmNH6TfUWJBKL7WsWKZb4
+```
+
+All three SDK clients (`packages/python`, `packages/typescript`,
+`packages/csharp`) implement exactly this. If you're hand-rolling signing,
+verify your implementation reproduces this exact signature for this exact
+input before pointing it at the live API.
+
+## Clock tolerance and replay
+
+- `X-SafeRx-Timestamp` must be within **300 seconds (5 minutes)** of the
+  server's clock, in either direction. Outside that window the request is
+  denied as a clock-skew failure, independent of whether the signature is
+  otherwise valid.
+- Every `X-SafeRx-Nonce` you send must be unique for your API key. A reused
+  nonce is denied as a replay, even with a correct signature and a fresh
+  timestamp. Generate a new random nonce for every request — the SDKs do
+  this automatically (`secrets.token_urlsafe` / `crypto.randomUUID` /
+  `RandomNumberGenerator`).
+
+## Denials
+
+The API denies unsigned requests, invalid signatures, stale timestamps,
+replayed nonces, unsupported authentication modes, and credentials that lack
+the required Enterprise entitlement for the requested operation. Denials use
+the documented [problem response shape](/api-reference) with a stable `code`
+you can switch on.

@@ -333,6 +333,32 @@ def test_erx_safety_check_uses_its_own_request_schema() -> None:
     assert set(schema["required"]) == {"erx_payload", "locale"}
 
 
+def test_signing_guide_worked_example_matches_the_real_implementation() -> None:
+    # The authentication guide publishes a fully worked canonical-string and
+    # signature example so an integrator can verify their own hand-rolled
+    # implementation byte-for-byte. This re-derives it from the same
+    # sign_request/canonical_request the SDKs actually ship, so the doc can't
+    # silently drift from the real signing behavior.
+    body = (
+        b'{"locale":"en","medications":[{"input_text":"amoxicillin 500mg"}],'
+        b'"requested_domains":["ddi"],"idempotency_key":"example-0001"}'
+    )
+    body_sha256 = hashlib.sha256(body).hexdigest()
+    canonical = canonical_request(
+        "POST", "/api/enterprise/v1/safety/checks", "", body_sha256,
+        "2026-08-15T12:00:00+00:00", "b4f6b1f8e2a94e2c9c3d7e6f1a2b3c4d",
+    )
+    signature = sign_request(
+        "sk_test_example_not_a_real_key", "POST", "/api/enterprise/v1/safety/checks", "",
+        body, "2026-08-15T12:00:00+00:00", "b4f6b1f8e2a94e2c9c3d7e6f1a2b3c4d",
+    )
+    doc = (ROOT / "fern/docs/pages/authentication/overview.mdx").read_text()
+    assert body_sha256 in doc
+    for line in canonical.splitlines():
+        assert line in doc
+    assert signature in doc
+
+
 def test_mcp_adapter_uses_only_signed_enterprise_operations() -> None:
     source = (ROOT / "packages/mcp-server/src/index.ts").read_text()
     for header in (
