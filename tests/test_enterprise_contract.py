@@ -302,6 +302,37 @@ def test_prescription_transitions_and_evidence_refs_are_not_always_empty() -> No
     }
 
 
+def test_example_fixtures_are_current_and_valid() -> None:
+    import subprocess
+    import sys
+
+    current = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/build_example_fixtures.py"), "--check"],
+        capture_output=True, text=True,
+    )
+    assert current.returncode == 0, current.stdout + current.stderr
+    valid = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/validate_examples.py")],
+        capture_output=True, text=True,
+    )
+    assert valid.returncode == 0, valid.stdout + valid.stderr
+
+
+def test_erx_safety_check_uses_its_own_request_schema() -> None:
+    # Was type: object, additionalProperties: false -- an inline placeholder
+    # that would reject any real request. The real backend contract
+    # (SafeRx-MIS ErxSafetyCheckRequest, x-contract-status implementation_ready)
+    # takes erx_payload + locale, not the free-text medications[] shape of
+    # ClientSafetyCheckRequest.
+    spec = yaml.safe_load((ROOT / "openapi/enterprise-v1.yaml").read_text())
+    op = spec["paths"]["/erx/safety-checks"]["post"]
+    ref = op["requestBody"]["content"]["application/json"]["schema"]["$ref"]
+    assert ref.endswith("ErxSafetyCheckRequest")
+    components = yaml.safe_load((ROOT / "openapi/components.yaml").read_text())
+    schema = components["components"]["schemas"]["ErxSafetyCheckRequest"]
+    assert set(schema["required"]) == {"erx_payload", "locale"}
+
+
 def test_mcp_adapter_uses_only_signed_enterprise_operations() -> None:
     source = (ROOT / "packages/mcp-server/src/index.ts").read_text()
     for header in (

@@ -1,0 +1,67 @@
+{
+  "request": {
+    "query_params": {
+      "limit": 5,
+      "locale": "en",
+      "q": "amox"
+    }
+  },
+  "response": {
+    "display_obligations": {
+      "may_not_describe_as_medical_advice": true,
+      "must_preserve_arabic_text": true,
+      "must_preserve_rtl_layout": true,
+      "must_show_educational_boundary": true,
+      "must_show_professional_review_language": false,
+      "must_show_source_snapshot": true
+    },
+    "educational_context": {
+      "basis": "curated_pharmaceutical_reference_data",
+      "claim_catalog_version": "2026.08.01",
+      "classification": "pharmaceutical_education",
+      "generated_at": "2026-08-15T12:00:00+00:00",
+      "locale": "en",
+      "not_dispensing_authorization": true,
+      "not_medical_advice": true,
+      "policy_version": "2026.08.01",
+      "professional_review_required": false,
+      "source_snapshot_id": "edu-snapshot-2026-08-01",
+      "supported_locales": [
+        "ar-EG",
+        "ar",
+        "en"
+      ]
+    },
+    "items": [
+      {
+        "dosage_form": {
+          "ar": "كبسولة",
+          "en": "Capsule"
+        },
+        "match_reason": {
+          "ar": "تطابق بداية الاسم التجاري",
+          "en": "Trade name prefix match"
+        },
+        "route": {
+          "ar": "فموي",
+          "en": "Oral"
+        },
+        "score": 0.91,
+        "sfrx_id": "SRX-101-000042",
+        "tradename": {
+          "ar": "أموكسيسيلين 500 مجم كبسولة",
+          "en": "Amoxicillin 500mg Capsule"
+        }
+      }
+    ],
+    "locale": "en",
+    "request_id": "req_example_0001",
+    "schema_version": "1.0.0",
+    "source_provenance": {
+      "claim_catalog_version": "2026.08.01",
+      "policy_version": "2026.08.01",
+      "registry_snapshot_id": "registry-2026-08-01",
+      "safety_snapshot_id": "safety-2026-08-01"
+    }
+  }
+}

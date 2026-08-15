@@ -1,0 +1,37 @@
+{
+  "request": {},
+  "response": {
+    "available": true,
+    "domains": {
+      "allergy": {
+        "available": true,
+        "status": "active"
+      },
+      "clinical_dose": {
+        "available": true,
+        "status": "active"
+      },
+      "ddi": {
+        "available": true,
+        "status": "active"
+      },
+      "food_interactions": {
+        "available": true,
+        "status": "active"
+      },
+      "meal_timing": {
+        "available": true,
+        "status": "active"
+      },
+      "pllr": {
+        "available": true,
+        "status": "active"
+      }
+    },
+    "registry_snapshot_id": "registry-2026-08-01",
+    "request_id": "req_example_0001",
+    "safety_snapshot_id": "safety-2026-08-01",
+    "schema_version": "1.0.0",
+    "status": "ready"
+  }
+}

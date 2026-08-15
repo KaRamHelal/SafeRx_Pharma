@@ -322,8 +322,10 @@ paths:
       summary: Run a safety check for an eRx workflow
       description: Safety check variant for electronic-prescription integrations.
         Shares the same six-domain evaluation and response shape as
-        `enterprise_safety_check`; requires `Idempotency-Key` so retried eRx
-        submissions cannot double-evaluate the same prescription.
+        `enterprise_safety_check`, but takes the prescription as an
+        integration-specific `erx_payload` rather than a free-text medication
+        list. Requires `Idempotency-Key` so retried eRx submissions cannot
+        double-evaluate the same prescription.
       x-idempotency-required: true
       parameters:
       - $ref: ./components.yaml#/components/parameters/idempotencyKey
@@ -332,8 +334,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              additionalProperties: false
+              $ref: ./components.yaml#/components/schemas/ErxSafetyCheckRequest
       responses:
         '200':
           description: eRx safety check result

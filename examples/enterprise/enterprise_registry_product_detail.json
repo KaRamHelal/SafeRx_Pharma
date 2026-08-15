@@ -1,0 +1,104 @@
+{
+  "request": {
+    "path_params": {
+      "sfrx_id": "SRX-101-000042"
+    }
+  },
+  "response": {
+    "barcode": null,
+    "category_trail": [
+      {
+        "label": {
+          "ar": "المضادات الحيوية",
+          "en": "Antibiotics"
+        },
+        "level": "class"
+      }
+    ],
+    "clinical_uses": {
+      "ar": "الالتهابات البكتيرية",
+      "en": "Bacterial infections"
+    },
+    "correction_anchors": [],
+    "display_obligations": {
+      "may_not_describe_as_medical_advice": true,
+      "must_preserve_arabic_text": true,
+      "must_preserve_rtl_layout": true,
+      "must_show_educational_boundary": true,
+      "must_show_professional_review_language": false,
+      "must_show_source_snapshot": true
+    },
+    "domain_availability": {
+      "allergy": "available",
+      "clinical_dose": "available",
+      "ddi": "available",
+      "food_interactions": "available",
+      "meal_timing": "available",
+      "pllr": "available"
+    },
+    "dosage_form": {
+      "ar": "كبسولة",
+      "en": "Capsule"
+    },
+    "educational_context": {
+      "basis": "curated_pharmaceutical_reference_data",
+      "claim_catalog_version": "2026.08.01",
+      "classification": "pharmaceutical_education",
+      "generated_at": "2026-08-15T12:00:00+00:00",
+      "locale": "en",
+      "not_dispensing_authorization": true,
+      "not_medical_advice": true,
+      "policy_version": "2026.08.01",
+      "professional_review_required": false,
+      "source_snapshot_id": "edu-snapshot-2026-08-01",
+      "supported_locales": [
+        "ar-EG",
+        "ar",
+        "en"
+      ]
+    },
+    "generic": {
+      "ar": "أموكسيسيلين",
+      "en": "Amoxicillin"
+    },
+    "locale": "en",
+    "manufacturer": null,
+    "package": {
+      "ar": "علبة 21 كبسولة",
+      "en": "Box of 21 capsules"
+    },
+    "parent_sfrx_id": null,
+    "pharmacology": {
+      "details": null
+    },
+    "primary_name": null,
+    "product_tier": "pharma",
+    "prose_details": {
+      "description": null,
+      "dosing": null,
+      "ingredients": null
+    },
+    "request_id": "req_example_0001",
+    "route": {
+      "ar": "فموي",
+      "en": "Oral"
+    },
+    "schema_version": "1.0.0",
+    "sfrx_id": "SRX-101-000042",
+    "source_provenance": {
+      "claim_catalog_version": "2026.08.01",
+      "policy_version": "2026.08.01",
+      "registry_snapshot_id": "registry-2026-08-01",
+      "safety_snapshot_id": "safety-2026-08-01"
+    },
+    "strength": "500mg",
+    "supplier": null,
+    "tradename": {
+      "ar": "أموكسيسيلين 500 مجم كبسولة",
+      "en": "Amoxicillin 500mg Capsule"
+    },
+    "warnings": {
+      "requires_professional_review": false
+    }
+  }
+}

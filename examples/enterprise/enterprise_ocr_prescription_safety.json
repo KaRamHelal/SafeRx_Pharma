@@ -1,0 +1,108 @@
+{
+  "request": {
+    "body": {},
+    "path_params": {
+      "prescription_id": "rx_example_0001"
+    }
+  },
+  "response": {
+    "candidate_medications": [
+      {
+        "alternatives": [],
+        "correction_anchor_id": null,
+        "line_id": "line_0001",
+        "ocr_candidates": [
+          {
+            "confidence": 0.95,
+            "locale": "en",
+            "rank": 1,
+            "recognized_text": "Amoxicillin 500mg cap"
+          }
+        ],
+        "position": 0,
+        "raw_span": "Amoxicillin 500mg cap",
+        "review_required": false,
+        "review_state": "not_required",
+        "winner": {
+          "confidence": 0.95,
+          "display_name": {
+            "ar": "أموكسيسيلين 500 مجم كبسولة",
+            "en": "Amoxicillin 500mg Capsule"
+          },
+          "final_score": 0.97,
+          "generic": {
+            "ar": "أموكسيسيلين",
+            "en": "Amoxicillin"
+          },
+          "review_state": "not_required",
+          "sfrx_id": "SRX-101-000042"
+        }
+      }
+    ],
+    "created_at": "2026-08-15T12:00:00+00:00",
+    "display_obligations": {
+      "may_not_describe_as_medical_advice": true,
+      "must_preserve_arabic_text": true,
+      "must_preserve_rtl_layout": true,
+      "must_show_educational_boundary": true,
+      "must_show_professional_review_language": false,
+      "must_show_source_snapshot": true
+    },
+    "document_context": {
+      "document_type": "prescription",
+      "is_prescription": true,
+      "medication_section": "body",
+      "medications_present": true
+    },
+    "educational_context": {
+      "basis": "curated_pharmaceutical_reference_data",
+      "claim_catalog_version": "2026.08.01",
+      "classification": "pharmaceutical_education",
+      "generated_at": "2026-08-15T12:00:00+00:00",
+      "locale": "en",
+      "not_dispensing_authorization": true,
+      "not_medical_advice": true,
+      "policy_version": "2026.08.01",
+      "professional_review_required": false,
+      "source_snapshot_id": "edu-snapshot-2026-08-01",
+      "supported_locales": [
+        "ar-EG",
+        "ar",
+        "en"
+      ]
+    },
+    "locale": "en",
+    "pipeline_profile": "auto",
+    "prescription_id": "rx_example_0001",
+    "reason_code": null,
+    "request_id": "req_example_0001",
+    "review": {
+      "minimum_reviewer_role": "none",
+      "reason_codes": [],
+      "required": false,
+      "review_deadline_policy": "not_applicable",
+      "review_outcome": null,
+      "reviewed_at": null,
+      "status": "not_required"
+    },
+    "source_provenance": {
+      "claim_catalog_version": "2026.08.01",
+      "policy_version": "2026.08.01",
+      "registry_snapshot_id": "registry-2026-08-01",
+      "safety_snapshot_id": "safety-2026-08-01"
+    },
+    "status": "safety_checked",
+    "transitions": [
+      {
+        "event_type": "ocr_completed",
+        "from_state": "accepted",
+        "occurred_at": "2026-08-15T12:00:05+00:00",
+        "payload": {},
+        "reason_code": null,
+        "to_state": "processing"
+      }
+    ],
+    "updated_at": "2026-08-15T12:00:05+00:00",
+    "workflow_id": "wf_example_0001"
+  }
+}

@@ -169,6 +169,35 @@ components:
           - string
           - 'null'
       additionalProperties: false
+    ErxSafetyCheckRequest:
+      description: Request body for enterprise_erx_safety_check. Distinct from
+        ClientSafetyCheckRequest -- an eRx submission carries the prescription
+        as an integration-specific payload rather than a free-text medication
+        list.
+      type: object
+      required:
+      - erx_payload
+      - locale
+      properties:
+        locale:
+          description: Locale to use for localized text in the response.
+          type: string
+          enum:
+          - ar-EG
+          - ar
+          - en
+          - mixed
+        erx_payload:
+          description: The eRx prescription payload. Shape is
+            integration-specific and not further constrained here.
+          type: object
+          additionalProperties: false
+        idempotency_key:
+          description: Client-supplied idempotency key. A retried request with
+            the same key and body returns the original result rather than
+            creating a new check. Required on this operation.
+          type: string
+      additionalProperties: false
     PatientSafetyContext:
       description: Optional patient factors considered for this single request only.
         Enterprise never reads or writes a saved profile; omitted fields are treated

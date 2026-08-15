@@ -6,10 +6,13 @@ on:
       - "openapi/**"
       - "fern/**"
       - "packages/**"
+      - "examples/**"
       - "CHANGELOG.md"
       - "scripts/release_preflight.py"
       - "scripts/generate_enterprise_sdks.py"
       - "scripts/render_fern_changelog.py"
+      - "scripts/build_example_fixtures.py"
+      - "scripts/validate_examples.py"
       - ".github/workflows/**"
   push:
     branches: [main]
@@ -17,10 +20,13 @@ on:
       - "openapi/**"
       - "fern/**"
       - "packages/**"
+      - "examples/**"
       - "CHANGELOG.md"
       - "scripts/release_preflight.py"
       - "scripts/generate_enterprise_sdks.py"
       - "scripts/render_fern_changelog.py"
+      - "scripts/build_example_fixtures.py"
+      - "scripts/validate_examples.py"
       - ".github/workflows/**"
   workflow_dispatch:
 
@@ -36,9 +42,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install validation dependency
-        run: python -m pip install --disable-pip-version-check "PyYAML==6.0.2"
+      - name: Install validation dependencies
+        run: python -m pip install --disable-pip-version-check "PyYAML==6.0.2" "jsonschema==4.23.0"
       - name: Validate public release inputs
         run: python scripts/release_preflight.py
       - name: Validate rendered changelog is current
         run: python scripts/render_fern_changelog.py --check
+      - name: Validate example fixtures are current
+        run: python scripts/build_example_fixtures.py --check
+      - name: Validate example fixtures against the real schemas
+        run: python scripts/validate_examples.py
