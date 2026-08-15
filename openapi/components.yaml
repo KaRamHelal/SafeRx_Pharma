@@ -1414,6 +1414,8 @@ components:
       - en
       - mixed
     LocalizedString:
+      description: Bilingual display text. Always render according to the
+        caller's chosen locale; do not concatenate en and ar.
       type: object
       additionalProperties: false
       required:
@@ -1421,20 +1423,26 @@ components:
       - ar
       properties:
         en:
+          description: English text.
           type: string
           minLength: 1
         ar:
+          description: Arabic text.
           type: string
           minLength: 1
         transliteration:
+          description: Latin transliteration of the Arabic text, when available.
           type:
           - string
           - 'null'
         direction:
+          description: Text direction hint for rendering, when it differs from
+            the locale default.
           type:
           - string
           - 'null'
     Pagination:
+      description: Cursor-based pagination state.
       type: object
       additionalProperties: false
       required:
@@ -1442,16 +1450,21 @@ components:
       - has_more
       properties:
         limit:
+          description: Page size used for this response.
           type: integer
         cursor:
+          description: Cursor that produced this page, when one was supplied.
           type:
           - string
           - 'null'
         next_cursor:
+          description: Cursor to request the next page. Null when has_more is
+            false.
           type:
           - string
           - 'null'
         has_more:
+          description: Whether more results exist beyond this page.
           type: boolean
     SourceProvenance:
       description: Snapshot identifiers for the reference data used to produce this
@@ -1465,20 +1478,29 @@ components:
       - claim_catalog_version
       properties:
         registry_snapshot_id:
+          description: Registry data snapshot used, when this response drew on
+            registry data.
           type:
           - string
           - 'null'
         safety_snapshot_id:
+          description: Safety data snapshot used, when this response drew on
+            safety data.
           type:
           - string
           - 'null'
         policy_version:
+          description: Policy version applied to this response.
           type: string
         claim_catalog_version:
+          description: Claim catalog version applied to this response, when
+            applicable.
           type:
           - string
           - 'null'
     DisplayObligations:
+      description: Display requirements the caller must honor when presenting
+        this response to an end user.
       type: object
       additionalProperties: false
       required:
@@ -1489,23 +1511,38 @@ components:
       - may_not_describe_as_medical_advice
       properties:
         must_show_educational_boundary:
+          description: Always true. The educational-content boundary must be
+            shown alongside this response wherever it's displayed.
           type: boolean
           const: true
         must_show_professional_review_language:
+          description: Whether professional-review language must be shown
+            alongside this response.
           type: boolean
         must_show_source_snapshot:
+          description: Always true. The source snapshot/version must be
+            attributable in the display.
           type: boolean
           const: true
         must_preserve_arabic_text:
+          description: Always true. Arabic text must be displayed as returned,
+            not machine-translated or altered.
           type: boolean
           const: true
         must_preserve_rtl_layout:
+          description: Whether right-to-left layout must be preserved for Arabic
+            content.
           type: boolean
           default: true
         may_not_describe_as_medical_advice:
+          description: Always true. This response must never be presented as
+            medical advice or a dispensing authorization.
           type: boolean
           const: true
     EducationalContext:
+      description: Fixed educational-content framing attached to every response.
+        Establishes that responses are pharmaceutical education, not medical
+        advice or a dispensing authorization.
       type: object
       additionalProperties: false
       required:
@@ -1522,35 +1559,47 @@ components:
       - supported_locales
       properties:
         classification:
+          description: Always pharmaceutical_education.
           type: string
           const: pharmaceutical_education
         not_medical_advice:
+          description: Always true.
           type: boolean
           const: true
         not_dispensing_authorization:
+          description: Always true.
           type: boolean
           const: true
         professional_review_required:
+          description: Whether this response's domain requires professional
+            review before being relied upon.
           type: boolean
         basis:
+          description: The reference-data basis for this response.
           type: string
           enum:
           - curated_pharmaceutical_reference_data
         source_snapshot_id:
+          description: Identifier for the reference-data snapshot this response
+            was generated from.
           type: string
           minLength: 1
         generated_at:
+          description: When this response was generated.
           type: string
           format: date-time
         policy_version:
+          description: Policy version applied to this response.
           type: string
           minLength: 1
         claim_catalog_version:
+          description: Claim catalog version applied to this response.
           type: string
           minLength: 1
         locale:
           $ref: '#/components/schemas/Locale'
         supported_locales:
+          description: Locales this response's content is available in.
           type: array
           minItems: 2
           items:
