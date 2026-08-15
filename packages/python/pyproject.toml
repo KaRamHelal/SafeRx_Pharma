@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "saferx-pharma"
-version = "2.0.2rc1"
+version = "2.0.2"
 description = "Signed Python client for the SafeRx Enterprise API"
 readme = "README.md"
 requires-python = ">=3.11"

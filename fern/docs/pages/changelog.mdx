@@ -15,9 +15,14 @@ Releases tracking. For the complete published version history, see
 and [NuGet (SafeRx)](https://www.nuget.org/packages/SafeRx#versions-body-tab).
 Entries below are not a backfilled reconstruction of that history.
 
-## [Unreleased]
+## [2.0.2] - 2026-08-15
 
 ### Fixed
+- `ProblemDetails` was missing `operation_id` and `path`, both present on
+  every real error response (confirmed against a live signed request to
+  production); added both. `policy_id`, also present live, is deliberately
+  not documented as public surface -- it is private policy-engine
+  vocabulary that should be stripped at the gateway.
 - `enterprise_registry_resolve`'s request schema required response-shaped
   fields no client could construct; corrected to the real
   locale + medications[] contract also used by the hosted MCP.
@@ -53,9 +58,12 @@ Entries below are not a backfilled reconstruction of that history.
   `get_safety_capabilities`) are documented at
   `/api/enterprise-mcp/v1/mcp`.
 - New guides: Medication Identity, Patient Context, Safety Results,
-  Registry Operations, eRx Safety Integration, OCR Prescription Lifecycle.
+  Registry Operations, eRx Safety Integration, OCR Prescription Lifecycle,
+  Allergy Reference (documented as not yet available -- still 501 upstream).
 - `.github/CODEOWNERS` for the public contract, SDK signing code, and
   release gates.
+- The regression test suite now runs in CI on every PR and before every
+  SDK publish (it previously only ran locally).
 
 ### Changed
 - Repository reorganized: SDKs and the MCP adapter moved under `packages/`;

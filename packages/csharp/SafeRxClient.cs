@@ -45,7 +45,7 @@ public sealed class SafeRxProblemDetailsException : Exception
 
 public sealed class SafeRxClient
 {
-    public const string SdkVersion = "2.0.2-preview.1";
+    public const string SdkVersion = "2.0.2";
     public static readonly IReadOnlyDictionary<string, EnterpriseOperation> Operations = new Dictionary<string, EnterpriseOperation>
     {
         ["enterprise_erx_safety_check"] = new EnterpriseOperation("enterprise_erx_safety_check", HttpMethod.Post, "/erx/safety-checks", true),

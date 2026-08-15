@@ -1,7 +1,7 @@
 release_id: enterprise-v1-2026.08.15
-release_version: 2.0.2-preview.1
-status: preview
-publishable: false
+release_version: 2.0.2
+status: available
+publishable: true
 
 api_contract:
   source: openapi/enterprise-v1.yaml
@@ -12,9 +12,9 @@ api_contract:
   response_policy: closed_schema
 
 artifacts:
-  python: saferx-pharma==2.0.1
-  typescript: saferx-pharma-sdk@2.0.1
-  csharp: SafeRx==2.0.1
+  python: saferx-pharma==2.0.2
+  typescript: saferx-pharma-sdk@2.0.2
+  csharp: SafeRx==2.0.2
 
 hosted_mcp:
   status: preview
@@ -46,3 +46,11 @@ notes:
     deprecated; it is not the supported MCP integration path.
   - This manifest is the public release identity only. It does not describe any
     account, plan, or entitlement other than the existing self-service free plan.
+  - Live-verified 2026-08-15 with a real signed key against production --
+    enterprise_registry_search, enterprise_registry_resolve, and
+    enterprise_registry_autocomplete all returned real, schema-valid
+    responses matching the corrected tradename/generic field names. A denied
+    call to enterprise_safety_capabilities also confirmed the signing
+    implementation reaches and is understood by the real gateway (403
+    API_KEY_DENIED, not an auth/signature failure). Full blackbox coverage
+    of all 14 available operations is still pending (plan section 12).
