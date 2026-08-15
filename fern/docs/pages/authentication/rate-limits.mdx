@@ -5,7 +5,7 @@ subtitle: Quotas, retries, idempotency, pagination, and request IDs
 
 ## Quota classes
 
-Every operation draws from one of six daily quota classes shared with
+Every operation draws from one of five daily quota classes shared with
 SafeRx's other surfaces (so, for example, autocomplete traffic never eats
 into your search budget):
 
@@ -13,10 +13,9 @@ into your search budget):
 |---|---|
 | `drug_lookups` | `enterprise_registry_search`, `enterprise_registry_product_detail`, `enterprise_registry_resolve`, `enterprise_registry_ingredients` |
 | `autocomplete` | `enterprise_registry_autocomplete` |
-| `safety_boards` | `enterprise_safety_check`, `enterprise_ocr_prescription_safety` |
-| `ocr_prescriptions` | `enterprise_ocr_prescription_create` (the reads/resolve/review/events that follow one upload draw 0 additional units — you're not billed again for reading back work already paid for) |
+| `safety_boards` | `enterprise_safety_check` and `enterprise_erx_safety_check` — eRx safety checks share the same daily pool as regular safety checks, not a separate allowance |
+| `ocr_prescriptions` | `enterprise_ocr_prescription_create` (the reads/resolve/review/events/safety that follow one upload, including `enterprise_ocr_prescription_safety`, draw 0 additional units — you're not billed again for reading back or evaluating work already paid for) |
 | `mcp_calls` | Every hosted MCP tool call (see [MCP Server](/ai-integration/mcp-server)); `tools/list` is a metadata read and draws 0 |
-| `erx_snapshots` | `enterprise_erx_safety_check` |
 
 The existing self-service **`enterprise_free`** plan's daily allowances:
 
@@ -27,7 +26,6 @@ The existing self-service **`enterprise_free`** plan's daily allowances:
 | `safety_boards` | 180 |
 | `ocr_prescriptions` | 30 |
 | `mcp_calls` | 180 |
-| `erx_snapshots` | 30 |
 
 Quota resets on a fixed daily window. Overage is denied, not billed —
 `enterprise_free` has no overage charge; requests past the allowance return
