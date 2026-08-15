@@ -66,6 +66,8 @@ navigation:
             path: docs/pages/concepts/erx.mdx
           - page: OCR Prescription Lifecycle
             path: docs/pages/concepts/ocr-lifecycle.mdx
+          - page: Allergy Reference
+            path: docs/pages/concepts/allergy-reference.mdx
       - api: Enterprise API
         api-name: enterprise
 
