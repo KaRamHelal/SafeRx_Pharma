@@ -164,6 +164,36 @@ def sign_request(api_key: str, method: str, path: str, query: str, body: bytes, 
     return base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
 
 
+class MultipartFile:
+    """A file to attach to a multipart/form-data request."""
+
+    __slots__ = ("filename", "content", "content_type")
+
+    def __init__(self, filename: str, content: bytes, content_type: str = "application/octet-stream"):
+        self.filename = filename
+        self.content = content
+        self.content_type = content_type
+
+
+def encode_multipart(fields: dict[str, Any]) -> tuple[bytes, str]:
+    """Build a multipart/form-data body. Signing always covers these exact bytes --
+    the same raw-bytes-over-the-wire rule the gateway applies to every content type."""
+    boundary = f"----saferx-{{secrets.token_hex(16)}}"
+    parts: list[bytes] = []
+    for name, value in fields.items():
+        if isinstance(value, MultipartFile):
+            header = (
+                f'--{{boundary}}\\r\\nContent-Disposition: form-data; name="{{name}}"; '
+                f'filename="{{value.filename}}"\\r\\nContent-Type: {{value.content_type}}\\r\\n\\r\\n'
+            )
+            parts.append(header.encode("utf-8") + value.content + b"\\r\\n")
+        else:
+            header = f'--{{boundary}}\\r\\nContent-Disposition: form-data; name="{{name}}"\\r\\n\\r\\n'
+            parts.append(header.encode("utf-8") + str(value).encode("utf-8") + b"\\r\\n")
+    parts.append(f"--{{boundary}}--\\r\\n".encode("utf-8"))
+    return b"".join(parts), f"multipart/form-data; boundary={{boundary}}"
+
+
 RETRY_AFTER_MAX_SECONDS = 60.0
 
 
@@ -193,14 +223,24 @@ class SafeRxClient:
         *,
         query: dict[str, Any] | None = None,
         body: Any = None,
+        multipart: dict[str, Any] | None = None,
         path_params: dict[str, Any] | None = None,
         idempotency_key: str | None = None,
     ) -> Any:
+        if body is not None and multipart is not None:
+            raise ValueError("pass either body or multipart, not both")
         operation = OPERATIONS[operation_id]
         path = operation.path
         for name, value in (path_params or {{}}).items():
             path = path.replace("{{" + name + "}}", quote(str(value), safe="-._~"))
-        body_bytes = b"" if body is None else json.dumps(body, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode()
+        content_type: str | None = None
+        if multipart is not None:
+            body_bytes, content_type = encode_multipart(multipart)
+        elif body is not None:
+            body_bytes = json.dumps(body, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode()
+            content_type = "application/json"
+        else:
+            body_bytes = b""
         canonical_q = canonical_query(query)
         target = f"{{self.base_url}}{{path}}{{('?' + canonical_q) if canonical_q else ''}}"
         request_id = secrets.token_hex(16)
@@ -220,8 +260,8 @@ class SafeRxClient:
             "X-SafeRx-SDK-Language": SDK_LANGUAGE,
             "X-SafeRx-SDK-Version": SDK_VERSION,
         }}
-        if body is not None:
-            headers["Content-Type"] = "application/json"
+        if content_type is not None:
+            headers["Content-Type"] = content_type
         if operation.idempotency_required and not idempotency_key:
             raise ValueError(f"{{operation_id}} requires idempotency_key")
         if idempotency_key:
@@ -284,7 +324,8 @@ export const OPERATIONS: Record<string, EnterpriseOperation> = {{
 {ts_operations(ops)}
 }};
 
-export type RequestOptions = {{ query?: Record<string, string | number | boolean | (string | number | boolean)[]>; body?: unknown; pathParams?: Record<string, string | number>; idempotencyKey?: string; signal?: AbortSignal; }};
+export type MultipartFile = {{ filename: string; content: Uint8Array; contentType?: string }};
+export type RequestOptions = {{ query?: Record<string, string | number | boolean | (string | number | boolean)[]>; body?: unknown; multipart?: Record<string, string | MultipartFile>; pathParams?: Record<string, string | number>; idempotencyKey?: string; signal?: AbortSignal; }};
 
 export class SafeRxProblemDetailsError extends Error {{
   readonly status: number; readonly problem: JsonObject; readonly requestId?: string;
@@ -319,21 +360,51 @@ function retryDelaySeconds(retryAfter: string | null, attempt: number): number {
   return Math.min(RETRY_AFTER_MAX_SECONDS, Math.max(backoff, parsed));
 }}
 
+function isMultipartFile(value: string | MultipartFile): value is MultipartFile {{ return typeof value === "object" && value !== null && "content" in value; }}
+export function encodeMultipart(fields: Record<string, string | MultipartFile>): {{ body: Uint8Array; contentType: string }} {{
+  const boundary = `----saferx-${{crypto.randomUUID().replace(/-/g, "")}}`;
+  const chunks: Uint8Array[] = [];
+  for (const [name, value] of Object.entries(fields)) {{
+    if (isMultipartFile(value)) {{
+      chunks.push(bytes(`--${{boundary}}\\r\\nContent-Disposition: form-data; name="${{name}}"; filename="${{value.filename}}"\\r\\nContent-Type: ${{value.contentType ?? "application/octet-stream"}}\\r\\n\\r\\n`));
+      chunks.push(value.content);
+      chunks.push(bytes("\\r\\n"));
+    }} else {{
+      chunks.push(bytes(`--${{boundary}}\\r\\nContent-Disposition: form-data; name="${{name}}"\\r\\n\\r\\n${{value}}\\r\\n`));
+    }}
+  }}
+  chunks.push(bytes(`--${{boundary}}--\\r\\n`));
+  const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+  const body = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {{ body.set(chunk, offset); offset += chunk.length; }}
+  return {{ body, contentType: `multipart/form-data; boundary=${{boundary}}` }};
+}}
+
 export class SafeRxClient {{
   constructor(private readonly baseUrl: string, private readonly apiKey: string, private readonly clientName = "saferx-pharma-sdk", private readonly fetchImpl: typeof fetch = fetch) {{}}
   async request(operationId: string, options: RequestOptions = {{}}): Promise<unknown> {{
     const operation = OPERATIONS[operationId]; if (!operation) throw new Error(`Unknown Enterprise operation: ${{operationId}}`);
     let path = operation.path; for (const [key, value] of Object.entries(options.pathParams ?? {{}})) path = path.replace(`{{${{key}}}}`, encode(String(value)));
     if (operation.idempotencyRequired && !options.idempotencyKey) throw new Error(`${{operationId}} requires idempotencyKey`);
-    const query = canonicalQuery(options.query); const body = options.body === undefined ? "" : canonicalJson(options.body); const bodyBytes = bytes(body);
+    if (options.body !== undefined && options.multipart !== undefined) throw new Error("pass either body or multipart, not both");
+    let bodyBytes: Uint8Array; let contentType: string | undefined; let sendBody: Uint8Array | string | undefined;
+    if (options.multipart !== undefined) {{
+      const encoded = encodeMultipart(options.multipart); bodyBytes = encoded.body; contentType = encoded.contentType; sendBody = encoded.body;
+    }} else if (options.body !== undefined) {{
+      const json = canonicalJson(options.body); bodyBytes = bytes(json); contentType = "application/json"; sendBody = json;
+    }} else {{
+      bodyBytes = bytes(""); sendBody = undefined;
+    }}
+    const query = canonicalQuery(options.query);
     const timestamp = new Date().toISOString(); const nonce = crypto.randomUUID(); const requestId = crypto.randomUUID();
     const signingPath = new URL(this.baseUrl).pathname.replace(/\\/+$/, "") + path;
     const signature = await hmac(this.apiKey, canonicalRequest(operation.method, signingPath, query, await sha256(bodyBytes), timestamp, nonce));
     const headers: Record<string, string> = {{ Accept: "application/json", "{key_header}": this.apiKey, "{timestamp_header}": timestamp, "{nonce_header}": nonce, "{signature_header}": signature, "X-Request-ID": requestId, "X-SafeRx-Client-Kind": CLIENT_KIND, "X-SafeRx-Client-Name": this.clientName, "X-SafeRx-Client-Version": SDK_VERSION, "X-SafeRx-SDK-Language": SDK_LANGUAGE, "X-SafeRx-SDK-Version": SDK_VERSION }};
-    if (options.body !== undefined) headers["Content-Type"] = "application/json"; if (options.idempotencyKey) headers["Idempotency-Key"] = options.idempotencyKey;
+    if (contentType !== undefined) headers["Content-Type"] = contentType; if (options.idempotencyKey) headers["Idempotency-Key"] = options.idempotencyKey;
     const target = `${{this.baseUrl.replace(/\\/+$/, "")}}${{path}}${{query ? `?${{query}}` : ""}}`;
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {{
-      try {{ const response = await this.fetchImpl(target, {{ method: operation.method, headers, body: options.body === undefined ? undefined : body, signal: options.signal }}); const raw = await response.text(); const parsed = raw ? JSON.parse(raw) : undefined;
+      try {{ const response = await this.fetchImpl(target, {{ method: operation.method, headers, body: sendBody as BodyInit | undefined, signal: options.signal }}); const raw = await response.text(); const parsed = raw ? JSON.parse(raw) : undefined;
         if (response.ok) return parsed; if ([429, 502, 503, 504].includes(response.status) && attempt + 1 < MAX_ATTEMPTS) {{ await new Promise((resolve) => setTimeout(resolve, retryDelaySeconds(response.headers.get("Retry-After"), attempt) * 1000)); continue; }}
         throw new SafeRxProblemDetailsError(response.status, (parsed ?? {{ status: response.status, title: "REQUEST_FAILED" }}) as JsonObject, requestId);
       }} catch (error) {{ if (error instanceof SafeRxProblemDetailsError) throw error; if (attempt + 1 >= MAX_ATTEMPTS) throw new SafeRxProblemDetailsError(503, {{ status: 503, title: "UPSTREAM_UNAVAILABLE", safe_to_retry: true }}, requestId); await new Promise((resolve) => setTimeout(resolve, Math.min(RETRY_BACKOFF_MAX_SECONDS, RETRY_BACKOFF_BASE_SECONDS * 2 ** attempt) * 1000)); }}
@@ -364,6 +435,33 @@ namespace SafeRx;
 
 public sealed record EnterpriseOperation(string OperationId, HttpMethod Method, string Path, bool IdempotencyRequired);
 
+public sealed record MultipartFilePart(string FileName, byte[] Content, string ContentType = "application/octet-stream");
+
+public static class MultipartEncoder
+{{
+    public static (byte[] Body, string ContentType) Encode(IReadOnlyDictionary<string, object> fields)
+    {{
+        var boundary = "----saferx-" + Guid.NewGuid().ToString("N");
+        using var stream = new MemoryStream();
+        void WriteAscii(string text) {{ var bytes = Encoding.UTF8.GetBytes(text); stream.Write(bytes, 0, bytes.Length); }}
+        foreach (var (name, value) in fields)
+        {{
+            if (value is MultipartFilePart file)
+            {{
+                WriteAscii($"--{{boundary}}\\r\\nContent-Disposition: form-data; name=\\"{{name}}\\"; filename=\\"{{file.FileName}}\\"\\r\\nContent-Type: {{file.ContentType}}\\r\\n\\r\\n");
+                stream.Write(file.Content, 0, file.Content.Length);
+                WriteAscii("\\r\\n");
+            }}
+            else
+            {{
+                WriteAscii($"--{{boundary}}\\r\\nContent-Disposition: form-data; name=\\"{{name}}\\"\\r\\n\\r\\n{{value}}\\r\\n");
+            }}
+        }}
+        WriteAscii($"--{{boundary}}--\\r\\n");
+        return (stream.ToArray(), $"multipart/form-data; boundary={{boundary}}");
+    }}
+}}
+
 public sealed class SafeRxProblemDetailsException : Exception
 {{
     public HttpStatusCode StatusCode {{ get; }}
@@ -393,12 +491,16 @@ public sealed class SafeRxClient
         return backoff;
     }}
 
-    public async Task<JsonElement> RequestAsync(string operationId, object? body = null, IReadOnlyDictionary<string, string>? pathParams = null, string? idempotencyKey = null, CancellationToken cancellationToken = default)
+    public async Task<JsonElement> RequestAsync(string operationId, object? body = null, IReadOnlyDictionary<string, object>? multipart = null, IReadOnlyDictionary<string, string>? pathParams = null, string? idempotencyKey = null, CancellationToken cancellationToken = default)
     {{
         if (!Operations.TryGetValue(operationId, out var operation)) throw new ArgumentException("Unknown Enterprise operation", nameof(operationId));
+        if (body is not null && multipart is not null) throw new ArgumentException("pass either body or multipart, not both");
         var path = operation.Path; foreach (var pair in pathParams ?? new Dictionary<string, string>()) path = path.Replace("{{" + pair.Key + "}}", Uri.EscapeDataString(pair.Value), StringComparison.Ordinal);
         if (operation.IdempotencyRequired && string.IsNullOrWhiteSpace(idempotencyKey)) throw new ArgumentException("Operation requires idempotencyKey", nameof(idempotencyKey));
-        var json = body is null ? "" : JsonSerializer.Serialize(body, new JsonSerializerOptions {{ PropertyNamingPolicy = JsonNamingPolicy.CamelCase }}); var bytes = Encoding.UTF8.GetBytes(json);
+        byte[] bytes; string json = ""; string? contentType = null;
+        if (multipart is not null) {{ (bytes, contentType) = MultipartEncoder.Encode(multipart); }}
+        else if (body is not null) {{ json = JsonSerializer.Serialize(body, new JsonSerializerOptions {{ PropertyNamingPolicy = JsonNamingPolicy.CamelCase }}); bytes = Encoding.UTF8.GetBytes(json); contentType = "application/json"; }}
+        else {{ bytes = Array.Empty<byte>(); }}
         var requestId = Guid.NewGuid().ToString();
         var bodyHash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
         for (var attempt = 0; attempt < MaxAttempts; attempt++) {{
@@ -407,7 +509,9 @@ public sealed class SafeRxClient
             var canonical = string.Join("\\n", operation.Method.Method.ToUpperInvariant(), signingPath, "", bodyHash, timestamp, nonce);
             using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_apiKey)); var signature = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(canonical))).TrimEnd('=').Replace('+', '-').Replace('/', '_');
             var requestUri = new Uri(new Uri(_baseUrl.ToString().TrimEnd('/') + "/"), path.TrimStart('/'));
-            using var request = new HttpRequestMessage(operation.Method, requestUri); request.Headers.TryAddWithoutValidation("{key_header}", _apiKey); request.Headers.TryAddWithoutValidation("{timestamp_header}", timestamp); request.Headers.TryAddWithoutValidation("{nonce_header}", nonce); request.Headers.TryAddWithoutValidation("{signature_header}", signature); request.Headers.TryAddWithoutValidation("X-Request-ID", requestId); request.Headers.TryAddWithoutValidation("X-SafeRx-Client-Kind", "csharp_sdk"); request.Headers.TryAddWithoutValidation("X-SafeRx-Client-Name", _clientName); request.Headers.TryAddWithoutValidation("X-SafeRx-Client-Version", SdkVersion); request.Headers.TryAddWithoutValidation("X-SafeRx-SDK-Language", "csharp"); request.Headers.TryAddWithoutValidation("X-SafeRx-SDK-Version", SdkVersion); if (idempotencyKey is not null) request.Headers.TryAddWithoutValidation("Idempotency-Key", idempotencyKey); if (body is not null) request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+            using var request = new HttpRequestMessage(operation.Method, requestUri); request.Headers.TryAddWithoutValidation("{key_header}", _apiKey); request.Headers.TryAddWithoutValidation("{timestamp_header}", timestamp); request.Headers.TryAddWithoutValidation("{nonce_header}", nonce); request.Headers.TryAddWithoutValidation("{signature_header}", signature); request.Headers.TryAddWithoutValidation("X-Request-ID", requestId); request.Headers.TryAddWithoutValidation("X-SafeRx-Client-Kind", "csharp_sdk"); request.Headers.TryAddWithoutValidation("X-SafeRx-Client-Name", _clientName); request.Headers.TryAddWithoutValidation("X-SafeRx-Client-Version", SdkVersion); request.Headers.TryAddWithoutValidation("X-SafeRx-SDK-Language", "csharp"); request.Headers.TryAddWithoutValidation("X-SafeRx-SDK-Version", SdkVersion); if (idempotencyKey is not null) request.Headers.TryAddWithoutValidation("Idempotency-Key", idempotencyKey);
+            if (multipart is not null) {{ var content = new ByteArrayContent(bytes); content.Headers.ContentType = MediaTypeHeaderValue.Parse(contentType!); request.Content = content; }}
+            else if (body is not null) {{ request.Content = new StringContent(json, Encoding.UTF8, "application/json"); }}
             try {{ using var response = await _http.SendAsync(request, cancellationToken); var raw = await response.Content.ReadAsStringAsync(cancellationToken); var parsed = JsonSerializer.Deserialize<JsonElement>(string.IsNullOrWhiteSpace(raw) ? "null" : raw); if (response.IsSuccessStatusCode) return parsed; if (!new[] {{ 429, 502, 503, 504 }}.Contains((int)response.StatusCode) || attempt + 1 >= MaxAttempts) throw new SafeRxProblemDetailsException(response.StatusCode, parsed); await Task.Delay(TimeSpan.FromSeconds(RetryDelaySeconds(response.Headers.RetryAfter, attempt)), cancellationToken); }} catch (SafeRxProblemDetailsException) {{ throw; }} catch (HttpRequestException) when (attempt + 1 < MaxAttempts) {{ await Task.Delay(TimeSpan.FromSeconds(Math.Min(RetryBackoffMaxSeconds, RetryBackoffBaseSeconds * Math.Pow(2, attempt))), cancellationToken); }}
         }}
         throw new InvalidOperationException("retry loop exhausted");
@@ -422,7 +526,7 @@ def generate(verify: bool = False) -> int:
     expected = [op["operation_id"] for op in ops]
     files = {
         OUT / "python/src/saferx_pharma/client.py": python_client(ops, retry),
-        OUT / "python/src/saferx_pharma/__init__.py": f'''# {MARKER}\nfrom .client import OPERATIONS, SafeRxClient, SafeRxProblemDetailsError, canonical_query, canonical_request, sign_request\n\n__all__ = ["OPERATIONS", "SafeRxClient", "SafeRxProblemDetailsError", "canonical_query", "canonical_request", "sign_request"]\n''',
+        OUT / "python/src/saferx_pharma/__init__.py": f'''# {MARKER}\nfrom .client import MultipartFile, OPERATIONS, SafeRxClient, SafeRxProblemDetailsError, canonical_query, canonical_request, encode_multipart, sign_request\n\n__all__ = ["MultipartFile", "OPERATIONS", "SafeRxClient", "SafeRxProblemDetailsError", "canonical_query", "canonical_request", "encode_multipart", "sign_request"]\n''',
         OUT / "typescript/src/client.ts": typescript_client(ops, retry),
         OUT / "csharp/SafeRxClient.cs": csharp_client(ops, retry),
         OUT / "python/pyproject.toml": f'''[project]\nname = "saferx-pharma"\nversion = "{PYTHON_PACKAGE_VERSION}"\nrequires-python = ">=3.11"\ndependencies = []\n''',

@@ -91,6 +91,36 @@ def sign_request(api_key: str, method: str, path: str, query: str, body: bytes, 
     return base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
 
 
+class MultipartFile:
+    """A file to attach to a multipart/form-data request."""
+
+    __slots__ = ("filename", "content", "content_type")
+
+    def __init__(self, filename: str, content: bytes, content_type: str = "application/octet-stream"):
+        self.filename = filename
+        self.content = content
+        self.content_type = content_type
+
+
+def encode_multipart(fields: dict[str, Any]) -> tuple[bytes, str]:
+    """Build a multipart/form-data body. Signing always covers these exact bytes --
+    the same raw-bytes-over-the-wire rule the gateway applies to every content type."""
+    boundary = f"----saferx-{secrets.token_hex(16)}"
+    parts: list[bytes] = []
+    for name, value in fields.items():
+        if isinstance(value, MultipartFile):
+            header = (
+                f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"; '
+                f'filename="{value.filename}"\r\nContent-Type: {value.content_type}\r\n\r\n'
+            )
+            parts.append(header.encode("utf-8") + value.content + b"\r\n")
+        else:
+            header = f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n'
+            parts.append(header.encode("utf-8") + str(value).encode("utf-8") + b"\r\n")
+    parts.append(f"--{boundary}--\r\n".encode("utf-8"))
+    return b"".join(parts), f"multipart/form-data; boundary={boundary}"
+
+
 RETRY_AFTER_MAX_SECONDS = 60.0
 
 
@@ -120,14 +150,24 @@ class SafeRxClient:
         *,
         query: dict[str, Any] | None = None,
         body: Any = None,
+        multipart: dict[str, Any] | None = None,
         path_params: dict[str, Any] | None = None,
         idempotency_key: str | None = None,
     ) -> Any:
+        if body is not None and multipart is not None:
+            raise ValueError("pass either body or multipart, not both")
         operation = OPERATIONS[operation_id]
         path = operation.path
         for name, value in (path_params or {}).items():
             path = path.replace("{" + name + "}", quote(str(value), safe="-._~"))
-        body_bytes = b"" if body is None else json.dumps(body, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode()
+        content_type: str | None = None
+        if multipart is not None:
+            body_bytes, content_type = encode_multipart(multipart)
+        elif body is not None:
+            body_bytes = json.dumps(body, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode()
+            content_type = "application/json"
+        else:
+            body_bytes = b""
         canonical_q = canonical_query(query)
         target = f"{self.base_url}{path}{('?' + canonical_q) if canonical_q else ''}"
         request_id = secrets.token_hex(16)
@@ -147,8 +187,8 @@ class SafeRxClient:
             "X-SafeRx-SDK-Language": SDK_LANGUAGE,
             "X-SafeRx-SDK-Version": SDK_VERSION,
         }
-        if body is not None:
-            headers["Content-Type"] = "application/json"
+        if content_type is not None:
+            headers["Content-Type"] = content_type
         if operation.idempotency_required and not idempotency_key:
             raise ValueError(f"{operation_id} requires idempotency_key")
         if idempotency_key:

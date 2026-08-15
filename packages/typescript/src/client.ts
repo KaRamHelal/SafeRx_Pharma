@@ -27,7 +27,8 @@ export const OPERATIONS: Record<string, EnterpriseOperation> = {
   enterprise_safety_check: { operationId: 'enterprise_safety_check', method: 'POST', path: '/safety/checks', idempotencyRequired: true },
 };
 
-export type RequestOptions = { query?: Record<string, string | number | boolean | (string | number | boolean)[]>; body?: unknown; pathParams?: Record<string, string | number>; idempotencyKey?: string; signal?: AbortSignal; };
+export type MultipartFile = { filename: string; content: Uint8Array; contentType?: string };
+export type RequestOptions = { query?: Record<string, string | number | boolean | (string | number | boolean)[]>; body?: unknown; multipart?: Record<string, string | MultipartFile>; pathParams?: Record<string, string | number>; idempotencyKey?: string; signal?: AbortSignal; };
 
 export class SafeRxProblemDetailsError extends Error {
   readonly status: number; readonly problem: JsonObject; readonly requestId?: string;
@@ -62,21 +63,51 @@ function retryDelaySeconds(retryAfter: string | null, attempt: number): number {
   return Math.min(RETRY_AFTER_MAX_SECONDS, Math.max(backoff, parsed));
 }
 
+function isMultipartFile(value: string | MultipartFile): value is MultipartFile { return typeof value === "object" && value !== null && "content" in value; }
+export function encodeMultipart(fields: Record<string, string | MultipartFile>): { body: Uint8Array; contentType: string } {
+  const boundary = `----saferx-${crypto.randomUUID().replace(/-/g, "")}`;
+  const chunks: Uint8Array[] = [];
+  for (const [name, value] of Object.entries(fields)) {
+    if (isMultipartFile(value)) {
+      chunks.push(bytes(`--${boundary}\r\nContent-Disposition: form-data; name="${name}"; filename="${value.filename}"\r\nContent-Type: ${value.contentType ?? "application/octet-stream"}\r\n\r\n`));
+      chunks.push(value.content);
+      chunks.push(bytes("\r\n"));
+    } else {
+      chunks.push(bytes(`--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}\r\n`));
+    }
+  }
+  chunks.push(bytes(`--${boundary}--\r\n`));
+  const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+  const body = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) { body.set(chunk, offset); offset += chunk.length; }
+  return { body, contentType: `multipart/form-data; boundary=${boundary}` };
+}
+
 export class SafeRxClient {
   constructor(private readonly baseUrl: string, private readonly apiKey: string, private readonly clientName = "saferx-pharma-sdk", private readonly fetchImpl: typeof fetch = fetch) {}
   async request(operationId: string, options: RequestOptions = {}): Promise<unknown> {
     const operation = OPERATIONS[operationId]; if (!operation) throw new Error(`Unknown Enterprise operation: ${operationId}`);
     let path = operation.path; for (const [key, value] of Object.entries(options.pathParams ?? {})) path = path.replace(`{${key}}`, encode(String(value)));
     if (operation.idempotencyRequired && !options.idempotencyKey) throw new Error(`${operationId} requires idempotencyKey`);
-    const query = canonicalQuery(options.query); const body = options.body === undefined ? "" : canonicalJson(options.body); const bodyBytes = bytes(body);
+    if (options.body !== undefined && options.multipart !== undefined) throw new Error("pass either body or multipart, not both");
+    let bodyBytes: Uint8Array; let contentType: string | undefined; let sendBody: Uint8Array | string | undefined;
+    if (options.multipart !== undefined) {
+      const encoded = encodeMultipart(options.multipart); bodyBytes = encoded.body; contentType = encoded.contentType; sendBody = encoded.body;
+    } else if (options.body !== undefined) {
+      const json = canonicalJson(options.body); bodyBytes = bytes(json); contentType = "application/json"; sendBody = json;
+    } else {
+      bodyBytes = bytes(""); sendBody = undefined;
+    }
+    const query = canonicalQuery(options.query);
     const timestamp = new Date().toISOString(); const nonce = crypto.randomUUID(); const requestId = crypto.randomUUID();
     const signingPath = new URL(this.baseUrl).pathname.replace(/\/+$/, "") + path;
     const signature = await hmac(this.apiKey, canonicalRequest(operation.method, signingPath, query, await sha256(bodyBytes), timestamp, nonce));
     const headers: Record<string, string> = { Accept: "application/json", "X-SafeRx-API-Key": this.apiKey, "X-SafeRx-Timestamp": timestamp, "X-SafeRx-Nonce": nonce, "X-SafeRx-Signature": signature, "X-Request-ID": requestId, "X-SafeRx-Client-Kind": CLIENT_KIND, "X-SafeRx-Client-Name": this.clientName, "X-SafeRx-Client-Version": SDK_VERSION, "X-SafeRx-SDK-Language": SDK_LANGUAGE, "X-SafeRx-SDK-Version": SDK_VERSION };
-    if (options.body !== undefined) headers["Content-Type"] = "application/json"; if (options.idempotencyKey) headers["Idempotency-Key"] = options.idempotencyKey;
+    if (contentType !== undefined) headers["Content-Type"] = contentType; if (options.idempotencyKey) headers["Idempotency-Key"] = options.idempotencyKey;
     const target = `${this.baseUrl.replace(/\/+$/, "")}${path}${query ? `?${query}` : ""}`;
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-      try { const response = await this.fetchImpl(target, { method: operation.method, headers, body: options.body === undefined ? undefined : body, signal: options.signal }); const raw = await response.text(); const parsed = raw ? JSON.parse(raw) : undefined;
+      try { const response = await this.fetchImpl(target, { method: operation.method, headers, body: sendBody as BodyInit | undefined, signal: options.signal }); const raw = await response.text(); const parsed = raw ? JSON.parse(raw) : undefined;
         if (response.ok) return parsed; if ([429, 502, 503, 504].includes(response.status) && attempt + 1 < MAX_ATTEMPTS) { await new Promise((resolve) => setTimeout(resolve, retryDelaySeconds(response.headers.get("Retry-After"), attempt) * 1000)); continue; }
         throw new SafeRxProblemDetailsError(response.status, (parsed ?? { status: response.status, title: "REQUEST_FAILED" }) as JsonObject, requestId);
       } catch (error) { if (error instanceof SafeRxProblemDetailsError) throw error; if (attempt + 1 >= MAX_ATTEMPTS) throw new SafeRxProblemDetailsError(503, { status: 503, title: "UPSTREAM_UNAVAILABLE", safe_to_retry: true }, requestId); await new Promise((resolve) => setTimeout(resolve, Math.min(RETRY_BACKOFF_MAX_SECONDS, RETRY_BACKOFF_BASE_SECONDS * 2 ** attempt) * 1000)); }

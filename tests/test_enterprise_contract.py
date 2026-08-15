@@ -153,6 +153,31 @@ def test_sdk_clients_honor_retry_after_on_429() -> None:
     assert "429" in cs_source and "RetryAfter" in cs_source
 
 
+def test_sdk_clients_support_multipart_upload_signing() -> None:
+    # enterprise_ocr_prescription_create is multipart/form-data-only per
+    # PrescriptionUploadRequest; the gateway signs over the exact raw request bytes
+    # regardless of content type (apps/gateway/cmd/gateway/identity_mode.go:
+    # bodyHash := sha256.Sum256(bodyBytes)), so a JSON-only client can never call
+    # this operation correctly. All three SDK clients must build a real multipart
+    # body and sign over those exact bytes.
+    from saferx_pharma import MultipartFile, encode_multipart, sign_request
+
+    body, content_type = encode_multipart(
+        {"pipeline_profile": "auto", "file": MultipartFile("rx.jpg", b"fake-bytes", "image/jpeg")}
+    )
+    assert content_type.startswith("multipart/form-data; boundary=")
+    assert b'name="pipeline_profile"' in body
+    assert b'name="file"; filename="rx.jpg"' in body
+    assert b"Content-Type: image/jpeg" in body
+    assert b"fake-bytes" in body
+    assert sign_request("test-key", "POST", "/api/enterprise/v1/ocr/prescriptions", "", body, "2026-08-15T00:00:00+00:00", "nonce-1")
+
+    ts_source = (ROOT / "packages/typescript/src/client.ts").read_text()
+    cs_source = (ROOT / "packages/csharp/SafeRxClient.cs").read_text()
+    assert "encodeMultipart" in ts_source and "multipart/form-data" in ts_source
+    assert "MultipartEncoder" in cs_source and "multipart/form-data" in cs_source
+
+
 def test_mcp_adapter_uses_only_signed_enterprise_operations() -> None:
     source = (ROOT / "packages/mcp-server/src/index.ts").read_text()
     for header in (

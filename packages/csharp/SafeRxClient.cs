@@ -9,6 +9,33 @@ namespace SafeRx;
 
 public sealed record EnterpriseOperation(string OperationId, HttpMethod Method, string Path, bool IdempotencyRequired);
 
+public sealed record MultipartFilePart(string FileName, byte[] Content, string ContentType = "application/octet-stream");
+
+public static class MultipartEncoder
+{
+    public static (byte[] Body, string ContentType) Encode(IReadOnlyDictionary<string, object> fields)
+    {
+        var boundary = "----saferx-" + Guid.NewGuid().ToString("N");
+        using var stream = new MemoryStream();
+        void WriteAscii(string text) { var bytes = Encoding.UTF8.GetBytes(text); stream.Write(bytes, 0, bytes.Length); }
+        foreach (var (name, value) in fields)
+        {
+            if (value is MultipartFilePart file)
+            {
+                WriteAscii($"--{boundary}\r\nContent-Disposition: form-data; name=\"{name}\"; filename=\"{file.FileName}\"\r\nContent-Type: {file.ContentType}\r\n\r\n");
+                stream.Write(file.Content, 0, file.Content.Length);
+                WriteAscii("\r\n");
+            }
+            else
+            {
+                WriteAscii($"--{boundary}\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n{value}\r\n");
+            }
+        }
+        WriteAscii($"--{boundary}--\r\n");
+        return (stream.ToArray(), $"multipart/form-data; boundary={boundary}");
+    }
+}
+
 public sealed class SafeRxProblemDetailsException : Exception
 {
     public HttpStatusCode StatusCode { get; }
@@ -51,12 +78,16 @@ public sealed class SafeRxClient
         return backoff;
     }
 
-    public async Task<JsonElement> RequestAsync(string operationId, object? body = null, IReadOnlyDictionary<string, string>? pathParams = null, string? idempotencyKey = null, CancellationToken cancellationToken = default)
+    public async Task<JsonElement> RequestAsync(string operationId, object? body = null, IReadOnlyDictionary<string, object>? multipart = null, IReadOnlyDictionary<string, string>? pathParams = null, string? idempotencyKey = null, CancellationToken cancellationToken = default)
     {
         if (!Operations.TryGetValue(operationId, out var operation)) throw new ArgumentException("Unknown Enterprise operation", nameof(operationId));
+        if (body is not null && multipart is not null) throw new ArgumentException("pass either body or multipart, not both");
         var path = operation.Path; foreach (var pair in pathParams ?? new Dictionary<string, string>()) path = path.Replace("{" + pair.Key + "}", Uri.EscapeDataString(pair.Value), StringComparison.Ordinal);
         if (operation.IdempotencyRequired && string.IsNullOrWhiteSpace(idempotencyKey)) throw new ArgumentException("Operation requires idempotencyKey", nameof(idempotencyKey));
-        var json = body is null ? "" : JsonSerializer.Serialize(body, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }); var bytes = Encoding.UTF8.GetBytes(json);
+        byte[] bytes; string json = ""; string? contentType = null;
+        if (multipart is not null) { (bytes, contentType) = MultipartEncoder.Encode(multipart); }
+        else if (body is not null) { json = JsonSerializer.Serialize(body, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }); bytes = Encoding.UTF8.GetBytes(json); contentType = "application/json"; }
+        else { bytes = Array.Empty<byte>(); }
         var requestId = Guid.NewGuid().ToString();
         var bodyHash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
         for (var attempt = 0; attempt < MaxAttempts; attempt++) {
@@ -65,7 +96,9 @@ public sealed class SafeRxClient
             var canonical = string.Join("\n", operation.Method.Method.ToUpperInvariant(), signingPath, "", bodyHash, timestamp, nonce);
             using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_apiKey)); var signature = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(canonical))).TrimEnd('=').Replace('+', '-').Replace('/', '_');
             var requestUri = new Uri(new Uri(_baseUrl.ToString().TrimEnd('/') + "/"), path.TrimStart('/'));
-            using var request = new HttpRequestMessage(operation.Method, requestUri); request.Headers.TryAddWithoutValidation("X-SafeRx-API-Key", _apiKey); request.Headers.TryAddWithoutValidation("X-SafeRx-Timestamp", timestamp); request.Headers.TryAddWithoutValidation("X-SafeRx-Nonce", nonce); request.Headers.TryAddWithoutValidation("X-SafeRx-Signature", signature); request.Headers.TryAddWithoutValidation("X-Request-ID", requestId); request.Headers.TryAddWithoutValidation("X-SafeRx-Client-Kind", "csharp_sdk"); request.Headers.TryAddWithoutValidation("X-SafeRx-Client-Name", _clientName); request.Headers.TryAddWithoutValidation("X-SafeRx-Client-Version", SdkVersion); request.Headers.TryAddWithoutValidation("X-SafeRx-SDK-Language", "csharp"); request.Headers.TryAddWithoutValidation("X-SafeRx-SDK-Version", SdkVersion); if (idempotencyKey is not null) request.Headers.TryAddWithoutValidation("Idempotency-Key", idempotencyKey); if (body is not null) request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+            using var request = new HttpRequestMessage(operation.Method, requestUri); request.Headers.TryAddWithoutValidation("X-SafeRx-API-Key", _apiKey); request.Headers.TryAddWithoutValidation("X-SafeRx-Timestamp", timestamp); request.Headers.TryAddWithoutValidation("X-SafeRx-Nonce", nonce); request.Headers.TryAddWithoutValidation("X-SafeRx-Signature", signature); request.Headers.TryAddWithoutValidation("X-Request-ID", requestId); request.Headers.TryAddWithoutValidation("X-SafeRx-Client-Kind", "csharp_sdk"); request.Headers.TryAddWithoutValidation("X-SafeRx-Client-Name", _clientName); request.Headers.TryAddWithoutValidation("X-SafeRx-Client-Version", SdkVersion); request.Headers.TryAddWithoutValidation("X-SafeRx-SDK-Language", "csharp"); request.Headers.TryAddWithoutValidation("X-SafeRx-SDK-Version", SdkVersion); if (idempotencyKey is not null) request.Headers.TryAddWithoutValidation("Idempotency-Key", idempotencyKey);
+            if (multipart is not null) { var content = new ByteArrayContent(bytes); content.Headers.ContentType = MediaTypeHeaderValue.Parse(contentType!); request.Content = content; }
+            else if (body is not null) { request.Content = new StringContent(json, Encoding.UTF8, "application/json"); }
             try { using var response = await _http.SendAsync(request, cancellationToken); var raw = await response.Content.ReadAsStringAsync(cancellationToken); var parsed = JsonSerializer.Deserialize<JsonElement>(string.IsNullOrWhiteSpace(raw) ? "null" : raw); if (response.IsSuccessStatusCode) return parsed; if (!new[] { 429, 502, 503, 504 }.Contains((int)response.StatusCode) || attempt + 1 >= MaxAttempts) throw new SafeRxProblemDetailsException(response.StatusCode, parsed); await Task.Delay(TimeSpan.FromSeconds(RetryDelaySeconds(response.Headers.RetryAfter, attempt)), cancellationToken); } catch (SafeRxProblemDetailsException) { throw; } catch (HttpRequestException) when (attempt + 1 < MaxAttempts) { await Task.Delay(TimeSpan.FromSeconds(Math.Min(RetryBackoffMaxSeconds, RetryBackoffBaseSeconds * Math.Pow(2, attempt))), cancellationToken); }
         }
         throw new InvalidOperationException("retry loop exhausted");
