@@ -1320,25 +1320,69 @@ components:
       additionalProperties: false
       required: [file]
       properties:
-        file: {type: string, format: binary}
-        pipeline_profile: {type: string, enum: [v5_fast, v7_smart, auto], default: auto}
-        source: {type: string, default: web}
-        device_id: {type: string}
-        include_ddi: {type: boolean, default: true}
-        include_allergy: {type: boolean, default: true}
-        include_food: {type: boolean, default: false}
-        include_meal: {type: boolean, default: false}
-        include_dose: {type: boolean, default: false}
-        include_clinical: {type: boolean, default: false}
-        include_pllr: {type: boolean, default: false}
+        file:
+          description: Prescription image to process.
+          type: string
+          format: binary
+        pipeline_profile:
+          description: Which OCR pipeline to use. v5_fast trades accuracy for
+            speed; v7_smart trades speed for accuracy; auto lets the platform
+            choose.
+          type: string
+          enum: [v5_fast, v7_smart, auto]
+          default: auto
+        source:
+          description: Caller-declared source label for this upload, used for
+            operational attribution only.
+          type: string
+          default: web
+        device_id:
+          description: Opaque caller-declared device identifier, used for
+            operational attribution only.
+          type: string
+        include_ddi:
+          description: Whether to include drug-drug interaction checking once
+            this prescription reaches the safety-check step.
+          type: boolean
+          default: true
+        include_allergy:
+          description: Whether to include allergy checking once this
+            prescription reaches the safety-check step.
+          type: boolean
+          default: true
+        include_food:
+          description: Whether to include food-interaction checking once this
+            prescription reaches the safety-check step.
+          type: boolean
+          default: false
+        include_meal:
+          description: Whether to include meal-timing checking once this
+            prescription reaches the safety-check step.
+          type: boolean
+          default: false
+        include_dose:
+          description: Whether to include clinical-dose checking once this
+            prescription reaches the safety-check step.
+          type: boolean
+          default: false
+        include_clinical:
+          description: Whether to include general clinical checks once this
+            prescription reaches the safety-check step.
+          type: boolean
+          default: false
+        include_pllr:
+          description: Whether to include pregnancy/lactation checking once this
+            prescription reaches the safety-check step.
+          type: boolean
+          default: false
     PrescriptionCreated:
       type: object
       additionalProperties: false
       required: [request_id, prescription_id, status, educational_context, source_provenance, review]
       properties:
-        request_id: {type: string}
-        prescription_id: {type: string}
-        status: {type: string, enum: [accepted, processing]}
+        request_id: {description: 'Echo of the request identifier for correlation.', type: string}
+        prescription_id: {description: 'Identifier for the created prescription workflow. Use this with every subsequent lifecycle call.', type: string}
+        status: {description: 'Initial workflow status immediately after upload.', type: string, enum: [accepted, processing]}
         educational_context: {$ref: '#/components/schemas/EducationalContext'}
         source_provenance: {$ref: '#/components/schemas/SourceProvenance'}
         review: {$ref: '#/components/schemas/ReviewState'}
@@ -1347,20 +1391,20 @@ components:
       additionalProperties: false
       required: [request_id, prescription_id, workflow_id, status, created_at, updated_at, transitions, locale, educational_context, source_provenance, review, candidate_medications, display_obligations]
       properties:
-        request_id: {type: string}
-        prescription_id: {type: string}
-        workflow_id: {type: string}
-        status: {type: string}
-        pipeline_profile: {type: [string, 'null']}
-        reason_code: {type: [string, 'null']}
-        created_at: {type: string, format: date-time}
-        updated_at: {type: string, format: date-time}
-        transitions: {type: array, items: {type: object, additionalProperties: false}}
-        locale: {type: string}
+        request_id: {description: 'Echo of the request identifier for correlation.', type: string}
+        prescription_id: {description: 'Identifier for this prescription workflow.', type: string}
+        workflow_id: {description: 'Identifier for the specific workflow run processing this prescription.', type: string}
+        status: {description: 'Current workflow status. Poll this or subscribe to the events endpoint rather than assuming a fixed processing time.', type: string}
+        pipeline_profile: {description: 'Which OCR pipeline processed this prescription.', type: [string, 'null']}
+        reason_code: {description: 'Machine-readable reason for the current status, when applicable (e.g. why processing failed).', type: [string, 'null']}
+        created_at: {description: 'When this prescription workflow was created.', type: string, format: date-time}
+        updated_at: {description: 'When this prescription workflow last changed state.', type: string, format: date-time}
+        transitions: {description: 'History of workflow state transitions.', type: array, items: {type: object, additionalProperties: false}}
+        locale: {description: 'Locale used for localized text in this response.', type: string}
         educational_context: {$ref: '#/components/schemas/EducationalContext'}
         source_provenance: {$ref: '#/components/schemas/SourceProvenance'}
         review: {$ref: '#/components/schemas/ReviewState'}
-        candidate_medications: {type: array, items: {type: object, additionalProperties: false}}
+        candidate_medications: {description: 'Medications resolved from this prescription so far. Empty until resolution has run.', type: array, items: {type: object, additionalProperties: false}}
         display_obligations: {$ref: '#/components/schemas/DisplayObligations'}
     Locale:
       type: string
