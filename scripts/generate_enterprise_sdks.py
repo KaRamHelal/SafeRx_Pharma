@@ -54,9 +54,6 @@ def operations() -> list[dict[str, Any]]:
                     "operation_id": operation["operationId"],
                     "method": method.upper(),
                     "path": path,
-                    "route_class": operation.get("x-route-class", "enterprise_unknown"),
-                    "response_profile": operation.get("x-response-profile", "rp_enterprise_default"),
-                    "quota_metric": operation.get("x-quota-metric", "enterprise_request"),
                     "idempotency_required": bool(operation.get("x-idempotency-required", False)),
                 }
             )
@@ -80,8 +77,7 @@ def py_operations(ops: list[dict[str, Any]]) -> str:
     for op in ops:
         lines.append(
             f"    {op['operation_id']!r}: Operation({op['operation_id']!r}, {op['method']!r}, "
-            f"{op['path']!r}, {op['route_class']!r}, {op['response_profile']!r}, "
-            f"{op['quota_metric']!r}, {op['idempotency_required']!r}),"
+            f"{op['path']!r}, {op['idempotency_required']!r}),"
         )
     return "\n".join(lines)
 
@@ -125,9 +121,6 @@ class Operation:
     operation_id: str
     method: str
     path: str
-    route_class: str
-    response_profile: str
-    quota_metric: str
     idempotency_required: bool
 
 
@@ -169,6 +162,22 @@ def sign_request(api_key: str, method: str, path: str, query: str, body: bytes, 
     payload = canonical_request(method, path, query, body_hash, timestamp, nonce)
     digest = hmac.new(api_key.encode("utf-8"), payload.encode("utf-8"), hashlib.sha256).digest()
     return base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
+
+
+RETRY_AFTER_MAX_SECONDS = 60.0
+
+
+def _retry_delay(retry_after: str | None, attempt: int) -> float:
+    backoff = min(RETRY_BACKOFF_MAX_SECONDS, RETRY_BACKOFF_BASE_SECONDS * (2**attempt))
+    if not retry_after:
+        return backoff
+    try:
+        # A server-specified Retry-After is authoritative and may legitimately exceed
+        # our internal transient-failure backoff ceiling; bound it only against a
+        # separate, larger sanity limit so a real rate-limit wait is honored.
+        return min(RETRY_AFTER_MAX_SECONDS, max(backoff, float(retry_after)))
+    except ValueError:
+        return backoff
 
 
 class SafeRxClient:
@@ -226,8 +235,8 @@ class SafeRxClient:
             except HTTPError as error:
                 raw = error.read()
                 problem = json.loads(raw) if raw else {{"status": error.code, "title": "REQUEST_FAILED"}}
-                if error.code in {{502, 503, 504}} and attempt + 1 < MAX_ATTEMPTS:
-                    time.sleep(min(RETRY_BACKOFF_MAX_SECONDS, RETRY_BACKOFF_BASE_SECONDS * (2**attempt)))
+                if error.code in {{429, 502, 503, 504}} and attempt + 1 < MAX_ATTEMPTS:
+                    time.sleep(_retry_delay(error.headers.get("Retry-After") if error.headers else None, attempt))
                     continue
                 raise SafeRxProblemDetailsError(error.code, problem, request_id) from error
             except (TimeoutError, URLError) as error:
@@ -252,7 +261,7 @@ for _operation_id in OPERATIONS:
 
 def ts_operations(ops: list[dict[str, Any]]) -> str:
     return "\n".join(
-        f"  {op['operation_id']}: {{ operationId: {op['operation_id']!r}, method: {op['method']!r}, path: {op['path']!r}, routeClass: {op['route_class']!r}, responseProfile: {op['response_profile']!r}, quotaMetric: {op['quota_metric']!r}, idempotencyRequired: {str(op['idempotency_required']).lower()} }},"
+        f"  {op['operation_id']}: {{ operationId: {op['operation_id']!r}, method: {op['method']!r}, path: {op['path']!r}, idempotencyRequired: {str(op['idempotency_required']).lower()} }},"
         for op in ops
     )
 
@@ -262,8 +271,7 @@ def typescript_client(ops: list[dict[str, Any]], retry: tuple[int, float, float,
     return f'''// {MARKER}
 export type JsonObject = Record<string, unknown>;
 export type EnterpriseOperation = {{
-  operationId: string; method: string; path: string; routeClass: string;
-  responseProfile: string; quotaMetric: string; idempotencyRequired: boolean;
+  operationId: string; method: string; path: string; idempotencyRequired: boolean;
 }};
 
 export const SDK_VERSION = "{SDK_VERSION}";
@@ -302,6 +310,14 @@ function bytes(value: string): Uint8Array {{ return new TextEncoder().encode(val
 async function sha256(value: Uint8Array): Promise<string> {{ const digest = await crypto.subtle.digest("SHA-256", value as BufferSource); return [...new Uint8Array(digest)].map((item) => item.toString(16).padStart(2, "0")).join(""); }}
 async function hmac(key: string, value: string): Promise<string> {{ const cryptoKey = await crypto.subtle.importKey("raw", bytes(key) as BufferSource, {{ name: "HMAC", hash: "SHA-256" }}, false, ["sign"]); const digest = await crypto.subtle.sign("HMAC", cryptoKey, bytes(value) as BufferSource); return btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/=+$/, "").replace(/\\+/g, "-").replace(/\\//g, "_"); }}
 export function canonicalRequest(method: string, path: string, query: string, bodyHash: string, timestamp: string, nonce: string): string {{ return [method.toUpperCase(), encode(path).replace(/%2F/g, "/"), query, bodyHash, timestamp, nonce].join("\\n"); }}
+const RETRY_AFTER_MAX_SECONDS = 60;
+function retryDelaySeconds(retryAfter: string | null, attempt: number): number {{
+  const backoff = Math.min(RETRY_BACKOFF_MAX_SECONDS, RETRY_BACKOFF_BASE_SECONDS * 2 ** attempt);
+  if (!retryAfter) return backoff;
+  const parsed = Number(retryAfter);
+  if (!Number.isFinite(parsed)) return backoff;
+  return Math.min(RETRY_AFTER_MAX_SECONDS, Math.max(backoff, parsed));
+}}
 
 export class SafeRxClient {{
   constructor(private readonly baseUrl: string, private readonly apiKey: string, private readonly clientName = "saferx-pharma-sdk", private readonly fetchImpl: typeof fetch = fetch) {{}}
@@ -318,7 +334,7 @@ export class SafeRxClient {{
     const target = `${{this.baseUrl.replace(/\\/+$/, "")}}${{path}}${{query ? `?${{query}}` : ""}}`;
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {{
       try {{ const response = await this.fetchImpl(target, {{ method: operation.method, headers, body: options.body === undefined ? undefined : body, signal: options.signal }}); const raw = await response.text(); const parsed = raw ? JSON.parse(raw) : undefined;
-        if (response.ok) return parsed; if ([502, 503, 504].includes(response.status) && attempt + 1 < MAX_ATTEMPTS) {{ await new Promise((resolve) => setTimeout(resolve, Math.min(RETRY_BACKOFF_MAX_SECONDS, RETRY_BACKOFF_BASE_SECONDS * 2 ** attempt) * 1000)); continue; }}
+        if (response.ok) return parsed; if ([429, 502, 503, 504].includes(response.status) && attempt + 1 < MAX_ATTEMPTS) {{ await new Promise((resolve) => setTimeout(resolve, retryDelaySeconds(response.headers.get("Retry-After"), attempt) * 1000)); continue; }}
         throw new SafeRxProblemDetailsError(response.status, (parsed ?? {{ status: response.status, title: "REQUEST_FAILED" }}) as JsonObject, requestId);
       }} catch (error) {{ if (error instanceof SafeRxProblemDetailsError) throw error; if (attempt + 1 >= MAX_ATTEMPTS) throw new SafeRxProblemDetailsError(503, {{ status: 503, title: "UPSTREAM_UNAVAILABLE", safe_to_retry: true }}, requestId); await new Promise((resolve) => setTimeout(resolve, Math.min(RETRY_BACKOFF_MAX_SECONDS, RETRY_BACKOFF_BASE_SECONDS * 2 ** attempt) * 1000)); }}
     }}
@@ -330,7 +346,7 @@ export class SafeRxClient {{
 
 def csharp_operations(ops: list[dict[str, Any]]) -> str:
     return "\n".join(
-        f'        ["{op["operation_id"]}"] = new EnterpriseOperation("{op["operation_id"]}", HttpMethod.{op["method"].title()}, "{op["path"]}", "{op["route_class"]}", "{op["response_profile"]}", "{op["quota_metric"]}", {str(op["idempotency_required"]).lower()}),'
+        f'        ["{op["operation_id"]}"] = new EnterpriseOperation("{op["operation_id"]}", HttpMethod.{op["method"].title()}, "{op["path"]}", {str(op["idempotency_required"]).lower()}),'
         for op in ops
     )
 
@@ -339,13 +355,14 @@ def csharp_client(ops: list[dict[str, Any]], retry: tuple[int, float, float, str
     max_attempts, backoff, backoff_max, key_header, timestamp_header, nonce_header, signature_header = retry
     return f'''// {MARKER}
 using System.Net;
+using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
 namespace SafeRx;
 
-public sealed record EnterpriseOperation(string OperationId, HttpMethod Method, string Path, string RouteClass, string ResponseProfile, string QuotaMetric, bool IdempotencyRequired);
+public sealed record EnterpriseOperation(string OperationId, HttpMethod Method, string Path, bool IdempotencyRequired);
 
 public sealed class SafeRxProblemDetailsException : Exception
 {{
@@ -364,8 +381,17 @@ public sealed class SafeRxClient
     private const int MaxAttempts = {max_attempts};
     private const double RetryBackoffBaseSeconds = {backoff};
     private const double RetryBackoffMaxSeconds = {backoff_max};
+    private const double RetryAfterMaxSeconds = 60.0;
     private readonly HttpClient _http; private readonly Uri _baseUrl; private readonly string _apiKey; private readonly string _clientName;
     public SafeRxClient(HttpClient http, Uri baseUrl, string apiKey, string clientName = "SafeRx") {{ _http = http; _baseUrl = baseUrl; _apiKey = apiKey; _clientName = clientName; }}
+
+    private static double RetryDelaySeconds(RetryConditionHeaderValue? retryAfter, int attempt)
+    {{
+        var backoff = Math.Min(RetryBackoffMaxSeconds, RetryBackoffBaseSeconds * Math.Pow(2, attempt));
+        if (retryAfter?.Delta is TimeSpan delta) return Math.Min(RetryAfterMaxSeconds, Math.Max(backoff, delta.TotalSeconds));
+        if (retryAfter?.Date is DateTimeOffset date) return Math.Min(RetryAfterMaxSeconds, Math.Max(backoff, (date - DateTimeOffset.UtcNow).TotalSeconds));
+        return backoff;
+    }}
 
     public async Task<JsonElement> RequestAsync(string operationId, object? body = null, IReadOnlyDictionary<string, string>? pathParams = null, string? idempotencyKey = null, CancellationToken cancellationToken = default)
     {{
@@ -382,7 +408,7 @@ public sealed class SafeRxClient
             using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_apiKey)); var signature = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(canonical))).TrimEnd('=').Replace('+', '-').Replace('/', '_');
             var requestUri = new Uri(new Uri(_baseUrl.ToString().TrimEnd('/') + "/"), path.TrimStart('/'));
             using var request = new HttpRequestMessage(operation.Method, requestUri); request.Headers.TryAddWithoutValidation("{key_header}", _apiKey); request.Headers.TryAddWithoutValidation("{timestamp_header}", timestamp); request.Headers.TryAddWithoutValidation("{nonce_header}", nonce); request.Headers.TryAddWithoutValidation("{signature_header}", signature); request.Headers.TryAddWithoutValidation("X-Request-ID", requestId); request.Headers.TryAddWithoutValidation("X-SafeRx-Client-Kind", "csharp_sdk"); request.Headers.TryAddWithoutValidation("X-SafeRx-Client-Name", _clientName); request.Headers.TryAddWithoutValidation("X-SafeRx-Client-Version", SdkVersion); request.Headers.TryAddWithoutValidation("X-SafeRx-SDK-Language", "csharp"); request.Headers.TryAddWithoutValidation("X-SafeRx-SDK-Version", SdkVersion); if (idempotencyKey is not null) request.Headers.TryAddWithoutValidation("Idempotency-Key", idempotencyKey); if (body is not null) request.Content = new StringContent(json, Encoding.UTF8, "application/json");
-            try {{ using var response = await _http.SendAsync(request, cancellationToken); var raw = await response.Content.ReadAsStringAsync(cancellationToken); var parsed = JsonSerializer.Deserialize<JsonElement>(string.IsNullOrWhiteSpace(raw) ? "null" : raw); if (response.IsSuccessStatusCode) return parsed; if (!new[] {{ 502, 503, 504 }}.Contains((int)response.StatusCode) || attempt + 1 >= MaxAttempts) throw new SafeRxProblemDetailsException(response.StatusCode, parsed); await Task.Delay(TimeSpan.FromSeconds(Math.Min(RetryBackoffMaxSeconds, RetryBackoffBaseSeconds * Math.Pow(2, attempt))), cancellationToken); }} catch (SafeRxProblemDetailsException) {{ throw; }} catch (HttpRequestException) when (attempt + 1 < MaxAttempts) {{ await Task.Delay(TimeSpan.FromSeconds(Math.Min(RetryBackoffMaxSeconds, RetryBackoffBaseSeconds * Math.Pow(2, attempt))), cancellationToken); }}
+            try {{ using var response = await _http.SendAsync(request, cancellationToken); var raw = await response.Content.ReadAsStringAsync(cancellationToken); var parsed = JsonSerializer.Deserialize<JsonElement>(string.IsNullOrWhiteSpace(raw) ? "null" : raw); if (response.IsSuccessStatusCode) return parsed; if (!new[] {{ 429, 502, 503, 504 }}.Contains((int)response.StatusCode) || attempt + 1 >= MaxAttempts) throw new SafeRxProblemDetailsException(response.StatusCode, parsed); await Task.Delay(TimeSpan.FromSeconds(RetryDelaySeconds(response.Headers.RetryAfter, attempt)), cancellationToken); }} catch (SafeRxProblemDetailsException) {{ throw; }} catch (HttpRequestException) when (attempt + 1 < MaxAttempts) {{ await Task.Delay(TimeSpan.FromSeconds(Math.Min(RetryBackoffMaxSeconds, RetryBackoffBaseSeconds * Math.Pow(2, attempt))), cancellationToken); }}
         }}
         throw new InvalidOperationException("retry loop exhausted");
     }}

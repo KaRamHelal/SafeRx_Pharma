@@ -125,6 +125,34 @@ def test_safety_check_request_is_request_scoped_patient_context() -> None:
     assert "saved_profile_applied" not in response["properties"]["status"]["enum"]
 
 
+def test_sdk_clients_carry_no_private_route_metadata() -> None:
+    # route_class/response_profile/quota_metric are internal MIS routing/accounting
+    # vocabulary and were always emitted as a hardcoded fallback (no OpenAPI
+    # x-route-class/x-response-profile/x-quota-metric extension ever set them) --
+    # pure private-naming leakage into every consumer's dependency tree.
+    forbidden = ("route_class", "response_profile", "quota_metric", "rp_enterprise_default", "enterprise_unknown")
+    py_source = (ROOT / "packages/python/src/saferx_pharma/client.py").read_text()
+    ts_source = (ROOT / "packages/typescript/src/client.ts").read_text()
+    cs_source = (ROOT / "packages/csharp/SafeRxClient.cs").read_text()
+    for term in forbidden:
+        assert term not in py_source
+        assert term not in ts_source
+        assert term not in cs_source
+    for term in ("routeClass", "responseProfile", "quotaMetric"):
+        assert term not in ts_source
+    for term in ("RouteClass", "ResponseProfile", "QuotaMetric"):
+        assert term not in cs_source
+
+
+def test_sdk_clients_honor_retry_after_on_429() -> None:
+    py_source = (ROOT / "packages/python/src/saferx_pharma/client.py").read_text()
+    ts_source = (ROOT / "packages/typescript/src/client.ts").read_text()
+    cs_source = (ROOT / "packages/csharp/SafeRxClient.cs").read_text()
+    assert "429" in py_source and "Retry-After" in py_source
+    assert "429" in ts_source and "Retry-After" in ts_source
+    assert "429" in cs_source and "RetryAfter" in cs_source
+
+
 def test_mcp_adapter_uses_only_signed_enterprise_operations() -> None:
     source = (ROOT / "packages/mcp-server/src/index.ts").read_text()
     for header in (

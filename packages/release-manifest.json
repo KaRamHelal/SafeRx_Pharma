@@ -2,12 +2,12 @@
   "api_contract_version": "enterprise-v1",
   "artifact_sha256": {
     "packages/csharp/SafeRx.csproj": "929e4dec18fe516bf93ce021952963b872274da4117a59daa041850b51e5aaa9",
-    "packages/csharp/SafeRxClient.cs": "4d29b0704ea5e24cee1de11cd106b522c6d35aee89b495b7ed6d80330fcc06ab",
+    "packages/csharp/SafeRxClient.cs": "bab5c1ef88c5b20d00bc4d3dd798db09f946787fe8f18c6c53f0d370c3ed51c6",
     "packages/python/pyproject.toml": "73a0b7aafd7f700c46dfbb96ee0a349c25b79257c4c3969e2b6a9d411d23fdaa",
     "packages/python/src/saferx_pharma/__init__.py": "07bec7e0f872f0462f00be1e705c7b1b69b35a3d6fd8d343bebdefa428580fe9",
-    "packages/python/src/saferx_pharma/client.py": "8bb80b19580458f238a8ac266dac16d1b72ade50c0608fbc793580da418769f7",
+    "packages/python/src/saferx_pharma/client.py": "1546bc5d679f3c8cf94624b9a2fc3a5f391201ac345c83c05ce49c5bee12b7db",
     "packages/typescript/package.json": "3e3a9eedd39986604e23029b893ffbf3b7e7ed946e3a5975911de1e1990f40e8",
-    "packages/typescript/src/client.ts": "e6a9e6eda4edab651bd25fc2e686c05b8410251ed6c8cac35aa304df9586d179",
+    "packages/typescript/src/client.ts": "b4301d207888fd6a49f36447b81a83315e34e2e1331b6056f4c40914132e0a51",
     "packages/typescript/tsconfig.json": "1dfaa085edc28800c8dbccf0c8093b855158371f8ee63da1395ec3de5b575d78"
   },
   "generator": "scripts/generate_enterprise_sdks.py",

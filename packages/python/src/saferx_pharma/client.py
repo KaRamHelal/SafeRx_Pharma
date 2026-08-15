@@ -35,27 +35,24 @@ class Operation:
     operation_id: str
     method: str
     path: str
-    route_class: str
-    response_profile: str
-    quota_metric: str
     idempotency_required: bool
 
 
 OPERATIONS = {
-    'enterprise_erx_safety_check': Operation('enterprise_erx_safety_check', 'POST', '/erx/safety-checks', 'enterprise_unknown', 'rp_enterprise_default', 'enterprise_request', True),
-    'enterprise_ocr_prescription_create': Operation('enterprise_ocr_prescription_create', 'POST', '/ocr/prescriptions', 'enterprise_unknown', 'rp_enterprise_default', 'enterprise_request', True),
-    'enterprise_ocr_prescription_events': Operation('enterprise_ocr_prescription_events', 'GET', '/ocr/prescriptions/{prescription_id}/events', 'enterprise_unknown', 'rp_enterprise_default', 'enterprise_request', False),
-    'enterprise_ocr_prescription_read': Operation('enterprise_ocr_prescription_read', 'GET', '/ocr/prescriptions/{prescription_id}', 'enterprise_unknown', 'rp_enterprise_default', 'enterprise_request', False),
-    'enterprise_ocr_prescription_resolve': Operation('enterprise_ocr_prescription_resolve', 'POST', '/ocr/prescriptions/{prescription_id}/medications/resolve', 'enterprise_unknown', 'rp_enterprise_default', 'enterprise_request', False),
-    'enterprise_ocr_prescription_review': Operation('enterprise_ocr_prescription_review', 'POST', '/ocr/prescriptions/{prescription_id}/review', 'enterprise_unknown', 'rp_enterprise_default', 'enterprise_request', False),
-    'enterprise_ocr_prescription_safety': Operation('enterprise_ocr_prescription_safety', 'POST', '/ocr/prescriptions/{prescription_id}/safety-checks', 'enterprise_unknown', 'rp_enterprise_default', 'enterprise_request', False),
-    'enterprise_registry_autocomplete': Operation('enterprise_registry_autocomplete', 'GET', '/registry/suggest', 'enterprise_unknown', 'rp_enterprise_default', 'enterprise_request', False),
-    'enterprise_registry_ingredients': Operation('enterprise_registry_ingredients', 'GET', '/registry/ingredients', 'enterprise_unknown', 'rp_enterprise_default', 'enterprise_request', False),
-    'enterprise_registry_product_detail': Operation('enterprise_registry_product_detail', 'GET', '/registry/products/{sfrx_id}', 'enterprise_unknown', 'rp_enterprise_default', 'enterprise_request', False),
-    'enterprise_registry_resolve': Operation('enterprise_registry_resolve', 'POST', '/registry/resolve', 'enterprise_unknown', 'rp_enterprise_default', 'enterprise_request', False),
-    'enterprise_registry_search': Operation('enterprise_registry_search', 'GET', '/registry/search', 'enterprise_unknown', 'rp_enterprise_default', 'enterprise_request', False),
-    'enterprise_safety_capabilities': Operation('enterprise_safety_capabilities', 'GET', '/safety/capabilities', 'enterprise_unknown', 'rp_enterprise_default', 'enterprise_request', False),
-    'enterprise_safety_check': Operation('enterprise_safety_check', 'POST', '/safety/checks', 'enterprise_unknown', 'rp_enterprise_default', 'enterprise_request', True),
+    'enterprise_erx_safety_check': Operation('enterprise_erx_safety_check', 'POST', '/erx/safety-checks', True),
+    'enterprise_ocr_prescription_create': Operation('enterprise_ocr_prescription_create', 'POST', '/ocr/prescriptions', True),
+    'enterprise_ocr_prescription_events': Operation('enterprise_ocr_prescription_events', 'GET', '/ocr/prescriptions/{prescription_id}/events', False),
+    'enterprise_ocr_prescription_read': Operation('enterprise_ocr_prescription_read', 'GET', '/ocr/prescriptions/{prescription_id}', False),
+    'enterprise_ocr_prescription_resolve': Operation('enterprise_ocr_prescription_resolve', 'POST', '/ocr/prescriptions/{prescription_id}/medications/resolve', False),
+    'enterprise_ocr_prescription_review': Operation('enterprise_ocr_prescription_review', 'POST', '/ocr/prescriptions/{prescription_id}/review', False),
+    'enterprise_ocr_prescription_safety': Operation('enterprise_ocr_prescription_safety', 'POST', '/ocr/prescriptions/{prescription_id}/safety-checks', False),
+    'enterprise_registry_autocomplete': Operation('enterprise_registry_autocomplete', 'GET', '/registry/suggest', False),
+    'enterprise_registry_ingredients': Operation('enterprise_registry_ingredients', 'GET', '/registry/ingredients', False),
+    'enterprise_registry_product_detail': Operation('enterprise_registry_product_detail', 'GET', '/registry/products/{sfrx_id}', False),
+    'enterprise_registry_resolve': Operation('enterprise_registry_resolve', 'POST', '/registry/resolve', False),
+    'enterprise_registry_search': Operation('enterprise_registry_search', 'GET', '/registry/search', False),
+    'enterprise_safety_capabilities': Operation('enterprise_safety_capabilities', 'GET', '/safety/capabilities', False),
+    'enterprise_safety_check': Operation('enterprise_safety_check', 'POST', '/safety/checks', True),
 }
 
 
@@ -92,6 +89,22 @@ def sign_request(api_key: str, method: str, path: str, query: str, body: bytes, 
     payload = canonical_request(method, path, query, body_hash, timestamp, nonce)
     digest = hmac.new(api_key.encode("utf-8"), payload.encode("utf-8"), hashlib.sha256).digest()
     return base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
+
+
+RETRY_AFTER_MAX_SECONDS = 60.0
+
+
+def _retry_delay(retry_after: str | None, attempt: int) -> float:
+    backoff = min(RETRY_BACKOFF_MAX_SECONDS, RETRY_BACKOFF_BASE_SECONDS * (2**attempt))
+    if not retry_after:
+        return backoff
+    try:
+        # A server-specified Retry-After is authoritative and may legitimately exceed
+        # our internal transient-failure backoff ceiling; bound it only against a
+        # separate, larger sanity limit so a real rate-limit wait is honored.
+        return min(RETRY_AFTER_MAX_SECONDS, max(backoff, float(retry_after)))
+    except ValueError:
+        return backoff
 
 
 class SafeRxClient:
@@ -149,8 +162,8 @@ class SafeRxClient:
             except HTTPError as error:
                 raw = error.read()
                 problem = json.loads(raw) if raw else {"status": error.code, "title": "REQUEST_FAILED"}
-                if error.code in {502, 503, 504} and attempt + 1 < MAX_ATTEMPTS:
-                    time.sleep(min(RETRY_BACKOFF_MAX_SECONDS, RETRY_BACKOFF_BASE_SECONDS * (2**attempt)))
+                if error.code in {429, 502, 503, 504} and attempt + 1 < MAX_ATTEMPTS:
+                    time.sleep(_retry_delay(error.headers.get("Retry-After") if error.headers else None, attempt))
                     continue
                 raise SafeRxProblemDetailsError(error.code, problem, request_id) from error
             except (TimeoutError, URLError) as error:
