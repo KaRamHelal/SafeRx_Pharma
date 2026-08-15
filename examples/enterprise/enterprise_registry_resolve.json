@@ -39,12 +39,63 @@
       {
         "candidates": [
           {
-            "label": {
+            "candidate_id": "cand_example_0001",
+            "confidence": 0.97,
+            "display_name": {
               "ar": "أموكسيسيلين 500 مجم كبسولة",
               "en": "Amoxicillin 500mg Capsule"
             },
-            "score": 0.97,
-            "sfrx_id": "SRX-101-000042"
+            "dosage_form": {
+              "ar": "كبسولة",
+              "en": "Capsule"
+            },
+            "equivalent_candidates": [],
+            "ingredient_names": [
+              {
+                "ar": "أموكسيسيلين",
+                "en": "Amoxicillin"
+              }
+            ],
+            "manufacturer": {
+              "ar": "شركة الأدوية المصرية",
+              "en": "Egyptian Pharma Co."
+            },
+            "match_reasons": [
+              {
+                "ar": "تطابق الاسم العلمي",
+                "en": "Generic name matched"
+              },
+              {
+                "ar": "تطابق التركيز",
+                "en": "Strength matched"
+              }
+            ],
+            "normalized_name": {
+              "ar": "اموكسيسيلين 500 كبسولة",
+              "en": "amoxicillin 500 capsule"
+            },
+            "registry_concept_id": null,
+            "review": {
+              "minimum_reviewer_role": "none",
+              "reason_codes": [],
+              "required": false,
+              "review_deadline_policy": "not_applicable",
+              "review_outcome": null,
+              "reviewed_at": null,
+              "status": "not_required"
+            },
+            "route": {
+              "ar": "فموي",
+              "en": "Oral"
+            },
+            "sfrx_id": "SRX-101-000042",
+            "source_provenance": {
+              "claim_catalog_version": "2026.08.01",
+              "policy_version": "2026.08.01",
+              "registry_snapshot_id": "registry-2026-08-01",
+              "safety_snapshot_id": "safety-2026-08-01"
+            },
+            "strength": "500mg"
           }
         ],
         "display_obligations": {

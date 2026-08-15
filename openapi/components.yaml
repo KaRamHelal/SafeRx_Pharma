@@ -1128,6 +1128,10 @@ components:
             - strength
             - route
             - dosage_form
+            - product_tier
+            - name_strength
+            - match_reason
+            - score
             properties:
               sfrx_id:
                 description: Registry identifier for this product.
@@ -1145,6 +1149,30 @@ components:
                 $ref: '#/components/schemas/LocalizedString'
               dosage_form:
                 $ref: '#/components/schemas/LocalizedString'
+              manufacturer:
+                description: Manufacturer name, when known.
+                oneOf:
+                - $ref: '#/components/schemas/LocalizedString'
+                - type: 'null'
+              product_tier:
+                description: Regulatory/commercial tier this product belongs to.
+                type: string
+                enum:
+                - pharma
+                - semi
+                - non_pharma
+              name_strength:
+                description: Display-composed name and strength, when distinct
+                  from tradename.
+                $ref: '#/components/schemas/LocalizedString'
+              match_reason:
+                description: Human-readable reason this product matched the
+                  query.
+                $ref: '#/components/schemas/LocalizedString'
+              score:
+                description: Relevance score for this match. Not comparable
+                  across different queries.
+                type: number
             additionalProperties: false
         pagination:
           $ref: '#/components/schemas/Pagination'
@@ -1188,18 +1216,78 @@ components:
             - route
             - match_reason
             - score
+            - product_tier
+            - name_strength
+            - match
             properties:
               sfrx_id:
                 description: Registry identifier for this suggestion.
                 type: string
               tradename:
                 $ref: '#/components/schemas/LocalizedString'
+              generic:
+                description: Generic/INN name, when known.
+                oneOf:
+                - $ref: '#/components/schemas/LocalizedString'
+                - type: 'null'
               dosage_form:
                 $ref: '#/components/schemas/LocalizedString'
               route:
                 $ref: '#/components/schemas/LocalizedString'
+              strength:
+                description: Strength as printed on the product, not structured.
+                type:
+                - string
+                - 'null'
+              manufacturer:
+                description: Manufacturer name, when known.
+                oneOf:
+                - $ref: '#/components/schemas/LocalizedString'
+                - type: 'null'
+              supplier:
+                description: Supplier name, when known and distinct from
+                  manufacturer.
+                oneOf:
+                - $ref: '#/components/schemas/LocalizedString'
+                - type: 'null'
+              pharma_uses:
+                description: Educational summary of pharmaceutical uses, when
+                  available.
+                oneOf:
+                - $ref: '#/components/schemas/LocalizedString'
+                - type: 'null'
+              product_tier:
+                description: Regulatory/commercial tier this product belongs to.
+                type: string
+                enum:
+                - pharma
+                - semi
+                - non_pharma
+              name_strength:
+                description: Display-composed name and strength, when distinct
+                  from tradename.
+                $ref: '#/components/schemas/LocalizedString'
               match_reason:
                 $ref: '#/components/schemas/LocalizedString'
+              match:
+                description: Structured match classification backing
+                  match_reason.
+                type: object
+                additionalProperties: false
+                required:
+                - score
+                - type
+                properties:
+                  score:
+                    type: integer
+                  type:
+                    type: string
+                    enum:
+                    - exact
+                    - prefix
+                    - infix
+                    - typo
+                    - similar
               score:
                 description: Relevance score for this suggestion. Not comparable
                   across different queries.
@@ -2273,27 +2361,87 @@ components:
               - 'null'
         candidates:
           description: Ranked resolution candidates. Empty means no confident
-            match was found -- do not treat that as "no product exists."
+            match was found -- do not treat that as "no product exists." Rebuilt
+            to match the real backend response contract -- the previous version
+            invented a {sfrx_id, label, score} shape no real response ever
+            returned.
           type: array
           items:
             type: object
             additionalProperties: false
             required:
+            - candidate_id
             - sfrx_id
-            - label
-            - score
+            - confidence
+            - display_name
+            - normalized_name
+            - review
+            - source_provenance
             properties:
+              candidate_id:
+                description: Stable identifier for this candidate within the
+                  resolution result.
+                type: string
               sfrx_id:
                 description: Registry identifier for this candidate.
                 type: string
-              label:
-                $ref: '#/components/schemas/LocalizedString'
-              score:
+              registry_concept_id:
+                description: Registry concept identifier, when this candidate
+                  is backed by a concept rather than a single product.
+                type:
+                - string
+                - 'null'
+              confidence:
                 description: Confidence this candidate matches the input, 0-1.
                   Not comparable across different queries.
                 type: number
                 minimum: 0
                 maximum: 1
+              display_name:
+                $ref: '#/components/schemas/LocalizedString'
+              normalized_name:
+                $ref: '#/components/schemas/LocalizedString'
+              strength:
+                description: Strength as printed on the product, not structured.
+                type:
+                - string
+                - 'null'
+              dosage_form:
+                description: Dosage form, when known.
+                oneOf:
+                - $ref: '#/components/schemas/LocalizedString'
+                - type: 'null'
+              route:
+                description: Administration route, when known.
+                oneOf:
+                - $ref: '#/components/schemas/LocalizedString'
+                - type: 'null'
+              manufacturer:
+                description: Manufacturer name, when known.
+                oneOf:
+                - $ref: '#/components/schemas/LocalizedString'
+                - type: 'null'
+              ingredient_names:
+                description: Active ingredient names for this candidate.
+                type: array
+                items:
+                  $ref: '#/components/schemas/LocalizedString'
+              match_reasons:
+                description: Human-readable reasons this candidate matched
+                  the input.
+                type: array
+                items:
+                  $ref: '#/components/schemas/LocalizedString'
+              equivalent_candidates:
+                description: Other candidate_ids considered equivalent to
+                  this one for resolution purposes.
+                type: array
+                items:
+                  type: string
+              review:
+                $ref: '#/components/schemas/ReviewState'
+              source_provenance:
+                $ref: '#/components/schemas/SourceProvenance'
         selected_candidate_id:
           description: sfrx_id of the candidate to treat as selected, when
             resolution is confident enough to auto-select one. Null when the

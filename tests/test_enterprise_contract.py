@@ -257,10 +257,16 @@ def test_registry_response_field_names_match_the_real_backend() -> None:
     assert "supplier" in detail["properties"]
 
     summary_item = schemas["RegistryProductSummaryList"]["properties"]["items"]["items"]
-    assert set(summary_item["required"]) == {"sfrx_id", "tradename", "generic", "strength", "route", "dosage_form"}
+    assert set(summary_item["required"]) == {
+        "sfrx_id", "tradename", "generic", "strength", "route", "dosage_form",
+        "product_tier", "name_strength", "match_reason", "score",
+    }
 
     suggestion_item = schemas["RegistrySuggestionList"]["properties"]["items"]["items"]
-    assert set(suggestion_item["required"]) == {"sfrx_id", "tradename", "dosage_form", "route", "match_reason", "score"}
+    assert set(suggestion_item["required"]) == {
+        "sfrx_id", "tradename", "dosage_form", "route", "match_reason", "score",
+        "product_tier", "name_strength", "match",
+    }
 
 
 def test_prescription_result_matches_the_real_backend_contract() -> None:

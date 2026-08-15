@@ -38,15 +38,24 @@
           "ar": "كبسولة",
           "en": "Capsule"
         },
+        "match": {
+          "score": 102,
+          "type": "prefix"
+        },
         "match_reason": {
           "ar": "تطابق بداية الاسم التجاري",
           "en": "Trade name prefix match"
         },
+        "name_strength": {
+          "ar": "أموكسيسيلين 500",
+          "en": "Amoxicillin 500"
+        },
+        "product_tier": "pharma",
         "route": {
           "ar": "فموي",
           "en": "Oral"
         },
-        "score": 0.91,
+        "score": 102,
         "sfrx_id": "SRX-101-000042",
         "tradename": {
           "ar": "أموكسيسيلين 500 مجم كبسولة",

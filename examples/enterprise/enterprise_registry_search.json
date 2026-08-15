@@ -42,10 +42,24 @@
           "ar": "أموكسيسيلين",
           "en": "Amoxicillin"
         },
+        "manufacturer": {
+          "ar": "شركة الأدوية المصرية",
+          "en": "Egyptian Pharma Co."
+        },
+        "match_reason": {
+          "ar": "تطابق بداية الاسم",
+          "en": "Prefix match"
+        },
+        "name_strength": {
+          "ar": "أموكسيسيلين 500",
+          "en": "Amoxicillin 500"
+        },
+        "product_tier": "pharma",
         "route": {
           "ar": "فموي",
           "en": "Oral"
         },
+        "score": 102,
         "sfrx_id": "SRX-101-000042",
         "strength": "500mg",
         "tradename": {

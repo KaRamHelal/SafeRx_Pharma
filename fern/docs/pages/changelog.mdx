@@ -15,6 +15,38 @@ Releases tracking. For the complete published version history, see
 and [NuGet (SafeRx)](https://www.nuget.org/packages/SafeRx#versions-body-tab).
 Entries below are not a backfilled reconstruction of that history.
 
+## [Unreleased]
+
+### Fixed
+- `enterprise_registry_search`, `enterprise_registry_autocomplete`, and
+  `enterprise_registry_product_detail` were live-confirmed to return
+  `correction_anchors` (internal correction-workflow routing/policy
+  metadata) and three internal Arabic-normalization keys (`eg_ar`,
+  `ar_normalized`, `source_locale`) on every `LocalizedString`-shaped field
+  — none of it part of this contract, all of it now stripped server-side
+  before an Enterprise API response leaves the building.
+  `enterprise_registry_product_detail` also dropped 14 fields
+  (`name_strength`, `pharma_uses`, `drug_type`, `population`, `form`,
+  `route_type`, `specialty`, `price`, `in_stock`, `icd10_code`/`icd10_text`,
+  `icd11_code`/`icd11_text`, `indications`) that were never part of this
+  contract and are not stripped as a mixed bag of clinical- and
+  commercial-looking data pending a deliberate decision on what (if any) of
+  it belongs in a future public release.
+
+### Added
+- `RegistryProductSummaryList` and `RegistrySuggestionList` items were
+  missing several fields every real response actually returns
+  (`manufacturer`, `product_tier`, `name_strength`, `match_reason`,
+  `score`, plus `generic`/`strength`/`supplier`/`pharma_uses`/structured
+  `match` on suggestions) — documented, not previously part of the
+  contract's `additionalProperties: false` allowlist.
+- `MedicationResolution.candidates` used an invented `{sfrx_id, label,
+  score}` shape no real response ever returned; rebuilt to match the real
+  contract (`candidate_id`, `confidence`, `display_name`,
+  `normalized_name`, `dosage_form`, `route`, `manufacturer`, `strength`,
+  `ingredient_names`, `match_reasons`, `equivalent_candidates`,
+  `registry_concept_id`, `review`, `source_provenance`).
+
 ## [2.0.2] - 2026-08-15
 
 ### Fixed
