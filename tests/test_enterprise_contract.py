@@ -196,6 +196,17 @@ def test_sdk_doc_examples_only_call_available_operations() -> None:
             assert f'"{operation_id}"' not in text and f"'{operation_id}'" not in text, f"{path.name} references deferred operation {operation_id}"
 
 
+def test_every_operation_has_a_summary_and_description() -> None:
+    spec = yaml.safe_load((ROOT / "openapi/enterprise-v1.yaml").read_text())
+    for item in spec["paths"].values():
+        for method, operation in item.items():
+            if method not in {"get", "post"}:
+                continue
+            operation_id = operation["operationId"]
+            assert operation.get("summary"), f"{operation_id} is missing a summary"
+            assert operation.get("description"), f"{operation_id} is missing a description"
+
+
 def test_mcp_adapter_uses_only_signed_enterprise_operations() -> None:
     source = (ROOT / "packages/mcp-server/src/index.ts").read_text()
     for header in (

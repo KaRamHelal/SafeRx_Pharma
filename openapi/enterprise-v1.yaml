@@ -40,6 +40,11 @@ paths:
   /registry/resolve:
     post:
       operationId: enterprise_registry_resolve
+      summary: Resolve free-text medication names to registry candidates
+      description: Bounded resolution of one or more free-text medication descriptions
+        into ranked registry candidates. Use this before a safety check when you only
+        have a raw medication name, dose, or prescription line, not a known `sfrx_id`.
+        It cannot search, enumerate, or export the registry.
       responses:
         '200':
           description: Medication resolution results
@@ -62,6 +67,11 @@ paths:
   /capabilities:
     get:
       operationId: enterprise_capabilities
+      summary: 'Deferred: account/key capability metadata'
+      description: Not yet available. This operation is documented for contract
+        completeness but returns a `501` upstream; it has no success response yet
+        and must not be relied on. Use `enterprise_safety_capabilities` for current
+        safety-domain readiness metadata instead.
       x-status: deferred
       responses:
         '501':
@@ -75,6 +85,14 @@ paths:
   /safety/checks:
     post:
       operationId: enterprise_safety_check
+      summary: Run a medication safety check
+      description: Evaluates one or more medications, optionally against a
+        request-scoped `patient_context`, across the requested safety domains
+        (interactions, pregnancy/lactation, clinical dose, food/meal, allergy).
+        Enterprise never reads a saved profile -- every patient factor considered
+        must be supplied on this request. Requires `Idempotency-Key`; a retried
+        request with the same key and body returns the original result rather than
+        creating a new check.
       x-idempotency-required: true
       parameters:
       - $ref: ./components.yaml#/components/parameters/signedSignature
@@ -99,6 +117,12 @@ paths:
   /registry/ingredients:
     get:
       operationId: enterprise_registry_ingredients
+      summary: Search registry ingredients
+      description: Bounded ingredient-name search across active substances,
+        generic components, and therapeutic classes. Returns ingredient identity
+        and the count of linked products, not full product records -- use
+        `enterprise_registry_search` or `enterprise_registry_product_detail` for
+        product-level detail.
       parameters:
       - $ref: ./components.yaml#/components/parameters/signedSignature
       - $ref: ./components.yaml#/components/parameters/signedNonce
@@ -126,6 +150,11 @@ paths:
   /safety/capabilities:
     get:
       operationId: enterprise_safety_capabilities
+      summary: Get current safety-domain readiness metadata
+      description: Release and domain readiness metadata only -- which of the six
+        safety domains are currently evaluable, and current source/policy versions.
+        Makes no patient-specific clinical claim. Useful as a first call to confirm
+        connectivity and current domain coverage before running safety checks.
       responses:
         '200':
           description: Safety capability metadata
@@ -142,6 +171,10 @@ paths:
   /status:
     get:
       operationId: enterprise_status
+      summary: 'Deferred: current account/key status'
+      description: Not yet available. This operation is documented for contract
+        completeness but returns a `501` upstream; it has no success response yet
+        and must not be relied on.
       x-status: deferred
       responses:
         '501':
@@ -155,6 +188,10 @@ paths:
   /registry/search:
     get:
       operationId: enterprise_registry_search
+      summary: Search registry products
+      description: Paginated free-text search over registry products by trade name,
+        generic name, or ingredient. For a known `sfrx_id`, use
+        `enterprise_registry_product_detail` directly instead.
       parameters:
       - $ref: ./components.yaml#/components/parameters/signedSignature
       - $ref: ./components.yaml#/components/parameters/signedNonce
@@ -185,6 +222,11 @@ paths:
   /registry/products/{sfrx_id}:
     get:
       operationId: enterprise_registry_product_detail
+      summary: Get a registry product by SFRX ID
+      description: Full registry product record for a known `sfrx_id`, including
+        display name, generic components, dosage form, route, and domain
+        availability. Use `enterprise_registry_resolve` first if you only have a
+        free-text medication description.
       parameters:
       - $ref: ./components.yaml#/components/parameters/signedSignature
       - $ref: ./components.yaml#/components/parameters/signedNonce
@@ -202,6 +244,10 @@ paths:
   /registry/suggest:
     get:
       operationId: enterprise_registry_autocomplete
+      summary: Autocomplete registry product/ingredient names
+      description: Fast, high-volume keystroke-driven suggestions for a search box.
+        Lighter-weight than `enterprise_registry_search`; use it for typeahead, not
+        as a substitute for a full search or resolution call.
       parameters:
       - $ref: ./components.yaml#/components/parameters/signedSignature
       - $ref: ./components.yaml#/components/parameters/signedNonce
@@ -238,6 +284,11 @@ paths:
   /safety/checks/{check_id}:
     get:
       operationId: enterprise_safety_check_read
+      summary: 'Deferred: read back a previously created safety check'
+      description: Not yet available. This operation is documented for contract
+        completeness but returns a `501` upstream; it has no success response yet.
+        Callers should retain the response from `enterprise_safety_check` directly
+        rather than expecting to read it back later.
       x-status: deferred
       responses:
         '501':
@@ -247,6 +298,10 @@ paths:
   /safety/check-batches:
     post:
       operationId: enterprise_safety_check_batch
+      summary: 'Deferred: run multiple safety checks in one call'
+      description: Not yet available. This operation is documented for contract
+        completeness but returns a `501` upstream; it has no success response yet.
+        Run individual `enterprise_safety_check` calls until this is promoted.
       x-status: deferred
       x-idempotency-required: true
       requestBody:
@@ -264,6 +319,11 @@ paths:
   /erx/safety-checks:
     post:
       operationId: enterprise_erx_safety_check
+      summary: Run a safety check for an eRx workflow
+      description: Safety check variant for electronic-prescription integrations.
+        Shares the same six-domain evaluation and response shape as
+        `enterprise_safety_check`; requires `Idempotency-Key` so retried eRx
+        submissions cannot double-evaluate the same prescription.
       x-idempotency-required: true
       parameters:
       - $ref: ./components.yaml#/components/parameters/idempotencyKey
@@ -286,6 +346,11 @@ paths:
   /allergies/resolve:
     post:
       operationId: enterprise_allergy_resolve
+      summary: 'Deferred: resolve free-text allergy entries'
+      description: Not yet available. This operation is documented for contract
+        completeness but returns a `501` upstream; it has no success response yet.
+        Allergy state can still be supplied on a safety check via
+        `patient_context.allergies` even though this dedicated resolver is deferred.
       x-status: deferred
       requestBody:
         required: true
@@ -302,6 +367,9 @@ paths:
   /allergies/families:
     get:
       operationId: enterprise_allergy_families
+      summary: 'Deferred: list allergy families'
+      description: Not yet available. This operation is documented for contract
+        completeness but returns a `501` upstream; it has no success response yet.
       x-status: deferred
       responses:
         '501':
@@ -311,6 +379,9 @@ paths:
   /allergies/substances:
     get:
       operationId: enterprise_allergy_substances
+      summary: 'Deferred: search allergy substances'
+      description: Not yet available. This operation is documented for contract
+        completeness but returns a `501` upstream; it has no success response yet.
       x-status: deferred
       parameters:
       - name: q
@@ -327,6 +398,13 @@ paths:
   /ocr/prescriptions:
     post:
       operationId: enterprise_ocr_prescription_create
+      summary: Upload a prescription image to start an OCR workflow
+      description: Starts an asynchronous prescription-intake workflow from an
+        uploaded image (`multipart/form-data`). Returns `202` with a
+        `prescription_id` immediately; poll `enterprise_ocr_prescription_read` or
+        stream `enterprise_ocr_prescription_events` for workflow progress, then
+        call resolve/safety/review in sequence. Requires an OCR-entitled key and
+        `Idempotency-Key`.
       x-entitlement-required: ocr_prescription
       x-idempotency-required: true
       parameters:
@@ -349,6 +427,12 @@ paths:
   /ocr/prescriptions/{prescription_id}:
     get:
       operationId: enterprise_ocr_prescription_read
+      summary: Get the current state of an OCR prescription workflow
+      description: Returns the current workflow status, transition history, and
+        candidate medications for a prescription created via
+        `enterprise_ocr_prescription_create`. Poll this or subscribe to
+        `enterprise_ocr_prescription_events` rather than assuming a fixed
+        processing time.
       x-entitlement-required: ocr_prescription
       responses:
         '200':
@@ -362,6 +446,10 @@ paths:
   /ocr/prescriptions/{prescription_id}/events:
     get:
       operationId: enterprise_ocr_prescription_events
+      summary: Stream OCR prescription workflow events
+      description: Server-sent-events stream of workflow transitions for a
+        prescription, as an alternative to polling
+        `enterprise_ocr_prescription_read`.
       x-entitlement-required: ocr_prescription
       responses:
         '200':
@@ -375,6 +463,11 @@ paths:
   /ocr/prescriptions/{prescription_id}/medications/resolve:
     post:
       operationId: enterprise_ocr_prescription_resolve
+      summary: Resolve OCR-extracted medication candidates
+      description: Advances an OCR prescription workflow by resolving the
+        text/candidates extracted from the uploaded image into registry
+        medications. Call after the workflow reaches a state ready for
+        resolution (see `enterprise_ocr_prescription_read`/events).
       x-entitlement-required: ocr_prescription
       requestBody:
         required: true
@@ -395,6 +488,10 @@ paths:
   /ocr/prescriptions/{prescription_id}/safety-checks:
     post:
       operationId: enterprise_ocr_prescription_safety
+      summary: Run a safety check on a resolved OCR prescription
+      description: Runs the six-domain safety evaluation over the medications
+        resolved for this prescription workflow. Call after
+        `enterprise_ocr_prescription_resolve` has produced resolved medications.
       x-entitlement-required: ocr_prescription
       requestBody:
         required: true
@@ -415,6 +512,11 @@ paths:
   /ocr/prescriptions/{prescription_id}/review:
     post:
       operationId: enterprise_ocr_prescription_review
+      summary: Submit a professional review decision for an OCR prescription
+      description: Records the professional review outcome for a prescription
+        workflow, closing out the review requirement carried on its safety result.
+        This is the terminal step of the OCR lifecycle for cases that require
+        review before the result may be relied upon.
       x-entitlement-required: ocr_prescription
       requestBody:
         required: true
