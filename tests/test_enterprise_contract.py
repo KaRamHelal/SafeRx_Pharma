@@ -367,6 +367,21 @@ def test_core_concept_guides_exist_and_are_navigated() -> None:
         assert f"docs/pages/concepts/{slug}.mdx" in docs_yml, f"{slug} not wired into nav"
 
 
+def test_problem_details_matches_a_real_live_error_response() -> None:
+    # Confirmed live against the production gateway 2026-08-15 (a real signed
+    # 403 API_KEY_DENIED response to enterprise_safety_capabilities). The real
+    # response carries operation_id and path -- both genuinely safe/useful and
+    # now added -- and also policy_id, which is deliberately NOT added: it is
+    # private-policy-engine vocabulary (e.g. "policy.enterprise_safety_capabilities")
+    # that should be stripped at the gateway before reaching Enterprise callers,
+    # not legitimized by documenting it as public surface.
+    components = yaml.safe_load((ROOT / "openapi/components.yaml").read_text())
+    schema = components["components"]["schemas"]["ProblemDetails"]
+    assert "operation_id" in schema["properties"]
+    assert "path" in schema["properties"]
+    assert "policy_id" not in schema["properties"]
+
+
 def test_mcp_adapter_uses_only_signed_enterprise_operations() -> None:
     source = (ROOT / "packages/mcp-server/src/index.ts").read_text()
     for header in (

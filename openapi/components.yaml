@@ -805,6 +805,13 @@ components:
         instance:
           description: URI identifying this specific occurrence, when available.
           type: string
+        operation_id:
+          description: Which operation this error occurred on, when available.
+            Matches the operationId values used throughout this documentation.
+          type: string
+        path:
+          description: Request path this error occurred on, when available.
+          type: string
         request_id:
           description: Request identifier for this occurrence. Include it when
             contacting support about a specific failure.
