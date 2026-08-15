@@ -60,6 +60,10 @@ navigation:
             path: docs/pages/concepts/patient-context.mdx
           - page: Safety Results
             path: docs/pages/concepts/safety-results.mdx
+          - page: Registry Operations
+            path: docs/pages/concepts/registry.mdx
+          - page: OCR Prescription Lifecycle
+            path: docs/pages/concepts/ocr-lifecycle.mdx
       - api: Enterprise API
         api-name: enterprise
 

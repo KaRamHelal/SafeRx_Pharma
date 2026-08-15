@@ -1,0 +1,88 @@
+---
+title: OCR prescription lifecycle
+subtitle: Upload, track, resolve, check, and review a prescription image
+---
+
+Prescription OCR is an asynchronous, multi-step workflow, not a single
+call. Six operations cover it, called roughly in this order:
+
+```text
+enterprise_ocr_prescription_create
+        |
+        v  (poll or subscribe)
+enterprise_ocr_prescription_read  <---  enterprise_ocr_prescription_events (SSE)
+        |
+        v
+enterprise_ocr_prescription_resolve
+        |
+        v
+enterprise_ocr_prescription_safety
+        |
+        v
+enterprise_ocr_prescription_review   (when review is required)
+```
+
+## 1. Upload
+
+`enterprise_ocr_prescription_create` takes a `multipart/form-data` upload —
+the image file plus optional flags (`pipeline_profile`, and which safety
+domains to eventually check via `include_ddi`/`include_allergy`/etc.).
+Requires `Idempotency-Key`. Returns `202` immediately with a
+`prescription_id` and initial `status` (`accepted` or `processing`) — the
+image has not been fully processed yet.
+
+<Note>
+This is the one Enterprise operation with a `multipart/form-data` body. The
+request signature covers the exact raw multipart bytes sent, the same rule
+as every other content type — see [Authentication](/authentication/overview).
+All three SDKs build this correctly; if you're hand-rolling requests, sign
+the literal bytes you send, not a JSON re-encoding of the form fields.
+</Note>
+
+## 2. Track progress
+
+Poll `enterprise_ocr_prescription_read` or subscribe to
+`enterprise_ocr_prescription_events` (a Server-Sent Events stream) rather
+than assuming a fixed processing time. The result carries `status`,
+`transitions[]` (history of state changes), and `document_context`
+(classification of the uploaded image itself — was it a prescription, did
+it contain medications, which section).
+
+## 3. Resolve
+
+Once OCR has produced text, `enterprise_ocr_prescription_resolve` matches
+each recognized line to registry medications. The result's
+`candidate_medications[]` has one entry per recognized line, each with:
+
+- `raw_span` — the raw OCR text for that line.
+- `ocr_candidates[]` — ranked raw OCR readings, each with a `confidence`.
+- `winner` — the selected medication for the line, once resolution has
+  chosen one (`null` until then).
+- `alternatives[]` — other possible matches, each with a `selection_reason`
+  (`ocr_alternative_match` or `same_generic_name`).
+- `review_required` / `review_state` — per-line review status, independent
+  of the result-level `review`.
+
+## 4. Safety check
+
+`enterprise_ocr_prescription_safety` runs the standard six-domain safety
+evaluation over the resolved medications — same response semantics as
+[Safety results](/concepts/safety-results).
+
+## 5. Review
+
+When the workflow's review requirement (`review.required`) is `true`,
+`enterprise_ocr_prescription_review` records the professional review
+outcome, closing out the workflow. This is the terminal step for cases that
+require review before the result may be relied upon —
+`review.review_deadline_policy` tells you whether that's required before
+relying on the output at all, or before workflow completion.
+
+## Retrying
+
+Only `enterprise_ocr_prescription_create` requires (and accepts) an
+`Idempotency-Key` — retry the same upload with the same key rather than
+re-uploading. The lifecycle steps that follow (resolve, safety, review) act
+on an existing `prescription_id` and are not independently idempotent in
+the same sense; consult `enterprise_ocr_prescription_read` before retrying
+a step to confirm it hasn't already advanced.

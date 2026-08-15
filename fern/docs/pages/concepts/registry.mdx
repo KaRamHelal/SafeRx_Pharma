@@ -1,0 +1,56 @@
+---
+title: Registry operations
+subtitle: Search, suggest, resolve, product detail, and ingredients
+---
+
+Five operations cover the registry surface. They overlap in purpose but are
+sized differently — picking the right one matters for both latency and
+result shape.
+
+## Choosing an operation
+
+| You have | Use |
+|---|---|
+| Keystrokes in a search box | `enterprise_registry_autocomplete` |
+| A search query, want a results page | `enterprise_registry_search` |
+| Free text or a dose line to identify | `enterprise_registry_resolve` |
+| A known `sfrx_id` | `enterprise_registry_product_detail` |
+| An ingredient/generic name to look up | `enterprise_registry_ingredients` |
+
+`enterprise_registry_autocomplete` is deliberately lighter-weight than
+`enterprise_registry_search` — use it for typeahead, not as a substitute for
+a real search or a resolution call. Charging autocomplete traffic against a
+search budget is why the two are billed as separate quota classes (see
+[Limits and retries](/authentication/rate-limits)).
+
+## Field names
+
+Registry response items use `tradename` and `generic` for the localized
+product/generic name — not `display_name`/`generic_name`. This is
+consistent across `enterprise_registry_search`,
+`enterprise_registry_autocomplete`, and `enterprise_registry_product_detail`.
+
+## Suggest and search response shape
+
+Both return ranked `items[]` with a `score` — not comparable across
+different queries, only useful for ordering results within one response.
+`enterprise_registry_search` additionally paginates via cursor (see
+`pagination.next_cursor`/`has_more`); `enterprise_registry_autocomplete`
+does not paginate — bound result size with `limit` instead (max 20).
+
+## Product detail
+
+`enterprise_registry_product_detail` returns the full record for one
+product: identity fields, `domain_availability` (per-safety-domain
+availability for this specific product), and loosely-structured educational
+content (`pharmacology`, `prose_details`, `warnings`) whose exact shape
+varies by product. This is a curated educational reference, not a
+commerce/inventory API — there's no price or stock-level field.
+
+## Ingredients
+
+`enterprise_registry_ingredients` searches active substances, generic
+components, and therapeutic classes — not full products. Each result
+carries `linked_product_count` and `linked_sfrx_ids` so you can pivot from
+an ingredient to the products containing it via
+`enterprise_registry_product_detail`.

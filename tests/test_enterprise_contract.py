@@ -361,7 +361,7 @@ def test_signing_guide_worked_example_matches_the_real_implementation() -> None:
 
 def test_core_concept_guides_exist_and_are_navigated() -> None:
     docs_yml = (ROOT / "fern/docs.yml").read_text()
-    for slug in ("medication-identity", "patient-context", "safety-results"):
+    for slug in ("medication-identity", "patient-context", "safety-results", "registry", "ocr-lifecycle"):
         page = ROOT / f"fern/docs/pages/concepts/{slug}.mdx"
         assert page.is_file(), f"missing guide: {slug}"
         assert f"docs/pages/concepts/{slug}.mdx" in docs_yml, f"{slug} not wired into nav"
