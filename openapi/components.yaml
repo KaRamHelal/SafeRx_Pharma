@@ -824,11 +824,14 @@ components:
       - domain_availability
       properties:
         request_id:
+          description: Echo of the request identifier for correlation.
           type: string
         schema_version:
+          description: Semantic version of this response's schema shape.
           type: string
           pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
         locale:
+          description: Locale used for localized text in this response.
           type: string
           enum:
           - ar-EG
@@ -842,12 +845,16 @@ components:
         display_obligations:
           $ref: '#/components/schemas/DisplayObligations'
         sfrx_id:
+          description: Stable SafeRx registry identifier for this product.
           type: string
         parent_sfrx_id:
+          description: sfrx_id of a parent product, when this product is a
+            variant or pack of another registry entry.
           type:
           - string
           - 'null'
         product_tier:
+          description: Regulatory/commercial tier this product belongs to.
           type: string
           enum:
           - pharma
@@ -856,22 +863,28 @@ components:
         display_name:
           $ref: '#/components/schemas/LocalizedString'
         trade_name:
+          description: Branded trade name, when distinct from display_name.
           oneOf:
           - $ref: '#/components/schemas/LocalizedString'
           - type: 'null'
         primary_name:
+          description: Primary reference name, when distinct from display_name.
           oneOf:
           - $ref: '#/components/schemas/LocalizedString'
           - type: 'null'
         generic_name:
+          description: Generic/INN name, when distinct from display_name.
           oneOf:
           - $ref: '#/components/schemas/LocalizedString'
           - type: 'null'
         generic_components:
+          description: Active generic components making up this product.
           type: array
           items:
             $ref: '#/components/schemas/LocalizedString'
         strength:
+          description: Strength as printed on the product (e.g. "500mg"), not
+            structured.
           type:
           - string
           - 'null'
@@ -880,18 +893,23 @@ components:
         route:
           $ref: '#/components/schemas/LocalizedString'
         manufacturer:
+          description: Manufacturer name, when known.
           oneOf:
           - $ref: '#/components/schemas/LocalizedString'
           - type: 'null'
         package:
+          description: Package/pack size description, when known.
           oneOf:
           - $ref: '#/components/schemas/LocalizedString'
           - type: 'null'
         barcode:
+          description: Product barcode, when known.
           type:
           - string
           - 'null'
         category_trail:
+          description: Registry category hierarchy this product belongs to, from
+            broadest to most specific.
           type: array
           items:
             type: object
@@ -900,27 +918,39 @@ components:
             - label
             properties:
               level:
+                description: Position in the category hierarchy.
                 type: string
               label:
                 $ref: '#/components/schemas/LocalizedString'
             additionalProperties: false
         facts:
+          description: Structured reference facts about this product. Shape
+            varies by product and is not further specified.
           type: object
           additionalProperties: false
         clinical_uses:
+          description: Educational summary of clinical uses, when available.
           oneOf:
           - $ref: '#/components/schemas/LocalizedString'
           - type: 'null'
         pharmacology:
+          description: Structured pharmacology reference detail. Shape varies by
+            product and is not further specified.
           type: object
           additionalProperties: false
         prose_details:
+          description: Additional free-form educational detail about this
+            product. Shape varies by product and is not further specified.
           type: object
           additionalProperties: false
         warnings:
+          description: Structured warning reference detail. Shape varies by
+            product and is not further specified.
           type: object
           additionalProperties: false
         domain_availability:
+          description: Per-safety-domain availability for this product, keyed by
+            domain id.
           type: object
           additionalProperties:
             type: string
@@ -1702,13 +1732,18 @@ components:
       - limitations
       properties:
         request_id:
+          description: Echo of the request identifier for correlation.
           type: string
         result_id:
+          description: Stable identifier for this specific resolution result.
           type: string
         schema_version:
+          description: Semantic version of this response's schema shape.
           type: string
           pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
         surface:
+          description: Which SafeRx surface produced this result. Always
+            enterprise_api for calls made through this API.
           type: string
           enum:
           - browser
@@ -1721,18 +1756,24 @@ components:
         source_provenance:
           $ref: '#/components/schemas/SourceProvenance'
         query:
+          description: Echo of the input that was resolved.
           type: object
           additionalProperties: false
           required:
           - raw_text
           properties:
             raw_text:
+              description: The free-text medication description that was
+                resolved.
               type: string
             locale_hint:
+              description: Locale hint supplied with the original input, if any.
               type:
               - string
               - 'null'
         candidates:
+          description: Ranked resolution candidates. Empty means no confident
+            match was found -- do not treat that as "no product exists."
           type: array
           items:
             type: object
@@ -1743,20 +1784,27 @@ components:
             - score
             properties:
               sfrx_id:
+                description: Registry identifier for this candidate.
                 type: string
               label:
                 $ref: '#/components/schemas/LocalizedString'
               score:
+                description: Confidence this candidate matches the input, 0-1.
+                  Not comparable across different queries.
                 type: number
                 minimum: 0
                 maximum: 1
         selected_candidate_id:
+          description: sfrx_id of the candidate to treat as selected, when
+            resolution is confident enough to auto-select one. Null when the
+            caller must choose among candidates.
           type:
           - string
           - 'null'
         review:
           $ref: '#/components/schemas/ReviewState'
         limitations:
+          description: Caveats about this resolution's scope or confidence.
           type: array
           items:
             $ref: '#/components/schemas/LocalizedString'
