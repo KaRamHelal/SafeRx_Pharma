@@ -15,7 +15,11 @@ Releases tracking. For the complete published version history, see
 and [NuGet (SafeRx)](https://www.nuget.org/packages/SafeRx#versions-body-tab).
 Entries below are not a backfilled reconstruction of that history.
 
-## [Unreleased]
+## [2.0.3] - 2026-08-15
+
+No SDK code changed. Documentation/contract-only release, published because
+`scripts/release_preflight.py` now prohibits overwriting an already-published
+`release_version`'s content -- see `### Changed` below.
 
 ### Fixed
 - `enterprise_registry_search`, `enterprise_registry_autocomplete`, and
@@ -54,6 +58,14 @@ Entries below are not a backfilled reconstruction of that history.
   `normalized_name`, `dosage_form`, `route`, `manufacturer`, `strength`,
   `ingredient_names`, `match_reasons`, `equivalent_candidates`,
   `registry_concept_id`, `review`, `source_provenance`).
+
+### Changed
+- `scripts/release_preflight.py` now fails if `release/current.yaml`'s
+  `release_version` matches an already-tagged (`vX.Y.Z`) release whose
+  `openapi/enterprise-v1.yaml`, `openapi/components.yaml`, or
+  `release/current.yaml` content differs from what's checked in now --
+  regenerating or correcting the contract always requires a new version;
+  silently overwriting a published version's content is no longer possible.
 
 ## [2.0.2] - 2026-08-15
 

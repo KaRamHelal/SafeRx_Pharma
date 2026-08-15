@@ -213,6 +213,60 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+# Files whose content defines "what release_version actually means" -- if any of these
+# differ from what a version's git tag recorded, that version has already been published
+# with different content and must not be reused.
+_RELEASE_DEFINING_FILES = (PUBLIC_SPEC, PUBLIC_COMPONENTS, RELEASE_MANIFEST)
+
+
+def _content_hash(read: Any) -> str:
+    """read(path) -> bytes for each release-defining file; combine into one hash."""
+    parts = sorted(hashlib.sha256(read(path)).hexdigest() for path in _RELEASE_DEFINING_FILES)
+    return hashlib.sha256("".join(parts).encode()).hexdigest()
+
+
+def _published_content_hash(version: str) -> str | None:
+    """Content hash of the release-defining files as recorded by git tag v{version}, or
+    None if that version has never been tagged (i.e. never actually published)."""
+    tag = f"v{version}"
+    check = subprocess.run(
+        ["git", "rev-parse", "--verify", "--quiet", f"refs/tags/{tag}"],
+        cwd=ROOT, capture_output=True, text=True,
+    )
+    if check.returncode != 0:
+        return None
+
+    def _read_at_tag(path: Path) -> bytes:
+        rel = path.relative_to(ROOT).as_posix()
+        result = subprocess.run(
+            ["git", "show", f"{tag}:{rel}"], cwd=ROOT, capture_output=True,
+        )
+        if result.returncode != 0:
+            return b""
+        return result.stdout
+
+    return _content_hash(_read_at_tag)
+
+
+def _check_release_version_is_immutable(release: dict[str, Any]) -> list[str]:
+    version = release.get("release_version")
+    if not version:
+        return ["release manifest is missing release_version"]
+    published_hash = _published_content_hash(str(version))
+    if published_hash is None:
+        return []  # this version has never been tagged/published -- nothing to compare
+    current_hash = _content_hash(lambda path: path.read_bytes())
+    if published_hash != current_hash:
+        return [
+            f"release_version {version!r} was already published (git tag v{version} exists) "
+            "with different contract content (openapi/enterprise-v1.yaml, "
+            "openapi/components.yaml, or release/current.yaml changed since that tag). "
+            "Overwriting a published version's content is prohibited -- bump release_version "
+            "in release/current.yaml (and the matching CHANGELOG.md entry) before publishing again."
+        ]
+    return []
+
+
 def main() -> int:
     errors: list[str] = []
     required = (
@@ -261,6 +315,7 @@ def main() -> int:
             errors.append("release manifest must carry a real public availability state (preview or available)")
         if "audience" in release.get("availability", {}) or "route_entitlements" in release.get("availability", {}):
             errors.append("release manifest availability block must not carry private audience/entitlement identifiers")
+        errors.extend(_check_release_version_is_immutable(release))
 
         for path in (PUBLIC_SPEC, PUBLIC_COMPONENTS, FERN_SPEC, FERN_COMPONENTS, FERN_CSHARP_SPEC, FERN_CSHARP_COMPONENTS):
             text = path.read_text(encoding="utf-8")

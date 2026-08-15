@@ -1,5 +1,5 @@
-release_id: enterprise-v1-2026.08.15
-release_version: 2.0.2
+release_id: enterprise-v1-2026.08.15b
+release_version: 2.0.3
 status: available
 publishable: true
 
@@ -12,9 +12,9 @@ api_contract:
   response_policy: closed_schema
 
 artifacts:
-  python: saferx-pharma==2.0.2
-  typescript: saferx-pharma-sdk@2.0.2
-  csharp: SafeRx==2.0.2
+  python: saferx-pharma==2.0.3
+  typescript: saferx-pharma-sdk@2.0.3
+  csharp: SafeRx==2.0.3
 
 hosted_mcp:
   status: preview
@@ -36,9 +36,17 @@ availability:
 
 notes:
   - operation_count reflects only operations with a complete, live-verified success
-    contract; deferred_operation_count lists operations still returning 501 upstream
-    and therefore excluded from the public bundle, SDK clients, and docs until they
-    have a real success schema and evidence (see openapi/enterprise-v1.yaml x-status).
+    contract; deferred_operation_count lists operations with no backend implementation
+    and no entitlement grant on any plan (live-confirmed 2026-08-15 -- 403
+    api-key-denied for every caller, not the previously documented 501) and therefore
+    excluded from the public bundle, SDK clients, and docs until they have a real
+    success schema and evidence (see openapi/enterprise-v1.yaml x-status).
+  - "2.0.3: no SDK code changed. Corrects the OpenAPI contract's documented response
+    for the 7 deferred operations (403, not 501 -- see prior note) and the registry
+    search/autocomplete/resolve/product_detail response schemas (see CHANGELOG.md
+    [2.0.3]). Bumped per the release-immutability rule in scripts/release_preflight.py:
+    any change to openapi/enterprise-v1.yaml, openapi/components.yaml, or this file
+    requires a new release_version rather than overwriting an already-published one."
   - Hosted MCP was promoted from internal_only to preview on 2026-08-15 in
     the backend's availability and documentation-binding configuration.
     It exposes exactly the three tools listed above with no resources or prompts.

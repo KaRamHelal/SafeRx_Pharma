@@ -27,7 +27,7 @@ RETRY_BACKOFF_BASE_SECONDS = 0.1
 RETRY_BACKOFF_MAX_SECONDS = 2.0
 CLIENT_KIND = "python_sdk"
 SDK_LANGUAGE = "python"
-SDK_VERSION = "2.0.2"
+SDK_VERSION = "2.0.3"
 
 
 @dataclass(frozen=True)
