@@ -66,6 +66,9 @@ components:
         format: date-time
   schemas:
     ClientSafetyCheckRequest:
+      description: Enterprise safety-check input is request-scoped only. There is no
+        server-held saved profile for this surface -- every patient factor considered
+        for a check must be supplied explicitly on the request.
       type: object
       required:
       - medications
@@ -113,19 +116,18 @@ components:
                 type:
                 - string
                 - 'null'
-        profile_context_mode:
-          type:
-          - string
-          - 'null'
-          enum:
-          - merge_saved_profile
-          - ignore_saved_profile
-          - saved_profile_only
-          - null
-        include_saved_current_medications:
-          type:
-          - boolean
-          - 'null'
+              role:
+                description: Which medication role this entry plays in the check.
+                  target_medication is the medication under review; current_medication
+                  marks a concurrently taken medication supplied for interaction
+                  checking. Defaults to target_medication.
+                type: string
+                enum:
+                - target_medication
+                - current_medication
+                default: target_medication
+        patient_context:
+          $ref: '#/components/schemas/PatientSafetyContext'
         requested_domains:
           type: array
           items:
@@ -143,6 +145,321 @@ components:
           - string
           - 'null'
       additionalProperties: false
+    PatientSafetyContext:
+      description: Optional patient factors considered for this single request only.
+        Enterprise never reads or writes a saved profile; omitted fields are treated
+        as unknown, not as "no risk factor present".
+      type: object
+      additionalProperties: false
+      properties:
+        age_years:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+          maximum: 150
+        date_of_birth:
+          type:
+          - string
+          - 'null'
+          format: date
+        age_reference_date:
+          type:
+          - string
+          - 'null'
+          format: date
+        sex:
+          type:
+          - string
+          - 'null'
+          enum:
+          - female
+          - male
+          - intersex
+          - unknown
+          - null
+        weight_kg:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+        pregnancy_status:
+          type:
+          - string
+          - 'null'
+          enum:
+          - pregnant
+          - not_pregnant
+          - unknown
+          - not_applicable
+          - null
+        lactation_status:
+          type:
+          - string
+          - 'null'
+          enum:
+          - lactating
+          - not_lactating
+          - unknown
+          - not_applicable
+          - null
+        pregnancy_context:
+          type: object
+          additionalProperties: false
+          properties:
+            lmp_date:
+              type:
+              - string
+              - 'null'
+              format: date
+            gestational_age_reference_date:
+              type:
+              - string
+              - 'null'
+              format: date
+            gestational_age_weeks:
+              type:
+              - number
+              - 'null'
+              minimum: 0
+              maximum: 45
+            gestational_age_months_approx:
+              type:
+              - number
+              - 'null'
+              minimum: 0
+              maximum: 11
+        lactation_context:
+          type: object
+          additionalProperties: false
+          properties:
+            infant_age_reference_date:
+              type:
+              - string
+              - 'null'
+              format: date
+            infant_age_days:
+              type:
+              - number
+              - 'null'
+              minimum: 0
+              maximum: 3650
+            infant_age_months_approx:
+              type:
+              - number
+              - 'null'
+              minimum: 0
+              maximum: 120
+        renal:
+          type: object
+          additionalProperties: false
+          properties:
+            crcl_ml_min:
+              type:
+              - number
+              - 'null'
+              minimum: 0
+            egfr_ml_min_1_73m2:
+              type:
+              - number
+              - 'null'
+              minimum: 0
+            status:
+              type:
+              - string
+              - 'null'
+              enum:
+              - normal
+              - mild
+              - moderate
+              - severe
+              - failure
+              - dialysis
+              - unknown
+              - null
+        hepatic:
+          type: object
+          additionalProperties: false
+          properties:
+            child_pugh:
+              type:
+              - string
+              - 'null'
+              enum:
+              - A
+              - B
+              - C
+              - unknown
+              - null
+            status:
+              type:
+              - string
+              - 'null'
+              enum:
+              - normal
+              - mild
+              - moderate
+              - severe
+              - unknown
+              - null
+        conditions:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            enum:
+            - arrhythmia
+            - asthma
+            - bph
+            - coronary
+            - depression
+            - diabetes
+            - epilepsy
+            - gi_bleeding
+            - glaucoma
+            - heart_failure
+            - hypertension
+            - hyperthyroidism
+            - hypothyroidism
+            - parkinsons
+        allergy_state:
+          type:
+          - string
+          - 'null'
+          description: Explicitly distinguishes unknown allergies from confirmed no
+            known allergies.
+          enum:
+          - unknown
+          - confirmed_none
+          - has_entries
+          - null
+        allergies:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - input_text
+            properties:
+              input_text:
+                type: string
+              entry_type:
+                type:
+                - string
+                - 'null'
+                enum:
+                - free_text
+                - family
+                - product
+                - null
+        diet_profile:
+          type: object
+          additionalProperties: false
+          properties:
+            diet_patterns:
+              type: array
+              uniqueItems: true
+              maxItems: 20
+              items:
+                type: string
+                enum:
+                - vegetarian
+                - vegan
+                - pescatarian
+                - keto_low_carb
+                - high_protein_fitness
+                - mediterranean
+                - dash_low_sodium
+                - diabetes_carb_managed
+                - renal_modified
+                - gluten_free
+                - lactose_or_cow_milk_free
+                - low_fodmap
+                - low_purine
+                - halal
+                - kosher
+                - ramadan_fasting
+                - intermittent_fasting
+                - other
+            fasting_pattern:
+              type:
+              - string
+              - 'null'
+              enum:
+              - none
+              - ramadan
+              - intermittent_fasting
+              - time_restricted_eating
+              - unknown
+              - null
+            food_exposures:
+              type: array
+              maxItems: 50
+              items:
+                type: object
+                additionalProperties: false
+                required:
+                - exposure_id
+                - confirmation_state
+                properties:
+                  exposure_id:
+                    type: string
+                    enum:
+                    - alcohol
+                    - grapefruit_citrus
+                    - dairy_calcium
+                    - vitamin_k_leafy_greens
+                    - caffeine
+                    - tyramine_aged_fermented
+                    - potassium_foods_or_salt_substitute
+                    - high_fiber
+                    - high_fat_meal
+                    - licorice
+                    - green_tea
+                    - hibiscus
+                    - black_seed
+                    - fenugreek
+                    - fava_beans
+                    - other
+                  confirmation_state:
+                    type: string
+                    enum:
+                    - confirmed_current
+                    - frequent
+                    - occasional
+                    - avoids
+                    - unknown
+            supplement_exposures:
+              type: array
+              maxItems: 50
+              items:
+                type: object
+                additionalProperties: false
+                required:
+                - exposure_id
+                - confirmation_state
+                properties:
+                  exposure_id:
+                    type: string
+                    enum:
+                    - protein_powder_whey_casein
+                    - calcium
+                    - iron
+                    - magnesium
+                    - potassium_or_electrolyte
+                    - caffeine_preworkout
+                    - creatine
+                    - herbal_supplement
+                    - other
+                  confirmation_state:
+                    type: string
+                    enum:
+                    - confirmed_current
+                    - frequent
+                    - occasional
+                    - avoids
+                    - unknown
     IngredientList:
       type: object
       required:
@@ -652,6 +969,7 @@ components:
       - source_provenance
       - review
       - summary
+      - context_summary
       - signals
       - domain_coverage
       - unavailable_domains
@@ -686,6 +1004,32 @@ components:
           $ref: '#/components/schemas/ReviewState'
         summary:
           $ref: '#/components/schemas/LocalizedString'
+        context_summary:
+          description: Privacy-safe indication of whether request-supplied patient_context
+            was applied to this check. Enterprise has no saved profile, so this never
+            reports a saved-profile source; it never echoes raw patient_context values.
+          type: object
+          additionalProperties: false
+          required:
+          - status
+          - missing_context_count
+          - stale_context_count
+          - contradiction_count
+          properties:
+            status:
+              type: string
+              enum:
+              - request_context_applied
+              - baseline_only
+            missing_context_count:
+              type: integer
+              minimum: 0
+            stale_context_count:
+              type: integer
+              minimum: 0
+            contradiction_count:
+              type: integer
+              minimum: 0
         signals:
           type: array
           items:

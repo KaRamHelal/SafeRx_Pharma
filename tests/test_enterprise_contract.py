@@ -103,6 +103,28 @@ def test_signature_binds_the_full_enterprise_path() -> None:
     assert sign_request("test-key", "POST", "/api/enterprise/v1/safety/checks", "", body, timestamp, nonce)
 
 
+def test_safety_check_request_is_request_scoped_patient_context() -> None:
+    components = yaml.safe_load((ROOT / "openapi/components.yaml").read_text())
+    schemas = components["components"]["schemas"]
+    request = schemas["ClientSafetyCheckRequest"]
+    # Enterprise has no saved profile: these are Browser-only session controls and
+    # must never be accepted on the Enterprise request.
+    assert "profile_context_mode" not in request["properties"]
+    assert "include_saved_current_medications" not in request["properties"]
+    assert request["additionalProperties"] is False
+    assert "patient_context" in request["properties"]
+    assert request["properties"]["patient_context"]["$ref"] == "#/components/schemas/PatientSafetyContext"
+    medication_item = request["properties"]["medications"]["items"]
+    assert set(medication_item["properties"]["role"]["enum"]) == {"target_medication", "current_medication"}
+    patient_context = schemas["PatientSafetyContext"]
+    assert patient_context["additionalProperties"] is False
+    response = schemas["SafetyCheckResponse"]["properties"]["context_summary"]
+    assert set(response["properties"]["status"]["enum"]) == {"request_context_applied", "baseline_only"}
+    # A saved-profile-sourced state would only be reachable if Enterprise merged a
+    # saved profile, which it never does.
+    assert "saved_profile_applied" not in response["properties"]["status"]["enum"]
+
+
 def test_mcp_adapter_uses_only_signed_enterprise_operations() -> None:
     source = (ROOT / "packages/mcp-server/src/index.ts").read_text()
     for header in (

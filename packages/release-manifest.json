@@ -32,7 +32,7 @@
   "release_status": "preview",
   "sdk_version": "2.0.2-preview.1",
   "source_sha256": {
-    "openapi/components.yaml": "aa96364a0c39da2e18357bcc41fc49f30074ac3d004a6292b8c62fb0e425e800",
+    "openapi/components.yaml": "873dfe183c5516d00d890b1476079441a2b56be9f22bdea0dfc9943271d78e05",
     "openapi/enterprise-v1.yaml": "db4115610cfa5098030dcd41d92774dc35af54228604e90afdc11e41bac4ff40"
   }
 }
