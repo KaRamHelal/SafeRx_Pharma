@@ -178,6 +178,24 @@ def test_sdk_clients_support_multipart_upload_signing() -> None:
     assert "MultipartEncoder" in cs_source and "multipart/form-data" in cs_source
 
 
+def test_sdk_doc_examples_only_call_available_operations() -> None:
+    # A doc example calling a deferred operation (e.g. client.enterprise_status())
+    # would raise immediately, since deferred operations are excluded from
+    # OPERATIONS and get no generated method -- exactly the class of bug a
+    # blackbox read-the-docs-and-try-it pass is meant to catch (see plan section
+    # 12). Every deferred operation id appearing as `client.<id>(` or
+    # `client.request("<id>"` in any SDK doc page is that bug.
+    import re
+
+    deferred = DEFERRED_OPERATIONS
+    docs_dir = ROOT / "fern/docs/pages/sdks"
+    for path in docs_dir.glob("*.mdx"):
+        text = path.read_text()
+        for operation_id in deferred:
+            assert not re.search(rf"client\.{operation_id}\s*\(", text), f"{path.name} calls deferred operation {operation_id}"
+            assert f'"{operation_id}"' not in text and f"'{operation_id}'" not in text, f"{path.name} references deferred operation {operation_id}"
+
+
 def test_mcp_adapter_uses_only_signed_enterprise_operations() -> None:
     source = (ROOT / "packages/mcp-server/src/index.ts").read_text()
     for header in (

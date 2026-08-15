@@ -15,7 +15,7 @@ client = SafeRxClient(
     api_key="YOUR_ENTERPRISE_KEY",
 )
 
-status = client.enterprise_status()
+capabilities = client.enterprise_safety_capabilities()
 result = client.enterprise_safety_check(
     body={
         "locale": "en",

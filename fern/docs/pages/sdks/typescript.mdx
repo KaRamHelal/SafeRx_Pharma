@@ -3,6 +3,15 @@ title: TypeScript SDK
 subtitle: Signed TypeScript client for the Enterprise API
 ---
 
+<Warning>
+Server-side use only. `SafeRxClient` signs every request with your Enterprise
+API key as the HMAC secret. Never import this package, bundle it, or embed
+your API key in code that runs in a browser, mobile WebView, or any other
+client-controlled environment — doing so exposes the signing secret to
+whoever can open dev tools. Call the Enterprise API from your backend, then
+serve only the results to the browser.
+</Warning>
+
 ```bash
 npm install saferx-pharma-sdk
 ```
