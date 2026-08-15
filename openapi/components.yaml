@@ -76,6 +76,7 @@ components:
       - requested_domains
       properties:
         locale:
+          description: Locale to use for localized text in the response.
           type: string
           enum:
           - ar-EG
@@ -83,6 +84,9 @@ components:
           - en
           - mixed
         medications:
+          description: Medications to evaluate. Use free-text input_text when you
+            only have a description; supply sfrx_id when you already have a
+            resolved registry identifier.
           type: array
           minItems: 1
           maxItems: 50
@@ -93,26 +97,40 @@ components:
             - input_text
             properties:
               client_medication_id:
+                description: Caller-supplied identifier echoed back for
+                  correlating this entry with its evaluation, not interpreted by
+                  the API.
                 type:
                 - string
                 - 'null'
               input_text:
+                description: Free-text medication description, e.g. as written on
+                  a prescription.
                 type: string
                 minLength: 1
               sfrx_id:
+                description: Registry identifier, when already known from a prior
+                  resolve/search call. Takes precedence over input_text for
+                  matching when both are supplied.
                 type:
                 - string
                 - 'null'
                 pattern: ^SRX-[0-9]{3}-[0-9]{6}$
               dose_text:
+                description: Free-text dose as written, used for dose-sensitive
+                  guidance where supported.
                 type:
                 - string
                 - 'null'
               route:
+                description: Free-text administration route, when relevant to
+                  evaluation.
                 type:
                 - string
                 - 'null'
               frequency_text:
+                description: Free-text dosing frequency, when relevant to
+                  evaluation.
                 type:
                 - string
                 - 'null'
@@ -129,6 +147,9 @@ components:
         patient_context:
           $ref: '#/components/schemas/PatientSafetyContext'
         requested_domains:
+          description: Which of the six safety domains to evaluate. Domains not
+            requested are simply not evaluated -- they will not appear in
+            unavailable_domains either.
           type: array
           items:
             type: string
@@ -141,6 +162,9 @@ components:
             - allergy
           uniqueItems: true
         idempotency_key:
+          description: Client-supplied idempotency key. A retried request with
+            the same key and body returns the original result rather than
+            creating a new check. Required on this operation.
           type:
           - string
           - 'null'
