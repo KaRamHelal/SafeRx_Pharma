@@ -1,278 +1,100 @@
 {
   "info": {
-    "name": "SafeRx Drug Safety API v1.2.0",
-    "description": "Comprehensive drug safety screening for 33,000 Egyptian pharma + semi-pharma products.\n\nAPI Version: 1.2.0 — Full bilingual (English + Arabic) support.\n\n## Getting Started\n\n1. **Get a free API key:** Run \"Register Free API Key\" to get a key\n2. **Set the key:** The key is automatically saved to the `api_key` environment variable\n3. Run any safety check request\n\n## Authentication\n\nThe Drug Safety API uses API keys (not session tokens).\n- Free tier: 5 requests/minute, 100/day\n- Header: `X-SafeRx-API-Key: sfx_free_xxxxx`\n\n## Bilingual Support\n\nAll text fields include both English and Arabic variants:\n- Drug names: `brand_name` + `brand_name_ar`\n- PLLR rationale: `pregnancy_rationale` + `pregnancy_rationale_ar`\n- DDI: `description` + `description_ar`, `recommendation` + `recommendation_ar`\n- Food: `brief_en` + `brief_ar`\n- Alerts: `message` + `message_ar`",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "saferx"
+    "name": "SafeRx Enterprise API preview",
+    "description": "Signed-request examples for the MIS Enterprise preview contract. Inject the key locally; never save a credential in this collection.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "auth": {
-    "type": "apikey",
-    "apikey": [
-      {
-        "key": "key",
-        "value": "X-SafeRx-API-Key",
-        "type": "string"
-      },
-      {
-        "key": "value",
-        "value": "{{api_key}}",
-        "type": "string"
-      },
-      {
-        "key": "in",
-        "value": "header",
-        "type": "string"
-      }
-    ]
-  },
-  "item": [
+  "variable": [
     {
-      "name": "Authentication",
-      "description": "Get a free API key to start making requests. Session tokens are for the website — the Drug Safety API uses API keys.",
-      "item": [
-        {
-          "name": "Register Free API Key",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var jsonData = pm.response.json();",
-                  "if (jsonData.api_key) {",
-                  "    pm.environment.set('api_key', jsonData.api_key);",
-                  "    console.log('API key saved: ' + jsonData.api_key);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "User-Agent",
-                "value": "SafeRx-Postman/1.0"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"developer@example.com\",\n  \"name\": \"Test Developer\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/developers/keys/free",
-              "host": ["{{base_url}}"],
-              "path": ["api", "developers", "keys", "free"]
-            },
-            "description": "Register for a free API key. The key is automatically saved to the `api_key` environment variable.\n\n**Free tier limits:** 5 requests/minute, 100 requests/day."
-          },
-          "response": []
-        },
-        {
-          "name": "Get Session Token (website only)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var jsonData = pm.response.json();",
-                  "if (jsonData.token) {",
-                  "    pm.environment.set('token', jsonData.token);",
-                  "    console.log('Token saved (valid 5 min)');",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "User-Agent",
-                "value": "SafeRx-Postman/1.0"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/security/token",
-              "host": ["{{base_url}}"],
-              "path": ["api", "security", "token"]
-            },
-            "description": "Session tokens are for the website frontend, NOT the Drug Safety API.\n\nThe Drug Safety endpoints require `X-SafeRx-API-Key` (from \"Register Free API Key\").\n\nSession tokens expire in 5 minutes."
-          },
-          "response": []
-        }
-      ]
+      "key": "base_url",
+      "value": "https://saferx.online/api/enterprise/v1"
     },
     {
-      "name": "Drug Safety",
-      "description": "Screen drugs across 6 safety domains: adverse effects (ae), drug interactions (ddi), pregnancy & lactation (pllr), food interactions (food), clinical considerations (clinical), and dosing (dose).",
-      "item": [
+      "key": "api_key",
+      "value": ""
+    },
+    {
+      "key": "idempotency_key",
+      "value": "postman-safety-001"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const CryptoJS = require('crypto-js');",
+          "const url = pm.request.url.toString();",
+          "const parsed = new URL(url);",
+          "const query = [...parsed.searchParams.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`).join('&');",
+          "const query = parsed.search.replace(/^\\?/, '');",
+          "const body = pm.request.body && pm.request.body.mode === 'raw' ? pm.request.body.raw : '';",
+          "const timestamp = new Date().toISOString();",
+          "const nonce = pm.variables.replaceIn('{{$guid}}');",
+          "const bodyHash = CryptoJS.SHA256(body).toString(CryptoJS.enc.Hex);",
+          "const canonical = [pm.request.method.toUpperCase(), encodeURI(path), query, bodyHash, timestamp, nonce].join('\\n');",
+          "const signature = CryptoJS.HmacSHA256(canonical, pm.variables.get('api_key')).toString(CryptoJS.enc.Base64).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
+          "pm.request.headers.upsert({key:'X-SafeRx-API-Key', value:pm.variables.get('api_key')});",
+          "pm.request.headers.upsert({key:'X-SafeRx-Timestamp', value:timestamp});",
+          "pm.request.headers.upsert({key:'X-SafeRx-Nonce', value:nonce});",
+          "pm.request.headers.upsert({key:'X-SafeRx-Signature', value:signature});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/status"
+      }
+    },
+    {
+      "name": "Capabilities",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/capabilities"
+      }
+    },
+    {
+      "name": "Registry search",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/registry/search?q=Augmentin&locale=en&limit=10"
+      }
+    },
+    {
+      "name": "Safety check",
+      "event": [
         {
-          "name": "Full Safety Check (2 drugs, all domains)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "User-Agent",
-                "value": "SafeRx-Postman/1.0"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"drugs\": [\"Augmentin 1g\", \"Marivan\"]\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/drug_safety/check",
-              "host": ["{{base_url}}"],
-              "path": ["api", "drug_safety", "check"]
-            },
-            "description": "Screen 2 drugs across ALL 6 safety domains. Augmentin + Marivan has a known major DDI.\n\nResponse includes bilingual drug identity (brand_name + brand_name_ar), all safety data, and Arabic alert messages."
-          },
-          "response": []
-        },
-        {
-          "name": "Check with Patient Profile",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "User-Agent",
-                "value": "SafeRx-Postman/1.0"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"drugs\": [\"Augmentin 1g\", \"Glucophage 500mg\", \"Marivan\"],\n  \"patient_profile\": {\n    \"populations\": [\"geriatric\", \"renal\"],\n    \"conditions\": [\"diabetes\", \"hypertension\"]\n  }\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/drug_safety/check",
-              "host": ["{{base_url}}"],
-              "path": ["api", "drug_safety", "check"]
-            },
-            "description": "Screen drugs with patient context for personalized clinical alerts.\n\n**Populations:** pediatric, geriatric, cardiac, hepatic, renal\n**Conditions:** arrhythmia, asthma, bph, coronary, depression, diabetes, epilepsy, gi_bleeding, glaucoma, heart_failure, hypertension, hyperthyroidism, hypothyroidism, parkinsons"
-          },
-          "response": []
-        },
-        {
-          "name": "DDI Only (selective domains)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "User-Agent",
-                "value": "SafeRx-Postman/1.0"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"drugs\": [\"Augmentin 1g\", \"Marivan\"],\n  \"include\": [\"ddi\"]\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/drug_safety/check",
-              "host": ["{{base_url}}"],
-              "path": ["api", "drug_safety", "check"]
-            },
-            "description": "Check drug interactions only (smallest, fastest response).\n\nUse `include` to request specific domains: ae, ddi, pllr, food, clinical, dose."
-          },
-          "response": []
-        },
-        {
-          "name": "Pregnancy + Food Safety",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "User-Agent",
-                "value": "SafeRx-Postman/1.0"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"drugs\": [\"Marivan\"],\n  \"include\": [\"pllr\", \"food\"]\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/drug_safety/check",
-              "host": ["{{base_url}}"],
-              "path": ["api", "drug_safety", "check"]
-            },
-            "description": "Check pregnancy/lactation safety and food interactions for Warfarin.\n\nPLLR response includes bilingual rationale (pregnancy_rationale + pregnancy_rationale_ar), trimester-specific risks, BBW with text_en/text_ar, and LactMed pharmacokinetics."
-          },
-          "response": []
-        },
-        {
-          "name": "Single Drug (AE + Dose)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "User-Agent",
-                "value": "SafeRx-Postman/1.0"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"drugs\": [\"Aspirin\"],\n  \"include\": [\"ae\", \"dose\"]\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/drug_safety/check",
-              "host": ["{{base_url}}"],
-              "path": ["api", "drug_safety", "check"]
-            },
-            "description": "Check adverse effects (including Black Box Warnings) and maximum daily dose for a single drug."
-          },
-          "response": []
-        },
-        {
-          "name": "Get Metadata",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "User-Agent",
-                "value": "SafeRx-Postman/1.0"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/drug_safety/metadata",
-              "host": ["{{base_url}}"],
-              "path": ["api", "drug_safety", "metadata"]
-            },
-            "description": "Get available populations, conditions, database versions, risk scales, and tier limits.\n\nNo authentication required."
-          },
-          "response": []
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.request.headers.upsert({key:'Idempotency-Key', value:pm.variables.get('idempotency_key')});"
+            ]
+          }
         }
-      ]
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"locale\": \"en\",\n  \"medications\": [\n    {\n      \"input_text\": \"Augmentin 1g\"\n    }\n  ],\n  \"requested_domains\": [\n    \"ddi\",\n    \"food_interactions\"\n  ]\n}"
+        },
+        "url": "{{base_url}}/safety/checks"
+      }
     }
   ]
 }

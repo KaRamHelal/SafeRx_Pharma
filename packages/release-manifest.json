@@ -1,0 +1,38 @@
+{
+  "api_contract_version": "enterprise-v1",
+  "artifact_sha256": {
+    "packages/csharp/SafeRx.csproj": "929e4dec18fe516bf93ce021952963b872274da4117a59daa041850b51e5aaa9",
+    "packages/csharp/SafeRxClient.cs": "4d29b0704ea5e24cee1de11cd106b522c6d35aee89b495b7ed6d80330fcc06ab",
+    "packages/python/pyproject.toml": "73a0b7aafd7f700c46dfbb96ee0a349c25b79257c4c3969e2b6a9d411d23fdaa",
+    "packages/python/src/saferx_pharma/__init__.py": "07bec7e0f872f0462f00be1e705c7b1b69b35a3d6fd8d343bebdefa428580fe9",
+    "packages/python/src/saferx_pharma/client.py": "8bb80b19580458f238a8ac266dac16d1b72ade50c0608fbc793580da418769f7",
+    "packages/typescript/package.json": "3e3a9eedd39986604e23029b893ffbf3b7e7ed946e3a5975911de1e1990f40e8",
+    "packages/typescript/src/client.ts": "e6a9e6eda4edab651bd25fc2e686c05b8410251ed6c8cac35aa304df9586d179",
+    "packages/typescript/tsconfig.json": "1dfaa085edc28800c8dbccf0c8093b855158371f8ee63da1395ec3de5b575d78"
+  },
+  "generator": "scripts/generate_enterprise_sdks.py",
+  "operation_ids": [
+    "enterprise_erx_safety_check",
+    "enterprise_ocr_prescription_create",
+    "enterprise_ocr_prescription_events",
+    "enterprise_ocr_prescription_read",
+    "enterprise_ocr_prescription_resolve",
+    "enterprise_ocr_prescription_review",
+    "enterprise_ocr_prescription_safety",
+    "enterprise_registry_autocomplete",
+    "enterprise_registry_ingredients",
+    "enterprise_registry_product_detail",
+    "enterprise_registry_resolve",
+    "enterprise_registry_search",
+    "enterprise_safety_capabilities",
+    "enterprise_safety_check"
+  ],
+  "publishable": false,
+  "release_id": "enterprise-v1-2026.08.15",
+  "release_status": "preview",
+  "sdk_version": "2.0.2-preview.1",
+  "source_sha256": {
+    "openapi/components.yaml": "aa96364a0c39da2e18357bcc41fc49f30074ac3d004a6292b8c62fb0e425e800",
+    "openapi/enterprise-v1.yaml": "db4115610cfa5098030dcd41d92774dc35af54228604e90afdc11e41bac4ff40"
+  }
+}

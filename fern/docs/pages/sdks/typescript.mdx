@@ -4,27 +4,25 @@ subtitle: Signed TypeScript client for the Enterprise API
 ---
 
 ```bash
-cd sdks/typescript
-npm install
-npm run build
+npm install saferx-pharma-sdk
 ```
 
 ```typescript
-import {{ SafeRxClient }} from "saferx-pharma-sdk";
+import { SafeRxClient } from "saferx-pharma-sdk";
 
 const client = new SafeRxClient(
   "https://saferx.online/api/enterprise/v1",
   process.env.SAFERX_API_KEY!,
 );
 
-const result = await client.request("enterprise_safety_check", {{
-  body: {{
+const result = await client.request("enterprise_safety_check", {
+  body: {
     locale: "en",
-    medications: [{{ input_text: "Augmentin 1g" }}],
+    medications: [{ input_text: "Augmentin 1g" }],
     requested_domains: ["ddi"],
-  }},
+  },
   idempotencyKey: "safety-check-001",
-}});
+});
 ```
 
 The client signs the exact method, path, query, body digest, timestamp, and nonce before sending.

@@ -3,14 +3,13 @@ title: SDKs
 subtitle: Signing-aware Enterprise client sources
 ---
 
-The repository clients are generated from `openapi/enterprise-v1.yaml` and use the same operation IDs and HMAC request contract as the REST surface.
+The clients are generated from `openapi/enterprise-v1.yaml` and use the same operation IDs and HMAC request contract as the REST surface. All three are published and installable today.
 
-| Language | Source | Release state |
+| Language | Package | Install |
 |---|---|---|
-| Python | `sdks/python` | Internal release source |
-| TypeScript | `sdks/typescript` | Internal release source |
-| C# | `sdks/csharp` | Internal release source |
+| Python | [`saferx-pharma`](https://pypi.org/project/saferx-pharma/) | `pip install saferx-pharma` |
+| TypeScript | [`saferx-pharma-sdk`](https://www.npmjs.com/package/saferx-pharma-sdk) | `npm install saferx-pharma-sdk` |
+| C# | [`SafeRx`](https://www.nuget.org/packages/SafeRx) | `dotnet add package SafeRx` |
 
-These checked-in sources are generated integration artifacts. They are not
-published package availability claims; use the raw signed REST contract unless
-your organization has received an SDK release through the MIS release process.
+An issued Enterprise API key is still required to make requests — see
+[Developer access](/authentication/developer-portal).

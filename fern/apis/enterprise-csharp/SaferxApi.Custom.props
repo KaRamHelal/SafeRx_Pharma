@@ -1,12 +1,6 @@
 <Project>
   <PropertyGroup>
-    <PackageId>SafeRx</PackageId>
-    <Description>SafeRx Drug Safety API — C# SDK. Screen drugs for adverse effects, interactions, pregnancy/lactation risks, food interactions, and dosing across 33,000 Egyptian pharma + semi-pharma products.</Description>
-    <Authors>SafeRx</Authors>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageTags>drug-safety;pharmacy;drug-interactions;adverse-effects;pregnancy-safety;egypt;pharmaceutical;mcp</PackageTags>
-    <PackageProjectUrl>https://docs.saferx.online</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/KaRamHelal/SafeRx_Pharma</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
+    <Description>SafeRx Enterprise API preview client</Description>
+    <PackageTags>saferx;enterprise-api;medication-safety;pharmacy</PackageTags>
   </PropertyGroup>
 </Project>

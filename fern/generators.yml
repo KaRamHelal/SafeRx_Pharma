@@ -1,8 +1,8 @@
 # Root generators.yml — INTENTIONALLY EMPTY for SDK groups.
 #
 # SDK generation is defined in sub-API configs ONLY:
-#   fern/apis/drug-safety/generators.yml      — Python + TypeScript
-#   fern/apis/drug-safety-csharp/generators.yml — C#
+#   fern/apis/enterprise/generators.yml      — Python + TypeScript
+#   fern/apis/enterprise-csharp/generators.yml — C#
 #
 # This prevents dual version counters (root vs sub-API).
 # CI uses: fern generate --group <group> --api <api>

@@ -8,14 +8,12 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "sdks/python/src"))
+sys.path.insert(0, str(ROOT / "packages/python/src"))
 
 from saferx_pharma.client import canonical_request, sign_request  # noqa: E402
 
 
 EXPECTED_OPERATIONS = {
-    "enterprise_capabilities",
-    "enterprise_status",
     "enterprise_registry_autocomplete",
     "enterprise_registry_search",
     "enterprise_registry_resolve",
@@ -23,12 +21,7 @@ EXPECTED_OPERATIONS = {
     "enterprise_registry_ingredients",
     "enterprise_safety_capabilities",
     "enterprise_safety_check",
-    "enterprise_safety_check_read",
-    "enterprise_safety_check_batch",
     "enterprise_erx_safety_check",
-    "enterprise_allergy_resolve",
-    "enterprise_allergy_families",
-    "enterprise_allergy_substances",
     "enterprise_ocr_prescription_create",
     "enterprise_ocr_prescription_read",
     "enterprise_ocr_prescription_events",
@@ -37,17 +30,49 @@ EXPECTED_OPERATIONS = {
     "enterprise_ocr_prescription_review",
 }
 
+# Present in the OpenAPI (documented, honestly marked x-status: deferred) but must
+# never carry a success response or ship in a generated SDK client -- the maintained
+# MIS OpenAPI only defines 501 for these operations today.
+DEFERRED_OPERATIONS = {
+    "enterprise_capabilities",
+    "enterprise_status",
+    "enterprise_safety_check_read",
+    "enterprise_safety_check_batch",
+    "enterprise_allergy_resolve",
+    "enterprise_allergy_families",
+    "enterprise_allergy_substances",
+}
+
 
 def test_public_projection_matches_current_enterprise_operation_set() -> None:
     spec = yaml.safe_load((ROOT / "openapi/enterprise-v1.yaml").read_text())
-    operation_ids = {
-        operation["operationId"]
+    operations = {
+        operation["operationId"]: operation
         for item in spec["paths"].values()
         for method, operation in item.items()
         if method in {"get", "post"}
     }
-    assert operation_ids == EXPECTED_OPERATIONS
+    assert set(operations) == EXPECTED_OPERATIONS | DEFERRED_OPERATIONS
+    available = {
+        operation_id
+        for operation_id, operation in operations.items()
+        if operation.get("x-status", "available") == "available"
+    }
+    assert available == EXPECTED_OPERATIONS
+    for operation_id in DEFERRED_OPERATIONS:
+        success_codes = {code for code in operations[operation_id]["responses"] if str(code)[0] in "23"}
+        assert not success_codes, f"{operation_id} must not carry an invented success response"
     assert spec["servers"][0]["url"] == "https://saferx.online/api/enterprise/v1"
+
+
+def test_deferred_operations_are_excluded_from_generated_sdk_clients() -> None:
+    ts_client = (ROOT / "packages/typescript/src/client.ts").read_text()
+    cs_client = (ROOT / "packages/csharp/SafeRxClient.cs").read_text()
+    py_client = (ROOT / "packages/python/src/saferx_pharma/client.py").read_text()
+    for operation_id in DEFERRED_OPERATIONS:
+        assert f'"{operation_id}"' not in ts_client
+        assert f'"{operation_id}"' not in cs_client
+        assert f"{operation_id!r}" not in py_client
 
 
 def test_public_response_schemas_are_closed() -> None:
@@ -79,7 +104,7 @@ def test_signature_binds_the_full_enterprise_path() -> None:
 
 
 def test_mcp_adapter_uses_only_signed_enterprise_operations() -> None:
-    source = (ROOT / "mcp-server/src/index.ts").read_text()
+    source = (ROOT / "packages/mcp-server/src/index.ts").read_text()
     for header in (
         "X-SafeRx-API-Key",
         "X-SafeRx-Timestamp",

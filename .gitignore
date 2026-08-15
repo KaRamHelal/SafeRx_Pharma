@@ -11,3 +11,12 @@ fern/generated/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Local planning artifacts (never packaged or published; see .plans/*.md)
+.plans/
+
+# Generated build/cache output
+packages/csharp/bin/
+packages/csharp/obj/
+**/__pycache__/
+*.pyc

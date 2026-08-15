@@ -5,17 +5,13 @@ export type EnterpriseOperation = {
   responseProfile: string; quotaMetric: string; idempotencyRequired: boolean;
 };
 
-export const SDK_VERSION = "0.1.0-rc.1";
+export const SDK_VERSION = "2.0.2-preview.1";
 export const CLIENT_KIND = "typescript_sdk";
 export const SDK_LANGUAGE = "typescript";
 export const MAX_ATTEMPTS = 3;
 export const RETRY_BACKOFF_BASE_SECONDS = 0.1;
 export const RETRY_BACKOFF_MAX_SECONDS = 2.0;
 export const OPERATIONS: Record<string, EnterpriseOperation> = {
-  enterprise_allergy_families: { operationId: 'enterprise_allergy_families', method: 'GET', path: '/allergies/families', routeClass: 'enterprise_unknown', responseProfile: 'rp_enterprise_default', quotaMetric: 'enterprise_request', idempotencyRequired: false },
-  enterprise_allergy_resolve: { operationId: 'enterprise_allergy_resolve', method: 'POST', path: '/allergies/resolve', routeClass: 'enterprise_unknown', responseProfile: 'rp_enterprise_default', quotaMetric: 'enterprise_request', idempotencyRequired: false },
-  enterprise_allergy_substances: { operationId: 'enterprise_allergy_substances', method: 'GET', path: '/allergies/substances', routeClass: 'enterprise_unknown', responseProfile: 'rp_enterprise_default', quotaMetric: 'enterprise_request', idempotencyRequired: false },
-  enterprise_capabilities: { operationId: 'enterprise_capabilities', method: 'GET', path: '/capabilities', routeClass: 'enterprise_unknown', responseProfile: 'rp_enterprise_default', quotaMetric: 'enterprise_request', idempotencyRequired: false },
   enterprise_erx_safety_check: { operationId: 'enterprise_erx_safety_check', method: 'POST', path: '/erx/safety-checks', routeClass: 'enterprise_unknown', responseProfile: 'rp_enterprise_default', quotaMetric: 'enterprise_request', idempotencyRequired: true },
   enterprise_ocr_prescription_create: { operationId: 'enterprise_ocr_prescription_create', method: 'POST', path: '/ocr/prescriptions', routeClass: 'enterprise_unknown', responseProfile: 'rp_enterprise_default', quotaMetric: 'enterprise_request', idempotencyRequired: true },
   enterprise_ocr_prescription_events: { operationId: 'enterprise_ocr_prescription_events', method: 'GET', path: '/ocr/prescriptions/{prescription_id}/events', routeClass: 'enterprise_unknown', responseProfile: 'rp_enterprise_default', quotaMetric: 'enterprise_request', idempotencyRequired: false },
@@ -30,9 +26,6 @@ export const OPERATIONS: Record<string, EnterpriseOperation> = {
   enterprise_registry_search: { operationId: 'enterprise_registry_search', method: 'GET', path: '/registry/search', routeClass: 'enterprise_unknown', responseProfile: 'rp_enterprise_default', quotaMetric: 'enterprise_request', idempotencyRequired: false },
   enterprise_safety_capabilities: { operationId: 'enterprise_safety_capabilities', method: 'GET', path: '/safety/capabilities', routeClass: 'enterprise_unknown', responseProfile: 'rp_enterprise_default', quotaMetric: 'enterprise_request', idempotencyRequired: false },
   enterprise_safety_check: { operationId: 'enterprise_safety_check', method: 'POST', path: '/safety/checks', routeClass: 'enterprise_unknown', responseProfile: 'rp_enterprise_default', quotaMetric: 'enterprise_request', idempotencyRequired: true },
-  enterprise_safety_check_batch: { operationId: 'enterprise_safety_check_batch', method: 'POST', path: '/safety/check-batches', routeClass: 'enterprise_unknown', responseProfile: 'rp_enterprise_default', quotaMetric: 'enterprise_request', idempotencyRequired: true },
-  enterprise_safety_check_read: { operationId: 'enterprise_safety_check_read', method: 'GET', path: '/safety/checks/{check_id}', routeClass: 'enterprise_unknown', responseProfile: 'rp_enterprise_default', quotaMetric: 'enterprise_request', idempotencyRequired: false },
-  enterprise_status: { operationId: 'enterprise_status', method: 'GET', path: '/status', routeClass: 'enterprise_unknown', responseProfile: 'rp_enterprise_default', quotaMetric: 'enterprise_request', idempotencyRequired: false },
 };
 
 export type RequestOptions = { query?: Record<string, string | number | boolean | (string | number | boolean)[]>; body?: unknown; pathParams?: Record<string, string | number>; idempotencyKey?: string; signal?: AbortSignal; };

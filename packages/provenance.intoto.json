@@ -1,0 +1,72 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "predicate": {
+    "buildType": "saferx-pharma/enterprise-sdk-generator",
+    "generator": "scripts/generate_enterprise_sdks.py",
+    "materials": [
+      {
+        "digest": {
+          "sha256": "aa96364a0c39da2e18357bcc41fc49f30074ac3d004a6292b8c62fb0e425e800"
+        },
+        "uri": "openapi/components.yaml"
+      },
+      {
+        "digest": {
+          "sha256": "db4115610cfa5098030dcd41d92774dc35af54228604e90afdc11e41bac4ff40"
+        },
+        "uri": "openapi/enterprise-v1.yaml"
+      }
+    ]
+  },
+  "predicateType": "https://slsa.dev/provenance/v1",
+  "subject": [
+    {
+      "digest": {
+        "sha256": "929e4dec18fe516bf93ce021952963b872274da4117a59daa041850b51e5aaa9"
+      },
+      "name": "packages/csharp/SafeRx.csproj"
+    },
+    {
+      "digest": {
+        "sha256": "4d29b0704ea5e24cee1de11cd106b522c6d35aee89b495b7ed6d80330fcc06ab"
+      },
+      "name": "packages/csharp/SafeRxClient.cs"
+    },
+    {
+      "digest": {
+        "sha256": "73a0b7aafd7f700c46dfbb96ee0a349c25b79257c4c3969e2b6a9d411d23fdaa"
+      },
+      "name": "packages/python/pyproject.toml"
+    },
+    {
+      "digest": {
+        "sha256": "07bec7e0f872f0462f00be1e705c7b1b69b35a3d6fd8d343bebdefa428580fe9"
+      },
+      "name": "packages/python/src/saferx_pharma/__init__.py"
+    },
+    {
+      "digest": {
+        "sha256": "8bb80b19580458f238a8ac266dac16d1b72ade50c0608fbc793580da418769f7"
+      },
+      "name": "packages/python/src/saferx_pharma/client.py"
+    },
+    {
+      "digest": {
+        "sha256": "3e3a9eedd39986604e23029b893ffbf3b7e7ed946e3a5975911de1e1990f40e8"
+      },
+      "name": "packages/typescript/package.json"
+    },
+    {
+      "digest": {
+        "sha256": "e6a9e6eda4edab651bd25fc2e686c05b8410251ed6c8cac35aa304df9586d179"
+      },
+      "name": "packages/typescript/src/client.ts"
+    },
+    {
+      "digest": {
+        "sha256": "1dfaa085edc28800c8dbccf0c8093b855158371f8ee63da1395ec3de5b575d78"
+      },
+      "name": "packages/typescript/tsconfig.json"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+release_id: enterprise-v1-2026.08.15
+release_version: 2.0.2-preview.1
+status: preview
+publishable: false
+
+api_contract:
+  source: openapi/enterprise-v1.yaml
+  openapi_version: 3.1.1
+  operation_count: 14
+  deferred_operation_count: 7
+  authentication: saferx-hmac-sha256-v1
+  response_policy: closed_schema
+
+artifacts:
+  python: saferx-pharma==2.0.1
+  typescript: saferx-pharma-sdk@2.0.1
+  csharp: SafeRx==2.0.1
+
+documentation:
+  fern_instance: saferx.docs.buildwithfern.com
+  custom_domain: docs.saferx.online
+
+availability:
+  plan: enterprise_free
+  key_required: true
+
+notes:
+  - operation_count reflects only operations with a complete, live-verified success
+    contract; deferred_operation_count lists operations still returning 501 upstream
+    and therefore excluded from the public bundle, SDK clients, and docs until they
+    have a real success schema and evidence (see openapi/enterprise-v1.yaml x-status).
+  - Hosted MCP is not included in this release; it has not been promoted past
+    internal_only in the availability state machine.
+  - This manifest is the public release identity only. It does not describe any
+    account, plan, or entitlement other than the existing self-service free plan.

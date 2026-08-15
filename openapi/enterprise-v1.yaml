@@ -62,13 +62,10 @@ paths:
   /capabilities:
     get:
       operationId: enterprise_capabilities
+      x-status: deferred
       responses:
-        '200':
-          description: Current bounded Enterprise metadata
-          content:
-            application/json:
-              schema:
-                $ref: ./components.yaml#/components/schemas/EnterpriseCapabilities
+        '501':
+          $ref: '#/components/responses/Problem'
         default:
           $ref: '#/components/responses/Problem'
       parameters:
@@ -145,13 +142,10 @@ paths:
   /status:
     get:
       operationId: enterprise_status
+      x-status: deferred
       responses:
-        '200':
-          description: Current bounded Enterprise metadata
-          content:
-            application/json:
-              schema:
-                $ref: ./components.yaml#/components/schemas/EnterpriseStatus
+        '501':
+          $ref: '#/components/responses/Problem'
         default:
           $ref: '#/components/responses/Problem'
       parameters:
@@ -244,18 +238,16 @@ paths:
   /safety/checks/{check_id}:
     get:
       operationId: enterprise_safety_check_read
+      x-status: deferred
       responses:
-        '200':
-          description: Previously created safety check
-          content:
-            application/json:
-              schema:
-                $ref: ./components.yaml#/components/schemas/SafetyCheckResponse
+        '501':
+          $ref: '#/components/responses/Problem'
         default:
           $ref: '#/components/responses/Problem'
   /safety/check-batches:
     post:
       operationId: enterprise_safety_check_batch
+      x-status: deferred
       x-idempotency-required: true
       requestBody:
         required: true
@@ -265,12 +257,8 @@ paths:
               type: object
               additionalProperties: false
       responses:
-        '200':
-          description: Batch safety check result
-          content:
-            application/json:
-              schema:
-                $ref: ./components.yaml#/components/schemas/SafetyCheckResponse
+        '501':
+          $ref: '#/components/responses/Problem'
         default:
           $ref: '#/components/responses/Problem'
   /erx/safety-checks:
@@ -298,6 +286,7 @@ paths:
   /allergies/resolve:
     post:
       operationId: enterprise_allergy_resolve
+      x-status: deferred
       requestBody:
         required: true
         content:
@@ -306,29 +295,23 @@ paths:
               type: object
               additionalProperties: false
       responses:
-        '200':
-          description: Allergy reference resolution
-          content:
-            application/json:
-              schema:
-                $ref: ./components.yaml#/components/schemas/AllergyResolution
+        '501':
+          $ref: '#/components/responses/Problem'
         default:
           $ref: '#/components/responses/Problem'
   /allergies/families:
     get:
       operationId: enterprise_allergy_families
+      x-status: deferred
       responses:
-        '200':
-          description: Allergy families
-          content:
-            application/json:
-              schema:
-                $ref: ./components.yaml#/components/schemas/AllergyFamilyList
+        '501':
+          $ref: '#/components/responses/Problem'
         default:
           $ref: '#/components/responses/Problem'
   /allergies/substances:
     get:
       operationId: enterprise_allergy_substances
+      x-status: deferred
       parameters:
       - name: q
         in: query
@@ -337,12 +320,8 @@ paths:
           type: string
           minLength: 2
       responses:
-        '200':
-          description: Allergy substances
-          content:
-            application/json:
-              schema:
-                $ref: ./components.yaml#/components/schemas/AllergySubstanceList
+        '501':
+          $ref: '#/components/responses/Problem'
         default:
           $ref: '#/components/responses/Problem'
   /ocr/prescriptions:

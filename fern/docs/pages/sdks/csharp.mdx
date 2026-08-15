@@ -4,7 +4,7 @@ subtitle: Signed .NET client for the Enterprise API
 ---
 
 ```xml
-<PackageReference Include="SafeRx" Version="0.1.0-rc.1" />
+<PackageReference Include="SafeRx" Version="2.0.1" />
 ```
 
 ```csharp
@@ -19,11 +19,11 @@ var client = new SafeRxClient(
 
 var result = await client.RequestAsync(
     "enterprise_safety_check",
-    new {{
+    new {
         locale = "en",
-        medications = new[] {{ new {{ input_text = "Augmentin 1g" }} }},
-        requested_domains = new[] {{ "ddi" }}
-    }},
+        medications = new[] { new { input_text = "Augmentin 1g" } },
+        requested_domains = new[] { "ddi" }
+    },
     idempotencyKey: "safety-check-001"
 );
 ```

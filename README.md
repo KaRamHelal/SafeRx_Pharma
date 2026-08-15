@@ -1,17 +1,18 @@
-# SafeRx Enterprise API — MIS authenticated release
+# SafeRx Enterprise API
 
 [![API contract](https://img.shields.io/badge/contract-Enterprise%20v1-0f766e)](openapi/enterprise-v1.yaml)
 [![Documentation](https://img.shields.io/badge/docs-docs.saferx.online-0f766e)](https://docs.saferx.online)
 [![Fern mirror](https://img.shields.io/badge/Fern-saferx.docs.buildwithfern.com-0f766e)](https://saferx.docs.buildwithfern.com)
 
-This repository contains the MIS-owned Enterprise API projection for SafeRx. It is
-the machine-readable contract, signed-request client implementations, MCP
-integration, examples, and Fern documentation source for the current surface.
+SafeRx is a regional medication-safety and prescription platform for pharmacies,
+prescribers, and health systems. This repository is the public Enterprise API
+surface: the OpenAPI contract, signed-request Python/TypeScript/C# SDKs, and the
+source for the developer documentation at [docs.saferx.online](https://docs.saferx.online).
 
-The current Enterprise API surface is available to approved enterprise
-customers with an issued API key and the entitlement for each route. This
-repository does not issue keys. SDK and MCP package publication remain separate
-MIS release decisions and are not implied by the API availability.
+The Enterprise API is available to approved customers with an issued API key
+and the entitlement for each route. This repository does not issue keys —
+access is provisioned through the MIS Enterprise release process (see
+[Developer access](https://docs.saferx.online/authentication/developer-portal)).
 
 ## Surface
 
@@ -46,7 +47,7 @@ Enterprise REST uses `saferx-hmac-sha256-v1`. Every request requires:
 - `X-SafeRx-Signature`
 
 The signature binds the uppercase method, escaped path, RFC3986-sorted query,
-lowercase SHA-256 body digest, timestamp, and nonce. The SDKs in `sdks/`
+lowercase SHA-256 body digest, timestamp, and nonce. The SDKs in `packages/`
 implement this signing behavior. Do not copy the signing secret into source,
 logs, or examples.
 
@@ -80,11 +81,16 @@ request and response shapes.
 ```
 openapi/enterprise-v1.yaml       # public Enterprise API projection
 openapi/components.yaml          # closed public schemas and signed headers
-sdks/                            # signing-aware Python, TypeScript, and C# clients
-mcp-server/                      # stdio MCP adapter for the Enterprise surface
+packages/python/                 # signing-aware Python client
+packages/typescript/             # signing-aware TypeScript client
+packages/csharp/                 # signing-aware C# client
+packages/mcp-server/             # stdio MCP adapter (internal-only, being superseded)
 fern/                            # Fern API reference and documentation source
 postman/                         # signed-request examples
+release/current.yaml             # current MIS release manifest
 scripts/release_preflight.py     # release and mirror validation
+scripts/generate_enterprise_sdks.py  # SDK/client generation
+CHANGELOG.md                     # release history
 ```
 
 ## Validation
@@ -92,12 +98,11 @@ scripts/release_preflight.py     # release and mirror validation
 ```bash
 python scripts/release_preflight.py
 python scripts/generate_enterprise_sdks.py --check
-cd mcp-server && npm ci && npm run build
+cd packages/mcp-server && npm ci && npm run build
 ```
 
 The API availability record is bound to
-`mis-enterprise-2026.07.28-authenticated.1`. Package publication is not claimed
-by this repository.
+`mis-enterprise-2026.07.28-authenticated.1`.
 
 ## Documentation
 
@@ -105,7 +110,7 @@ by this repository.
 - [Fern documentation mirror](https://saferx.docs.buildwithfern.com)
 - [OpenAPI contract](openapi/enterprise-v1.yaml)
 - [Postman collection](postman/SafeRx-Enterprise-API.postman_collection.json)
-- [MCP adapter](mcp-server/README.md)
+- [Release history](CHANGELOG.md)
 
 ## License
 

@@ -17,13 +17,9 @@ public sealed class SafeRxProblemDetailsException : Exception
 
 public sealed class SafeRxClient
 {
-    public const string SdkVersion = "0.1.0-rc.1";
+    public const string SdkVersion = "2.0.2-preview.1";
     public static readonly IReadOnlyDictionary<string, EnterpriseOperation> Operations = new Dictionary<string, EnterpriseOperation>
     {
-        ["enterprise_allergy_families"] = new EnterpriseOperation("enterprise_allergy_families", HttpMethod.Get, "/allergies/families", "enterprise_unknown", "rp_enterprise_default", "enterprise_request", false),
-        ["enterprise_allergy_resolve"] = new EnterpriseOperation("enterprise_allergy_resolve", HttpMethod.Post, "/allergies/resolve", "enterprise_unknown", "rp_enterprise_default", "enterprise_request", false),
-        ["enterprise_allergy_substances"] = new EnterpriseOperation("enterprise_allergy_substances", HttpMethod.Get, "/allergies/substances", "enterprise_unknown", "rp_enterprise_default", "enterprise_request", false),
-        ["enterprise_capabilities"] = new EnterpriseOperation("enterprise_capabilities", HttpMethod.Get, "/capabilities", "enterprise_unknown", "rp_enterprise_default", "enterprise_request", false),
         ["enterprise_erx_safety_check"] = new EnterpriseOperation("enterprise_erx_safety_check", HttpMethod.Post, "/erx/safety-checks", "enterprise_unknown", "rp_enterprise_default", "enterprise_request", true),
         ["enterprise_ocr_prescription_create"] = new EnterpriseOperation("enterprise_ocr_prescription_create", HttpMethod.Post, "/ocr/prescriptions", "enterprise_unknown", "rp_enterprise_default", "enterprise_request", true),
         ["enterprise_ocr_prescription_events"] = new EnterpriseOperation("enterprise_ocr_prescription_events", HttpMethod.Get, "/ocr/prescriptions/{prescription_id}/events", "enterprise_unknown", "rp_enterprise_default", "enterprise_request", false),
@@ -38,9 +34,6 @@ public sealed class SafeRxClient
         ["enterprise_registry_search"] = new EnterpriseOperation("enterprise_registry_search", HttpMethod.Get, "/registry/search", "enterprise_unknown", "rp_enterprise_default", "enterprise_request", false),
         ["enterprise_safety_capabilities"] = new EnterpriseOperation("enterprise_safety_capabilities", HttpMethod.Get, "/safety/capabilities", "enterprise_unknown", "rp_enterprise_default", "enterprise_request", false),
         ["enterprise_safety_check"] = new EnterpriseOperation("enterprise_safety_check", HttpMethod.Post, "/safety/checks", "enterprise_unknown", "rp_enterprise_default", "enterprise_request", true),
-        ["enterprise_safety_check_batch"] = new EnterpriseOperation("enterprise_safety_check_batch", HttpMethod.Post, "/safety/check-batches", "enterprise_unknown", "rp_enterprise_default", "enterprise_request", true),
-        ["enterprise_safety_check_read"] = new EnterpriseOperation("enterprise_safety_check_read", HttpMethod.Get, "/safety/checks/{check_id}", "enterprise_unknown", "rp_enterprise_default", "enterprise_request", false),
-        ["enterprise_status"] = new EnterpriseOperation("enterprise_status", HttpMethod.Get, "/status", "enterprise_unknown", "rp_enterprise_default", "enterprise_request", false),
     };
     private const int MaxAttempts = 3;
     private const double RetryBackoffBaseSeconds = 0.1;

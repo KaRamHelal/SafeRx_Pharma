@@ -1,147 +1,132 @@
-name: Publish SDKs
+name: Publish Enterprise SDKs
+
+# mcp-server is NOT published here: SafeRx-MIS's public-availability-state-machine.yaml
+# marks mcp-stdio as internal_only/public_eligible:false. It was previously published to
+# npm in error (see public-package-catalog.yaml history); that live package is being
+# replaced by the hosted MCP surface and is not re-published from this workflow.
 
 on:
   push:
-    tags:
-      - "v*"
+    tags: ["v*"]
   workflow_dispatch:
     inputs:
       version:
-        description: "Release version (must be a 2.x.x MIS release)"
+        description: "Immutable release version"
         required: true
-        default: "2.0.1"
+        default: "2.0.2"
 
-concurrency:
-  group: publish-sdks-${{ github.ref }}
-  cancel-in-progress: true
+permissions:
+  contents: write
 
 jobs:
-  publish-sdks:
+  publish:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Resolve release version
-        id: release
-        shell: bash
+      - name: Validate release contract
         run: |
-          set -euo pipefail
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            version="${GITHUB_REF_NAME#v}"
+          python -m pip install --disable-pip-version-check "PyYAML==6.0.2"
+          python scripts/release_preflight.py
+          python scripts/generate_enterprise_sdks.py --check
+          python scripts/render_fern_changelog.py --check
+
+      - name: Determine release version
+        id: version
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
           else
-            version="${{ inputs.version }}"
+            VERSION="${{ github.event.inputs.version }}"
           fi
-          if [[ ! "$version" =~ ^2\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Release version must be a 2.x.x MIS release: $version"
+          if [[ -z "$VERSION" ]]; then
+            echo "could not determine the release version being published" >&2
             exit 1
           fi
-          echo "release_version=$version" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Install validation dependency
-        run: python -m pip install --disable-pip-version-check "PyYAML==6.0.2"
-
-      - name: Validate public release inputs
-        run: python scripts/release_preflight.py
-        env:
-          SAFERX_RELEASE_VERSION: ${{ steps.release.outputs.release_version }}
-
-      - name: Verify registry version is unused
-        shell: bash
-        env:
-          RELEASE_VERSION: ${{ steps.release.outputs.release_version }}
+      - name: Require an approved available release
         run: |
-          set -euo pipefail
           python - <<'PY'
-          import json
-          import os
-          import urllib.request
-
-          version = os.environ["RELEASE_VERSION"]
-          checks = {
-              "PyPI saferx-pharma": "https://pypi.org/pypi/saferx-pharma/json",
-              "npm saferx-pharma-sdk": "https://registry.npmjs.org/saferx-pharma-sdk",
-              "npm @saferx_pharma/mcp-server": "https://registry.npmjs.org/@saferx_pharma%2fmcp-server",
-              "NuGet SafeRx": "https://api.nuget.org/v3-flatcontainer/saferx/index.json",
-          }
-          for name, url in checks.items():
-              with urllib.request.urlopen(url, timeout=20) as response:
-                  data = json.load(response)
-              versions = set(data.get("releases", {})) | set(data.get("versions", {})) | set(data.get("versions", []))
-              if version in versions:
-                  raise SystemExit(f"{name} already contains {version}; immutable publication would collide")
-              print(f"{name}: {version} is unused")
+          import yaml
+          from pathlib import Path
+          manifest = yaml.safe_load(Path("release/current.yaml").read_text())
+          if manifest.get("status") != "available" or manifest.get("publishable") is not True:
+              raise SystemExit("publication is blocked: the checked-in MIS release is not available")
           PY
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          registry-url: "https://registry.npmjs.org"
+      - name: Require a matching CHANGELOG.md entry
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          version = os.environ["VERSION"]
+          changelog = Path("CHANGELOG.md").read_text()
+          if not re.search(rf"^## \[{re.escape(version)}\]", changelog, re.MULTILINE):
+              raise SystemExit(f"CHANGELOG.md has no '## [{version}]' entry — add one before publishing")
+          PY
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
+
+      - name: Build and publish Python client
+        working-directory: packages/python
+        run: |
+          python -m pip install build twine
+          python -m build
+          python -m twine upload dist/*
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: https://registry.npmjs.org
+
+      - name: Build and publish TypeScript client
+        working-directory: packages/typescript
+        run: |
+          npm install
+          npm run build
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
 
-      - name: Install Fern CLI
-        run: npm install -g fern-api@5.80.2
-
-      - name: Generate & Publish Python SDK
-        run: fern generate --group python-sdk --api drug-safety --version "$RELEASE_VERSION"
-        env:
-          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
-          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
-          RELEASE_VERSION: ${{ steps.release.outputs.release_version }}
-
-      - name: Generate & Publish TypeScript SDK
-        run: fern generate --group ts-sdk --api drug-safety --version "$RELEASE_VERSION"
-        env:
-          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          RELEASE_VERSION: ${{ steps.release.outputs.release_version }}
-
-      - name: Generate C# SDK
-        run: fern generate --group csharp-sdk --api drug-safety-csharp --version "$RELEASE_VERSION" --force
-        env:
-          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
-          RELEASE_VERSION: ${{ steps.release.outputs.release_version }}
-
-      - name: Fix & Publish C# SDK
+      - name: Pack and publish C# client
+        working-directory: packages/csharp
         run: |
-          python scripts/fix_csharp_sdk_bug.py --pharma-root .
-          dotnet pack fern/generated/csharp-sdk/src/SaferxApi/SaferxApi.csproj -c Release -p:PackageVersion="$RELEASE_VERSION"
-          dotnet nuget push fern/generated/csharp-sdk/src/SaferxApi/bin/Release/SafeRx.*.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
+          dotnet pack -c Release -o nupkg
+          dotnet nuget push nupkg/*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-          RELEASE_VERSION: ${{ steps.release.outputs.release_version }}
 
-      - name: Build & Publish MCP Server
-        shell: bash
+      - name: Create GitHub Release
         run: |
-          set -euo pipefail
-          cd mcp-server
-          npm ci
-          npm run build
-          LOCAL_VERSION=$(node -p "require('./package.json').version")
-          echo "Local MCP version: $LOCAL_VERSION"
-          if [ "$LOCAL_VERSION" != "$RELEASE_VERSION" ]; then
-            echo "ERROR: MCP package version $LOCAL_VERSION does not match release $RELEASE_VERSION."
-            exit 1
-          fi
-          npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          RELEASE_VERSION: ${{ steps.release.outputs.release_version }}
+          python - <<'PY' > /tmp/release_notes.md
+          import os
+          import re
+          from pathlib import Path
 
-      - name: Publish Fern Docs
-        timeout-minutes: 10
-        run: fern generate --docs --instance saferx.docs.buildwithfern.com --force --no-prompt --strict-broken-links
+          version = os.environ["VERSION"]
+          changelog = Path("CHANGELOG.md").read_text()
+          match = re.search(rf"^## \[{re.escape(version)}\].*?(?=^## \[|\Z)", changelog, re.MULTILINE | re.DOTALL)
+          print(match.group(0).strip() if match else f"See CHANGELOG.md for the [{version}] entry.")
+          PY
+          gh release create "v${VERSION}" --title "SafeRx Enterprise SDKs v${VERSION}" --notes-file /tmp/release_notes.md
         env:
-          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}

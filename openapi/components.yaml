@@ -389,7 +389,6 @@ components:
       - sfrx_id
       - product_tier
       - display_name
-      - display_name_origin
       - generic_components
       - dosage_form
       - route
@@ -427,8 +426,6 @@ components:
           - non_pharma
         display_name:
           $ref: '#/components/schemas/LocalizedString'
-        display_name_origin:
-          $ref: '#/components/schemas/MedicationContentOrigin'
         trade_name:
           oneOf:
           - $ref: '#/components/schemas/LocalizedString'
@@ -503,10 +500,6 @@ components:
             - not_available
             - not_covered
             - unknown
-        catalogue_filter_memberships:
-          type: array
-          items:
-            $ref: '#/components/schemas/CatalogueFilterMembership'
       additionalProperties: false
     RegistryProductSummaryList:
       type: object
@@ -538,7 +531,6 @@ components:
             required:
             - sfrx_id
             - display_name
-            - display_name_origin
             - generic_name
             - strength
             - route
@@ -548,8 +540,6 @@ components:
                 type: string
               display_name:
                 $ref: '#/components/schemas/LocalizedString'
-              display_name_origin:
-                $ref: '#/components/schemas/MedicationContentOrigin'
               generic_name:
                 $ref: '#/components/schemas/LocalizedString'
               strength:
@@ -560,10 +550,6 @@ components:
                 $ref: '#/components/schemas/LocalizedString'
               dosage_form:
                 $ref: '#/components/schemas/LocalizedString'
-              catalogue_filter_memberships:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CatalogueFilterMembership'
             additionalProperties: false
         pagination:
           $ref: '#/components/schemas/Pagination'
@@ -857,3 +843,403 @@ components:
         review: {$ref: '#/components/schemas/ReviewState'}
         candidate_medications: {type: array, items: {type: object, additionalProperties: false}}
         display_obligations: {$ref: '#/components/schemas/DisplayObligations'}
+    Locale:
+      type: string
+      enum:
+      - ar-EG
+      - ar
+      - en
+      - mixed
+    LocalizedString:
+      type: object
+      additionalProperties: false
+      required:
+      - en
+      - ar
+      properties:
+        en:
+          type: string
+          minLength: 1
+        ar:
+          type: string
+          minLength: 1
+        transliteration:
+          type:
+          - string
+          - 'null'
+        direction:
+          type:
+          - string
+          - 'null'
+    Pagination:
+      type: object
+      additionalProperties: false
+      required:
+      - limit
+      - has_more
+      properties:
+        limit:
+          type: integer
+        cursor:
+          type:
+          - string
+          - 'null'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+        has_more:
+          type: boolean
+    SourceProvenance:
+      description: Snapshot identifiers for the reference data used to produce this
+        response. Does not describe internal model, resolver, or pipeline identity.
+      type: object
+      additionalProperties: false
+      required:
+      - registry_snapshot_id
+      - safety_snapshot_id
+      - policy_version
+      - claim_catalog_version
+      properties:
+        registry_snapshot_id:
+          type:
+          - string
+          - 'null'
+        safety_snapshot_id:
+          type:
+          - string
+          - 'null'
+        policy_version:
+          type: string
+        claim_catalog_version:
+          type:
+          - string
+          - 'null'
+    DisplayObligations:
+      type: object
+      additionalProperties: false
+      required:
+      - must_show_educational_boundary
+      - must_show_professional_review_language
+      - must_show_source_snapshot
+      - must_preserve_arabic_text
+      - may_not_describe_as_medical_advice
+      properties:
+        must_show_educational_boundary:
+          type: boolean
+          const: true
+        must_show_professional_review_language:
+          type: boolean
+        must_show_source_snapshot:
+          type: boolean
+          const: true
+        must_preserve_arabic_text:
+          type: boolean
+          const: true
+        must_preserve_rtl_layout:
+          type: boolean
+          default: true
+        may_not_describe_as_medical_advice:
+          type: boolean
+          const: true
+    EducationalContext:
+      type: object
+      additionalProperties: false
+      required:
+      - classification
+      - not_medical_advice
+      - not_dispensing_authorization
+      - professional_review_required
+      - basis
+      - source_snapshot_id
+      - generated_at
+      - policy_version
+      - claim_catalog_version
+      - locale
+      - supported_locales
+      properties:
+        classification:
+          type: string
+          const: pharmaceutical_education
+        not_medical_advice:
+          type: boolean
+          const: true
+        not_dispensing_authorization:
+          type: boolean
+          const: true
+        professional_review_required:
+          type: boolean
+        basis:
+          type: string
+          enum:
+          - curated_pharmaceutical_reference_data
+        source_snapshot_id:
+          type: string
+          minLength: 1
+        generated_at:
+          type: string
+          format: date-time
+        policy_version:
+          type: string
+          minLength: 1
+        claim_catalog_version:
+          type: string
+          minLength: 1
+        locale:
+          $ref: '#/components/schemas/Locale'
+        supported_locales:
+          type: array
+          minItems: 2
+          items:
+            $ref: '#/components/schemas/Locale'
+    ReviewState:
+      type: object
+      additionalProperties: false
+      required:
+      - required
+      - status
+      - minimum_reviewer_role
+      - review_deadline_policy
+      properties:
+        required:
+          type: boolean
+        status:
+          type: string
+          enum:
+          - not_required
+          - pending
+          - in_review
+          - reviewed_acknowledged
+          - reviewed_needs_followup
+          - dismissed_as_not_applicable
+          - escalated
+          - expired
+        reason_codes:
+          type: array
+          items:
+            type: string
+          default: []
+        minimum_reviewer_role:
+          type: string
+          enum:
+          - none
+          - trained_operator
+          - qualified_professional
+          - pharmaceutical_reviewer
+        review_deadline_policy:
+          type: string
+          enum:
+          - before_relying_on_output
+          - before_workflow_completion
+          - optional
+          - not_applicable
+        review_outcome:
+          type:
+          - string
+          - 'null'
+          enum:
+          - acknowledged_for_professional_review
+          - needs_followup
+          - not_applicable_to_case
+          - data_quality_issue_reported
+          - ocr_correction_applied
+          - null
+        review_note:
+          $ref: '#/components/schemas/LocalizedString'
+        reviewed_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+    SafetyBoardDomainState:
+      type: object
+      additionalProperties: false
+      required:
+      - domain
+      - status
+      - code
+      properties:
+        domain:
+          type: string
+          enum:
+          - ddi
+          - pllr
+          - food_interactions
+          - meal_timing
+          - allergy
+          - clinical_dose
+        status:
+          type: string
+          enum:
+          - evaluated
+          - not_applicable
+          - unknown
+          - unmapped
+          - not_enough_context
+          - unavailable
+          - failed
+        code:
+          type: string
+        display_label:
+          $ref: '#/components/schemas/LocalizedString'
+        status_label:
+          $ref: '#/components/schemas/LocalizedString'
+    SafetySignal:
+      type: object
+      additionalProperties: false
+      required:
+      - signal_id
+      - domain
+      - severity
+      - action_bucket
+      - title
+      - reason
+      - justification
+      - evidence_refs
+      - confidence
+      - review_required
+      - source_provenance
+      properties:
+        signal_id:
+          type: string
+        domain:
+          type: string
+          enum:
+          - ddi
+          - pllr
+          - food_interactions
+          - meal_timing
+          - allergy
+          - clinical_dose
+        severity:
+          type: string
+          enum:
+          - informational
+          - low
+          - moderate
+          - high
+          - critical
+        action_bucket:
+          type: string
+          enum:
+          - urgent_review
+          - clarify_first
+          - counsel
+          - monitor
+          - reference
+        title:
+          $ref: '#/components/schemas/LocalizedString'
+        reason:
+          $ref: '#/components/schemas/LocalizedString'
+        justification:
+          $ref: '#/components/schemas/LocalizedString'
+        equivalent_options:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - display_name
+            - equivalence_reason
+            properties:
+              display_name:
+                $ref: '#/components/schemas/LocalizedString'
+              equivalence_reason:
+                $ref: '#/components/schemas/LocalizedString'
+          default: []
+        evidence_refs:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            additionalProperties: false
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        review_required:
+          type: boolean
+        source_provenance:
+          $ref: '#/components/schemas/SourceProvenance'
+        limitations:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocalizedString'
+          default: []
+    MedicationResolution:
+      type: object
+      additionalProperties: false
+      required:
+      - request_id
+      - result_id
+      - schema_version
+      - surface
+      - locale
+      - educational_context
+      - source_provenance
+      - query
+      - candidates
+      - review
+      - limitations
+      properties:
+        request_id:
+          type: string
+        result_id:
+          type: string
+        schema_version:
+          type: string
+          pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
+        surface:
+          type: string
+          enum:
+          - browser
+          - enterprise_api
+          - partner_api
+        locale:
+          $ref: '#/components/schemas/Locale'
+        educational_context:
+          $ref: '#/components/schemas/EducationalContext'
+        source_provenance:
+          $ref: '#/components/schemas/SourceProvenance'
+        query:
+          type: object
+          additionalProperties: false
+          required:
+          - raw_text
+          properties:
+            raw_text:
+              type: string
+            locale_hint:
+              type:
+              - string
+              - 'null'
+        candidates:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - sfrx_id
+            - label
+            - score
+            properties:
+              sfrx_id:
+                type: string
+              label:
+                $ref: '#/components/schemas/LocalizedString'
+              score:
+                type: number
+                minimum: 0
+                maximum: 1
+        selected_candidate_id:
+          type:
+          - string
+          - 'null'
+        review:
+          $ref: '#/components/schemas/ReviewState'
+        limitations:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocalizedString'
+        display_obligations:
+          $ref: '#/components/schemas/DisplayObligations'

@@ -1,72 +1,21 @@
-# SafeRx C# SDK
+# SafeRx Enterprise C# SDK
 
-Official .NET SDK for the [SafeRx Drug Safety API](https://docs.saferx.online) — screen drugs across 6 safety domains covering 33,000 Egyptian pharma + semi-pharma products.
-
-## Installation
-
-```bash
-dotnet add package SafeRx
-```
-
-**Requirements:** .NET 8.0+, .NET Framework 4.6.2+, or .NET Standard 2.0+
-
-## Quick Start
+The SafeRx Enterprise client targets .NET 8 and uses the signed Enterprise request contract.
 
 ```csharp
-using SaferxApi;
+using SafeRx;
 
-var client = new SaferxApiClient(
-    apiKey: "sfx_free_your_key_here"
+var client = new SafeRxClient(
+    http,
+    new Uri("https://saferx.online/api/enterprise/v1"),
+    Environment.GetEnvironmentVariable("SAFERX_API_KEY")!
 );
 
-var response = await client.DrugSafety.CheckAsync(
-    new DrugSafetyCheckRequest
-    {
-        Drugs = new List<string> { "Augmentin 1g", "Glucophage 500mg", "Marivan" },
-        Lang = DrugSafetyCheckRequestLang.En,
-    }
+var result = await client.RequestAsync(
+    "enterprise_safety_check",
+    body: request,
+    idempotencyKey: "safety-check-001"
 );
-
-Console.WriteLine($"Status: {response.Status}");
-
-foreach (var drug in response.Drugs)
-{
-    Console.WriteLine($"  {drug.BrandName} ({drug.ActiveIngredient}) - {drug.PriceEgp} EGP");
-}
-
-// Check alerts (highest priority safety issues)
-foreach (var alert in response.Alerts)
-{
-    Console.WriteLine($"  [{alert.Severity}] {alert.Message}");
-}
 ```
 
-## Get an API Key
-
-```bash
-# Request verification code
-curl -X POST https://saferx.online/api/developers/keys/free \
-  -H "Content-Type: application/json" \
-  -d '{"email":"you@example.com"}'
-
-# Verify and receive key
-curl -X POST https://saferx.online/api/developers/keys/free/verify \
-  -H "Content-Type: application/json" \
-  -d '{"email":"you@example.com","code":"123456"}'
-```
-
-Or register at the [Developer Portal](https://saferx.online/developer).
-
-## Key Classes
-
-| NuGet Package | `SafeRx` |
-|---------------|----------|
-| **Namespace** | `SaferxApi` |
-| **Client class** | `SaferxApiClient` |
-| **Import** | `using SaferxApi;` |
-
-## Documentation
-
-- [Full API docs](https://docs.saferx.online)
-- [C# SDK guide](https://docs.saferx.online/sdks/c-sharp)
-- [API Reference](https://docs.saferx.online/api-reference)
+Enterprise API access requires an issued API key; this package alone does not grant access.

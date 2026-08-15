@@ -1,6 +1,6 @@
 api:
   specs:
-    - openapi: openapi/openapi.yaml
+    - openapi: openapi/enterprise-v1.yaml
 
 groups:
   csharp-sdk:
