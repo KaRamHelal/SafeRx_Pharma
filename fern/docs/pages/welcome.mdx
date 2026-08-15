@@ -1,22 +1,18 @@
 ---
 title: Welcome
-subtitle: SafeRx Enterprise authenticated API documentation
+subtitle: SafeRx Enterprise API documentation
 ---
 
-This page describes the current MIS Enterprise API. Use the [Enterprise API reference](/api-reference) and the checked-in [OpenAPI contract](https://github.com/KaRamHelal/SafeRx_Pharma/blob/main/openapi/enterprise-v1.yaml) for the authoritative operation and schema definitions.
+This page describes the current SafeRx Enterprise API. Use the
+[Enterprise API reference](/api-reference) and the checked-in
+[OpenAPI contract](https://github.com/KaRamHelal/SafeRx_Pharma/blob/main/openapi/enterprise-v1.yaml)
+for the authoritative operation and schema definitions.
 
-Every Enterprise request is signed with `saferx-hmac-sha256-v1`. Send these headers:
+Every Enterprise request is signed with `saferx-hmac-sha256-v1` — see
+[Authentication](/authentication/overview) for the exact canonical-string
+spec and a fully worked example.
 
-| Header | Purpose |
-|---|---|
-| `X-SafeRx-API-Key` | Enterprise key identifier and signing secret input |
-| `X-SafeRx-Timestamp` | UTC timestamp with an explicit offset |
-| `X-SafeRx-Nonce` | One-use replay protection value |
-| `X-SafeRx-Signature` | Base64url HMAC-SHA256 signature |
-
-The signed canonical message is the uppercase method, escaped path, sorted query, lowercase SHA-256 body digest, timestamp, and nonce joined by newlines. The SDK clients implement this exactly. Never place credentials in source control or logs.
-
-
-Enterprise REST access is available only to approved customers with an issued
-API key and the required route entitlement. MCP tools and package publication
-remain separate internal release surfaces.
+Enterprise REST access is self-service for the existing `enterprise_free`
+plan — see [Developer access](/authentication/developer-portal). Larger
+plans are admin-assigned. The hosted MCP server is in preview — see
+[MCP Server](/ai-integration/mcp-server).

@@ -17,6 +17,46 @@ Entries below are not a backfilled reconstruction of that history.
 
 ## [Unreleased]
 
+### Fixed
+- `enterprise_registry_resolve`'s request schema required response-shaped
+  fields no client could construct; corrected to the real
+  locale + medications[] contract also used by the hosted MCP.
+- `enterprise_erx_safety_check`'s request schema was an inline empty-object
+  placeholder that rejected any real request; added the real
+  `ErxSafetyCheckRequest` schema (`erx_payload` + `locale`).
+- `SafetyCapabilities`'s response schema didn't match the real backend
+  contract at all; rebuilt from the real shape (`domains`, `available`,
+  `status`, snapshot IDs).
+- `RegistryProductDetail`, `RegistryProductSummaryList`, and
+  `RegistrySuggestionList` used invented field names (`display_name`,
+  `generic_name`) instead of the real `tradename`/`generic` — affected
+  three actively-available operations.
+- `PrescriptionResult.candidate_medications`/`.transitions` and
+  `SafetySignal.evidence_refs` were typed as always-empty objects that
+  would reject any real populated response; given their real structure.
+  `PrescriptionResult` was also missing the required `document_context`
+  field.
+- Removed private MIS routing/accounting metadata (route class, response
+  profile, quota metric) that every generated SDK client shipped as inert
+  hardcoded fallback values.
+- SDK clients now honor `Retry-After` and retry `429`, and support real
+  `multipart/form-data` signing for `enterprise_ocr_prescription_create`
+  (previously uncallable from any SDK — bodies were always JSON-encoded).
+
+### Added
+- `examples/` — synthetic request/response fixtures for every available
+  operation, validated against the real bundled OpenAPI schemas in CI.
+- Every operation now has a summary and description; every public schema
+  property now has a description.
+- Hosted MCP promoted from `internal_only` to `preview` — the three tools
+  (`resolve_medications`, `check_medication_safety`,
+  `get_safety_capabilities`) are documented at
+  `/api/enterprise-mcp/v1/mcp`.
+- New guides: Medication Identity, Patient Context, Safety Results,
+  Registry Operations, eRx Safety Integration, OCR Prescription Lifecycle.
+- `.github/CODEOWNERS` for the public contract, SDK signing code, and
+  release gates.
+
 ### Changed
 - Repository reorganized: SDKs and the MCP adapter moved under `packages/`;
   the OpenAPI spec is now a single source of truth (`openapi/enterprise-v1.yaml`)
@@ -25,3 +65,12 @@ Entries below are not a backfilled reconstruction of that history.
 - Public documentation pages corrected to reflect that the SDKs are actually
   published (they previously, incorrectly, described themselves as
   unpublished/internal-only).
+- Quickstart, developer access, welcome, and terms pages corrected: the
+  existing `enterprise_free` plan has real self-service signup (previous
+  wording flatly claimed no self-service issuance existed at all).
+- Security & Compliance pages expanded to cover credential storage,
+  server-side-only SDK use, prohibited logging, synthetic-data testing,
+  and incident reporting.
+- Fixed a GitHub Actions script-injection risk in the SDK publish workflow
+  (an untrusted `workflow_dispatch` input was interpolated directly into a
+  shell script in a job holding registry publish secrets).
