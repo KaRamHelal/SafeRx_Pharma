@@ -19,6 +19,6 @@
    and push the tag — `sdk-publish.yml` publishes all artifacts and creates the
    matching GitHub Release automatically.
 
-The current checked-in release is `2.0.2-preview.1` and is intentionally not
-publishable. See `release/current.yaml` for the live release manifest (the filename
-is stable across releases; only its contents change).
+The current checked-in release is `2.0.2`, published and publishable. See
+`release/current.yaml` for the live release manifest (the filename is stable across
+releases; only its contents change).
