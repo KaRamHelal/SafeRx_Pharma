@@ -872,6 +872,15 @@ components:
           type: boolean
       additionalProperties: false
     RegistryProductDetail:
+      description: Corrected against the real backend contract (SafeRx-MIS
+        services/registry-search-service/src/saferx_registry_search/product_detail.py
+        and api/openapi/components.yaml, x-contract-status implementation_ready)
+        -- the previous version of this schema used invented field names
+        (display_name/generic_name/generic_components) that don't match the
+        real response (tradename/generic), and typed pharmacology/prose_details/
+        warnings as always-empty objects, which would have rejected every real
+        response. price and in_stock are intentionally omitted, since this is
+        a curated educational reference, not a commerce/inventory API.
       type: object
       required:
       - request_id
@@ -882,8 +891,7 @@ components:
       - display_obligations
       - sfrx_id
       - product_tier
-      - display_name
-      - generic_components
+      - tradename
       - dosage_form
       - route
       - domain_availability
@@ -925,28 +933,18 @@ components:
           - pharma
           - semi
           - non_pharma
-        display_name:
+        tradename:
           $ref: '#/components/schemas/LocalizedString'
-        trade_name:
-          description: Branded trade name, when distinct from display_name.
-          oneOf:
-          - $ref: '#/components/schemas/LocalizedString'
-          - type: 'null'
         primary_name:
-          description: Primary reference name, when distinct from display_name.
+          description: Primary reference name, when distinct from tradename.
           oneOf:
           - $ref: '#/components/schemas/LocalizedString'
           - type: 'null'
-        generic_name:
-          description: Generic/INN name, when distinct from display_name.
+        generic:
+          description: Generic/INN name, when known.
           oneOf:
           - $ref: '#/components/schemas/LocalizedString'
           - type: 'null'
-        generic_components:
-          description: Active generic components making up this product.
-          type: array
-          items:
-            $ref: '#/components/schemas/LocalizedString'
         strength:
           description: Strength as printed on the product (e.g. "500mg"), not
             structured.
@@ -959,6 +957,11 @@ components:
           $ref: '#/components/schemas/LocalizedString'
         manufacturer:
           description: Manufacturer name, when known.
+          oneOf:
+          - $ref: '#/components/schemas/LocalizedString'
+          - type: 'null'
+        supplier:
+          description: Supplier name, when known and distinct from manufacturer.
           oneOf:
           - $ref: '#/components/schemas/LocalizedString'
           - type: 'null'
@@ -988,31 +991,51 @@ components:
               label:
                 $ref: '#/components/schemas/LocalizedString'
             additionalProperties: false
-        facts:
-          description: Structured reference facts about this product. Shape
-            varies by product and is not further specified.
-          type: object
-          additionalProperties: false
         clinical_uses:
           description: Educational summary of clinical uses, when available.
           oneOf:
           - $ref: '#/components/schemas/LocalizedString'
           - type: 'null'
         pharmacology:
-          description: Structured pharmacology reference detail. Shape varies by
-            product and is not further specified.
+          description: Structured pharmacology reference detail, when available.
           type: object
           additionalProperties: false
+          properties:
+            details:
+              description: Educational pharmacology detail.
+              oneOf:
+              - $ref: '#/components/schemas/LocalizedString'
+              - type: 'null'
         prose_details:
           description: Additional free-form educational detail about this
-            product. Shape varies by product and is not further specified.
+            product, when available.
           type: object
           additionalProperties: false
+          properties:
+            description:
+              description: General educational description.
+              oneOf:
+              - $ref: '#/components/schemas/LocalizedString'
+              - type: 'null'
+            ingredients:
+              description: Educational ingredient detail.
+              oneOf:
+              - $ref: '#/components/schemas/LocalizedString'
+              - type: 'null'
+            dosing:
+              description: Educational dosing detail.
+              oneOf:
+              - $ref: '#/components/schemas/LocalizedString'
+              - type: 'null'
         warnings:
-          description: Structured warning reference detail. Shape varies by
-            product and is not further specified.
+          description: Structured warning reference detail, when available.
           type: object
           additionalProperties: false
+          properties:
+            requires_professional_review:
+              description: Whether this product's warnings require professional
+                review before relying on them.
+              type: boolean
         domain_availability:
           description: Per-safety-domain availability for this product, keyed by
             domain id.
@@ -1024,6 +1047,14 @@ components:
             - not_available
             - not_covered
             - unknown
+        correction_anchors:
+          description: Opaque anchors for reporting a correction against this
+            product's data.
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+          default: []
       additionalProperties: false
     RegistryProductSummaryList:
       type: object
@@ -1058,8 +1089,8 @@ components:
             type: object
             required:
             - sfrx_id
-            - display_name
-            - generic_name
+            - tradename
+            - generic
             - strength
             - route
             - dosage_form
@@ -1067,9 +1098,9 @@ components:
               sfrx_id:
                 description: Registry identifier for this product.
                 type: string
-              display_name:
+              tradename:
                 $ref: '#/components/schemas/LocalizedString'
-              generic_name:
+              generic:
                 $ref: '#/components/schemas/LocalizedString'
               strength:
                 description: Strength as printed on the product, not structured.
@@ -1118,14 +1149,20 @@ components:
             type: object
             required:
             - sfrx_id
-            - display_name
+            - tradename
+            - dosage_form
+            - route
             - match_reason
             - score
             properties:
               sfrx_id:
                 description: Registry identifier for this suggestion.
                 type: string
-              display_name:
+              tradename:
+                $ref: '#/components/schemas/LocalizedString'
+              dosage_form:
+                $ref: '#/components/schemas/LocalizedString'
+              route:
                 $ref: '#/components/schemas/LocalizedString'
               match_reason:
                 $ref: '#/components/schemas/LocalizedString'

@@ -243,6 +243,31 @@ def test_safety_capabilities_matches_the_real_backend_contract() -> None:
     assert set(domain_status["enum"]) == {"active", "unavailable", "failed", "pending_implementation"}
 
 
+def test_registry_response_field_names_match_the_real_backend() -> None:
+    # RegistryProductDetail/RegistryProductSummaryList/RegistrySuggestionList
+    # previously used invented field names (display_name, generic_name) that
+    # don't exist in the real registry-search-service response
+    # (services/registry-search-service/src/saferx_registry_search/
+    # product_detail.py, autocomplete_builder.py: "tradename"/"generic"). A
+    # client built against the old schema would fail to read every real
+    # response.
+    components = yaml.safe_load((ROOT / "openapi/components.yaml").read_text())
+    schemas = components["components"]["schemas"]
+
+    detail = schemas["RegistryProductDetail"]
+    assert "tradename" in detail["required"]
+    assert "display_name" not in detail["properties"]
+    assert "generic_name" not in detail["properties"]
+    assert "generic_components" not in detail["properties"]
+    assert "supplier" in detail["properties"]
+
+    summary_item = schemas["RegistryProductSummaryList"]["properties"]["items"]["items"]
+    assert set(summary_item["required"]) == {"sfrx_id", "tradename", "generic", "strength", "route", "dosage_form"}
+
+    suggestion_item = schemas["RegistrySuggestionList"]["properties"]["items"]["items"]
+    assert set(suggestion_item["required"]) == {"sfrx_id", "tradename", "dosage_form", "route", "match_reason", "score"}
+
+
 def test_mcp_adapter_uses_only_signed_enterprise_operations() -> None:
     source = (ROOT / "packages/mcp-server/src/index.ts").read_text()
     for header in (
