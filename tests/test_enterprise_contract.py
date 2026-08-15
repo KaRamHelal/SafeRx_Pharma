@@ -223,6 +223,26 @@ def test_medication_resolution_request_is_actually_constructible_by_a_client() -
     assert medication_item["required"] == ["input_text"]
 
 
+def test_safety_capabilities_matches_the_real_backend_contract() -> None:
+    # Previously required educational_context/source_provenance/locale/review/
+    # display_name/summary/items -- none of which are actual fields of the real
+    # backend contract (SafeRx-MIS contracts/safety-capabilities.schema.json),
+    # for an actively-available operation. Also confirms the two fields
+    # deliberately dropped from the real contract (action_readiness, which mixes
+    # in Browser/admin-only workflow names, and preload, an app-preload caching
+    # implementation detail) never reappear.
+    components = yaml.safe_load((ROOT / "openapi/components.yaml").read_text())
+    schema = components["components"]["schemas"]["SafetyCapabilities"]
+    assert set(schema["required"]) == {
+        "request_id", "schema_version", "domains", "available", "status",
+        "safety_snapshot_id", "registry_snapshot_id",
+    }
+    assert "action_readiness" not in schema["properties"]
+    assert "preload" not in schema["properties"]
+    domain_status = schema["properties"]["domains"]["additionalProperties"]["properties"]["status"]
+    assert set(domain_status["enum"]) == {"active", "unavailable", "failed", "pending_implementation"}
+
+
 def test_mcp_adapter_uses_only_signed_enterprise_operations() -> None:
     source = (ROOT / "packages/mcp-server/src/index.ts").read_text()
     for header in (

@@ -655,11 +655,14 @@ components:
       - items
       properties:
         request_id:
+          description: Echo of the request identifier for correlation.
           type: string
         schema_version:
+          description: Semantic version of this response's schema shape.
           type: string
           pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
         locale:
+          description: Locale used for localized text in this response.
           type: string
           enum:
           - ar-EG
@@ -673,6 +676,8 @@ components:
         display_obligations:
           $ref: '#/components/schemas/DisplayObligations'
         items:
+          description: One resolution result per requested medication, in
+            request order.
           type: array
           items:
             $ref: '#/components/schemas/MedicationResolution'
@@ -1033,17 +1038,21 @@ components:
       - display_obligations
       properties:
         request_id:
+          description: Echo of the request identifier for correlation.
           type: string
         schema_version:
+          description: Semantic version of this response's schema shape.
           type: string
           pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
         locale:
+          description: Locale used for localized text in this response.
           type: string
         educational_context:
           $ref: '#/components/schemas/EducationalContext'
         source_provenance:
           $ref: '#/components/schemas/SourceProvenance'
         items:
+          description: Matching products, in relevance order.
           type: array
           items:
             type: object
@@ -1056,12 +1065,14 @@ components:
             - dosage_form
             properties:
               sfrx_id:
+                description: Registry identifier for this product.
                 type: string
               display_name:
                 $ref: '#/components/schemas/LocalizedString'
               generic_name:
                 $ref: '#/components/schemas/LocalizedString'
               strength:
+                description: Strength as printed on the product, not structured.
                 type:
                 - string
                 - 'null'
@@ -1087,17 +1098,21 @@ components:
       - display_obligations
       properties:
         request_id:
+          description: Echo of the request identifier for correlation.
           type: string
         schema_version:
+          description: Semantic version of this response's schema shape.
           type: string
           pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
         locale:
+          description: Locale used for localized text in this response.
           type: string
         educational_context:
           $ref: '#/components/schemas/EducationalContext'
         source_provenance:
           $ref: '#/components/schemas/SourceProvenance'
         items:
+          description: Suggestions, in relevance order.
           type: array
           items:
             type: object
@@ -1108,56 +1123,81 @@ components:
             - score
             properties:
               sfrx_id:
+                description: Registry identifier for this suggestion.
                 type: string
               display_name:
                 $ref: '#/components/schemas/LocalizedString'
               match_reason:
                 $ref: '#/components/schemas/LocalizedString'
               score:
+                description: Relevance score for this suggestion. Not comparable
+                  across different queries.
                 type: number
             additionalProperties: false
         display_obligations:
           $ref: '#/components/schemas/DisplayObligations'
       additionalProperties: false
     SafetyCapabilities:
+      description: Release and domain readiness metadata. Rebuilt to match the
+        real backend contract (contracts/safety-capabilities.schema.json in
+        SafeRx-MIS) -- the previous version of this schema did not match the
+        actual response shape at all. Fields present only for internal/Browser
+        workflows (action_readiness.prescriber_review, .pharmacy_workbench;
+        preload.shared_via_cow, an app-preload caching implementation detail)
+        are intentionally omitted from this public projection.
       type: object
+      additionalProperties: false
       required:
       - request_id
       - schema_version
-      - educational_context
-      - source_provenance
-      - locale
+      - domains
+      - available
+      - status
+      - safety_snapshot_id
+      - registry_snapshot_id
       properties:
         request_id:
+          description: Echo of the request identifier for correlation.
           type: string
         schema_version:
+          description: Semantic version of this response's schema shape.
           type: string
-          pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
-        locale:
-          type: string
-          enum:
-          - ar-EG
-          - ar
-          - en
-          - mixed
-        educational_context:
-          $ref: '#/components/schemas/EducationalContext'
-        source_provenance:
-          $ref: '#/components/schemas/SourceProvenance'
-        review:
-          $ref: '#/components/schemas/ReviewState'
-        display_name:
-          $ref: '#/components/schemas/LocalizedString'
-        summary:
-          $ref: '#/components/schemas/LocalizedString'
-        items:
-          type: array
-          items:
+        domains:
+          description: Per-safety-domain readiness, keyed by domain id (ddi,
+            pllr, food_interactions, meal_timing, allergy, clinical_dose).
+          type: object
+          additionalProperties:
             type: object
             additionalProperties: false
-        display_obligations:
-          $ref: '#/components/schemas/DisplayObligations'
-      additionalProperties: false
+            required:
+            - available
+            - status
+            properties:
+              available:
+                description: Whether this domain can currently be evaluated.
+                type: boolean
+              status:
+                description: Current readiness state for this domain.
+                type: string
+                enum:
+                - active
+                - unavailable
+                - failed
+                - pending_implementation
+        available:
+          description: Overall availability of the safety-check capability.
+          type: boolean
+        status:
+          description: Overall status label for the safety-check capability.
+          type: string
+        safety_snapshot_id:
+          description: Safety data snapshot currently in use.
+          type: string
+          minLength: 1
+        registry_snapshot_id:
+          description: Registry data snapshot currently in use.
+          type: string
+          minLength: 1
     SafetyCheckResponse:
       type: object
       additionalProperties: false
@@ -1293,6 +1333,9 @@ components:
             additionalProperties: false
           default: []
     EnterpriseStatus:
+      description: Response contract for the deferred enterprise_status operation.
+        Placeholder shape only -- this operation currently returns 501 upstream
+        and has no live-verified success response.
       type: object
       additionalProperties: false
       required:
@@ -1303,22 +1346,30 @@ components:
       - supported_locales
       properties:
         request_id:
+          description: Echo of the request identifier for correlation.
           type: string
         schema_version:
+          description: Semantic version of this response's schema shape.
           type: string
           pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
         status:
+          description: Status label.
           type: string
         capabilities:
+          description: Capability identifiers.
           type: array
           items:
             type: string
         supported_locales:
+          description: Locales this response's content is available in.
           type: array
           items:
             $ref: '#/components/schemas/Locale'
           minItems: 2
     EnterpriseCapabilities:
+      description: Response contract for the deferred enterprise_capabilities
+        operation. Placeholder shape only -- this operation currently returns
+        501 upstream and has no live-verified success response.
       type: object
       additionalProperties: false
       required:
@@ -1329,51 +1380,66 @@ components:
       - supported_locales
       properties:
         request_id:
+          description: Echo of the request identifier for correlation.
           type: string
         schema_version:
+          description: Semantic version of this response's schema shape.
           type: string
           pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
         status:
+          description: Status label.
           type: string
         capabilities:
+          description: Capability identifiers.
           type: array
           items:
             type: string
         supported_locales:
+          description: Locales this response's content is available in.
           type: array
           items:
             $ref: '#/components/schemas/Locale'
           minItems: 2
     AllergyResolution:
+      description: Response contract for the deferred enterprise_allergy_resolve
+        operation. Placeholder shape only -- this operation currently returns
+        501 upstream and has no live-verified success response.
       type: object
       additionalProperties: false
       required: [request_id, schema_version, locale, items]
       properties:
-        request_id: {type: string}
-        schema_version: {type: string}
+        request_id: {description: 'Echo of the request identifier for correlation.', type: string}
+        schema_version: {description: "Semantic version of this response's schema shape.", type: string}
         locale: {$ref: '#/components/schemas/Locale'}
         items:
+          description: Resolved allergy entries.
           type: array
           items: {type: object, additionalProperties: false}
         source_provenance: {$ref: '#/components/schemas/SourceProvenance'}
         display_obligations: {$ref: '#/components/schemas/DisplayObligations'}
     AllergyFamilyList:
+      description: Response contract for the deferred enterprise_allergy_families
+        operation. Placeholder shape only -- this operation currently returns
+        501 upstream and has no live-verified success response.
       type: object
       additionalProperties: false
       required: [items, pagination]
       properties:
-        items: {type: array, items: {type: object, additionalProperties: false}}
+        items: {description: 'Allergy families.', type: array, items: {type: object, additionalProperties: false}}
         pagination: {$ref: '#/components/schemas/Pagination'}
-        locale: {type: string}
+        locale: {description: 'Locale used for localized text in this response.', type: string}
         source_provenance: {$ref: '#/components/schemas/SourceProvenance'}
     AllergySubstanceList:
+      description: Response contract for the deferred enterprise_allergy_substances
+        operation. Placeholder shape only -- this operation currently returns
+        501 upstream and has no live-verified success response.
       type: object
       additionalProperties: false
       required: [items, pagination]
       properties:
-        items: {type: array, items: {type: object, additionalProperties: false}}
+        items: {description: 'Allergy substances.', type: array, items: {type: object, additionalProperties: false}}
         pagination: {$ref: '#/components/schemas/Pagination'}
-        locale: {type: string}
+        locale: {description: 'Locale used for localized text in this response.', type: string}
         source_provenance: {$ref: '#/components/schemas/SourceProvenance'}
     PrescriptionUploadRequest:
       type: object
