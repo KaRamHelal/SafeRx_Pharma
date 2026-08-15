@@ -207,6 +207,22 @@ def test_every_operation_has_a_summary_and_description() -> None:
             assert operation.get("description"), f"{operation_id} is missing a description"
 
 
+def test_medication_resolution_request_is_actually_constructible_by_a_client() -> None:
+    # Previously required educational_context/source_provenance/review/summary --
+    # response-shaped fields no client could construct, matching neither
+    # resolver-service's real request contract (services/resolver-service/src/
+    # saferx_resolver/schemas/resolution.py::MedicationResolutionRequest,
+    # request_parser.py) nor the hosted MCP's resolve_medications tool schema,
+    # which the same backend validates against.
+    components = yaml.safe_load((ROOT / "openapi/components.yaml").read_text())
+    schema = components["components"]["schemas"]["MedicationResolutionRequest"]
+    for private_field in ("educational_context", "source_provenance", "review", "summary", "display_obligations"):
+        assert private_field not in schema["properties"]
+    assert set(schema["required"]) == {"locale", "medications"}
+    medication_item = schema["properties"]["medications"]["items"]
+    assert medication_item["required"] == ["input_text"]
+
+
 def test_mcp_adapter_uses_only_signed_enterprise_operations() -> None:
     source = (ROOT / "packages/mcp-server/src/index.ts").read_text()
     for header in (

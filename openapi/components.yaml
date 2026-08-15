@@ -578,11 +578,14 @@ components:
       - pagination
       properties:
         request_id:
+          description: Echo of the request identifier for correlation.
           type: string
         schema_version:
+          description: Semantic version of this response's schema shape.
           type: string
           pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
         locale:
+          description: Locale used for localized text in this response.
           type: string
           enum:
           - ar-EG
@@ -596,6 +599,7 @@ components:
         display_obligations:
           $ref: '#/components/schemas/DisplayObligations'
         items:
+          description: Matching ingredients.
           type: array
           items:
             type: object
@@ -607,8 +611,10 @@ components:
             - linked_sfrx_ids
             properties:
               ingredient_id:
+                description: Stable identifier for this ingredient.
                 type: string
               ingredient_type:
+                description: What kind of ingredient concept this is.
                 type: string
                 enum:
                 - active
@@ -617,13 +623,19 @@ components:
               display_name:
                 $ref: '#/components/schemas/LocalizedString'
               linked_product_count:
+                description: Number of registry products containing this
+                  ingredient.
                 type: integer
                 minimum: 0
               linked_sfrx_ids:
+                description: Registry identifiers of products containing this
+                  ingredient.
                 type: array
                 items:
                   type: string
               correction_anchors:
+                description: Opaque anchors for reporting a correction against
+                  this entry.
                 type: array
                 items:
                   type: object
@@ -666,43 +678,67 @@ components:
             $ref: '#/components/schemas/MedicationResolution'
       additionalProperties: false
     MedicationResolutionRequest:
+      description: Request body for medication resolution. This schema previously
+        required response-shaped fields (educational_context, source_provenance,
+        review, summary) that no client could construct -- a documentation defect,
+        since resolver-service's real request contract only accepts a locale and
+        one or more free-text medications. Corrected to match the same
+        medications[]/locale shape already used by the hosted MCP's
+        resolve_medications tool, which is validated against the same backend.
       type: object
       required:
-      - request_id
-      - schema_version
-      - educational_context
-      - source_provenance
       - locale
+      - medications
       properties:
-        request_id:
-          type: string
-        schema_version:
-          type: string
-          pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
         locale:
+          description: Locale to use for localized text in the response.
           type: string
           enum:
           - ar-EG
           - ar
           - en
           - mixed
-        educational_context:
-          $ref: '#/components/schemas/EducationalContext'
-        source_provenance:
-          $ref: '#/components/schemas/SourceProvenance'
-        review:
-          $ref: '#/components/schemas/ReviewState'
-        display_name:
-          $ref: '#/components/schemas/LocalizedString'
-        summary:
-          $ref: '#/components/schemas/LocalizedString'
-        items:
+        medications:
+          description: Medications to resolve.
           type: array
+          minItems: 1
+          maxItems: 50
           items:
             type: object
             additionalProperties: false
-        display_obligations:
-          $ref: '#/components/schemas/DisplayObligations'
+            required:
+            - input_text
+            properties:
+              client_medication_id:
+                description: Caller-supplied identifier echoed back for
+                  correlating this entry with its resolution, not interpreted by
+                  the API.
+                type:
+                - string
+                - 'null'
+              input_text:
+                description: Free-text medication description to resolve.
+                type: string
+                minLength: 1
+              sfrx_id:
+                description: Registry identifier, when already known -- narrows
+                  resolution rather than performing a fresh free-text match.
+                type:
+                - string
+                - 'null'
+                pattern: ^SRX-[0-9]{3}-[0-9]{6}$
+              dose_text:
+                description: Free-text dose as written, used to disambiguate
+                  between candidate strengths/forms where supported.
+                type:
+                - string
+                - 'null'
+              route:
+                description: Free-text administration route, when relevant to
+                  disambiguation.
+                type:
+                - string
+                - 'null'
       additionalProperties: false
     ProblemDetails:
       description: RFC 9457 problem response returned for every non-success status.
