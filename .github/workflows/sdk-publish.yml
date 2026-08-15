@@ -27,10 +27,13 @@ jobs:
 
       - name: Validate release contract
         run: |
-          python -m pip install --disable-pip-version-check "PyYAML==6.0.2"
+          python -m pip install --disable-pip-version-check "PyYAML==6.0.2" "jsonschema==4.23.0" "pytest==8.3.3"
           python scripts/release_preflight.py
           python scripts/generate_enterprise_sdks.py --check
           python scripts/render_fern_changelog.py --check
+          python scripts/build_example_fixtures.py --check
+          python scripts/validate_examples.py
+          python -m pytest tests/ -v
 
       - name: Determine release version
         id: version

@@ -13,6 +13,7 @@ on:
       - "scripts/render_fern_changelog.py"
       - "scripts/build_example_fixtures.py"
       - "scripts/validate_examples.py"
+      - "tests/**"
       - ".github/workflows/**"
   push:
     branches: [main]
@@ -27,6 +28,7 @@ on:
       - "scripts/render_fern_changelog.py"
       - "scripts/build_example_fixtures.py"
       - "scripts/validate_examples.py"
+      - "tests/**"
       - ".github/workflows/**"
   workflow_dispatch:
 
@@ -43,7 +45,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install validation dependencies
-        run: python -m pip install --disable-pip-version-check "PyYAML==6.0.2" "jsonschema==4.23.0"
+        run: python -m pip install --disable-pip-version-check "PyYAML==6.0.2" "jsonschema==4.23.0" "pytest==8.3.3"
       - name: Validate public release inputs
         run: python scripts/release_preflight.py
       - name: Validate rendered changelog is current
@@ -52,3 +54,5 @@ jobs:
         run: python scripts/build_example_fixtures.py --check
       - name: Validate example fixtures against the real schemas
         run: python scripts/validate_examples.py
+      - name: Run the regression test suite
+        run: python -m pytest tests/ -v
