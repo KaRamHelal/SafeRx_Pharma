@@ -681,6 +681,9 @@ components:
           $ref: '#/components/schemas/DisplayObligations'
       additionalProperties: false
     ProblemDetails:
+      description: RFC 9457 problem response returned for every non-success status.
+        Always check code for programmatic handling; detail is for humans and may
+        change wording without notice.
       type: object
       required:
       - type
@@ -690,23 +693,35 @@ components:
       - code
       properties:
         type:
+          description: A URI identifying the problem type. Stable for a given code.
           type: string
           format: uri-reference
         title:
+          description: Short, human-readable summary of the problem type.
           type: string
         status:
+          description: HTTP status code, repeated here for convenience.
           type: integer
           minimum: 400
           maximum: 599
         detail:
+          description: Human-readable detail specific to this occurrence. Not
+            stable -- do not pattern-match on this text; use code instead.
           type: string
         instance:
+          description: URI identifying this specific occurrence, when available.
           type: string
         request_id:
+          description: Request identifier for this occurrence. Include it when
+            contacting support about a specific failure.
           type: string
         code:
+          description: Stable machine-readable error code. Safe to switch on.
           type: string
         retry_after_seconds:
+          description: Seconds to wait before retrying, when applicable (e.g.
+            429, some 503s). Prefer this or the Retry-After header over a fixed
+            client-side backoff.
           type:
           - integer
           - 'null'
@@ -718,61 +733,77 @@ components:
           - 'null'
           minimum: 0
         quota_metric:
+          description: Which quota class this error relates to, when the error is
+            quota-related.
           type:
           - string
           - 'null'
         rate_limit:
+          description: Current rate-limit window state, present on rate-limit
+            errors.
           type:
           - object
           - 'null'
           additionalProperties: false
           properties:
             limit:
+              description: Requests allowed in the current window.
               type:
               - integer
               - 'null'
               minimum: 0
             remaining:
+              description: Requests remaining in the current window.
               type:
               - integer
               - 'null'
               minimum: 0
             reset:
+              description: Seconds until the window resets.
               type:
               - integer
               - 'null'
               minimum: 0
         quota:
+          description: Current quota state, present on quota-related errors.
           type:
           - object
           - 'null'
           additionalProperties: false
           properties:
             metric:
+              description: Which quota class this quota state describes.
               type:
               - string
               - 'null'
             limit:
+              description: Total allowance for the current window.
               type:
               - integer
               - 'null'
               minimum: 0
             remaining:
+              description: Allowance remaining in the current window.
               type:
               - integer
               - 'null'
               minimum: 0
             reset_at:
+              description: When the current window resets.
               type:
               - string
               - 'null'
               format: date-time
             window_seconds:
+              description: Length of the quota window in seconds.
               type:
               - integer
               - 'null'
               minimum: 0
         safe_to_retry:
+          description: Whether this exact request is safe to retry as-is (e.g.
+            after a transient 503) without risk of duplicating a side-effecting
+            operation.
           type: boolean
       additionalProperties: false
     RegistryProductDetail:
