@@ -38,13 +38,15 @@ jobs:
           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
             VERSION="${GITHUB_REF#refs/tags/v}"
           else
-            VERSION="${{ github.event.inputs.version }}"
+            VERSION="${DISPATCH_VERSION}"
           fi
           if [[ -z "$VERSION" ]]; then
             echo "could not determine the release version being published" >&2
             exit 1
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        env:
+          DISPATCH_VERSION: ${{ github.event.inputs.version }}
 
       - name: Require an approved available release
         run: |

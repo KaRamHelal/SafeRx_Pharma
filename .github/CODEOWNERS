@@ -1,0 +1,21 @@
+# Review requirements for surfaces where an unreviewed change could leak
+# private MIS detail, break the signed request contract, or ship a bad
+# release (plan v2, Workstream G).
+
+# The public API contract itself.
+/openapi/                          @KaRamHelal
+
+# Reviewed developer guides, presentation, and examples.
+/fern/                             @KaRamHelal
+/postman/                          @KaRamHelal
+
+# Signing implementations -- a bug here breaks every integrator's auth.
+/packages/python/src/saferx_pharma/client.py     @KaRamHelal
+/packages/typescript/src/client.ts               @KaRamHelal
+/packages/csharp/SafeRxClient.cs                 @KaRamHelal
+/scripts/generate_enterprise_sdks.py             @KaRamHelal
+
+# Release identity and the gates that certify it.
+/release/                          @KaRamHelal
+/scripts/release_preflight.py      @KaRamHelal
+/.github/workflows/                @KaRamHelal
