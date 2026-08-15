@@ -1,17 +1,19 @@
 ---
 title: Enterprise keys
-subtitle: Credential handling and signing
+subtitle: Credential handling
 ---
 
-Every Enterprise request is signed with `saferx-hmac-sha256-v1`. Send these headers:
+Your Enterprise key is both your account identifier and your HMAC signing
+secret — see [Authentication](/authentication/overview) for the exact
+signing contract. There is no separate signing key to manage.
 
-| Header | Purpose |
-|---|---|
-| `X-SafeRx-API-Key` | Enterprise key identifier and signing secret input |
-| `X-SafeRx-Timestamp` | UTC timestamp with an explicit offset |
-| `X-SafeRx-Nonce` | One-use replay protection value |
-| `X-SafeRx-Signature` | Base64url HMAC-SHA256 signature |
+Keys for the existing `enterprise_free` plan are self-service (see
+[Developer access](/authentication/developer-portal)); larger plans are
+admin-assigned. Either way, the key is shown exactly once at issuance and
+cannot be retrieved again — only rotated.
 
-The signed canonical message is the uppercase method, escaped path, sorted query, lowercase SHA-256 body digest, timestamp, and nonce joined by newlines. The SDK clients implement this exactly. Never place credentials in source control or logs.
-
-Enterprise keys are provisioned out of band for approved organizations. Store the key in the organization’s secret manager, inject it at runtime, and rotate it through the organization’s access process. Do not place it in a browser bundle, Postman collection, repository, issue, or support message.
+Store the key in your organization's secret manager, inject it at runtime,
+and rotate it through your Partner account when needed. Do not place it in
+a browser bundle, Postman collection, repository, issue, or support
+message — see [Server-side-only use](/security/overview) for why a
+browser-embedded key is a real exposure, not a theoretical one.
