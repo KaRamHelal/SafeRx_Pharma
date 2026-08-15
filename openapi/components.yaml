@@ -1059,18 +1059,24 @@ components:
       - correction_anchors
       properties:
         request_id:
+          description: Echo of the request identifier for correlation.
           type: string
         result_id:
+          description: Stable identifier for this specific safety check result.
           type: string
         schema_version:
+          description: Semantic version of this response's schema shape.
           type: string
         surface:
+          description: Which SafeRx surface produced this result. Always
+            enterprise_api for calls made through this API.
           type: string
           enum:
           - browser
           - enterprise_api
           - partner_api
         locale:
+          description: Locale used for localized text in this response.
           type: string
           enum:
           - ar-EG
@@ -1084,6 +1090,9 @@ components:
         review:
           $ref: '#/components/schemas/ReviewState'
         summary:
+          description: Short human-readable summary of this result. Never reduce
+            this response to a bare safe/unsafe claim -- read signals,
+            domain_coverage, and review together.
           $ref: '#/components/schemas/LocalizedString'
         context_summary:
           description: Privacy-safe indication of whether request-supplied patient_context
@@ -1098,34 +1107,55 @@ components:
           - contradiction_count
           properties:
             status:
+              description: request_context_applied means at least one
+                patient_context field was supplied and used; baseline_only means
+                no patient_context was supplied, so only medication-level
+                evaluation was performed.
               type: string
               enum:
               - request_context_applied
               - baseline_only
             missing_context_count:
+              description: Count of patient-context fields relevant to the
+                requested domains that were not supplied.
               type: integer
               minimum: 0
             stale_context_count:
+              description: Count of supplied patient-context fields whose
+                reference date makes them too old to be trusted as current
+                (e.g. an old age_reference_date).
               type: integer
               minimum: 0
             contradiction_count:
+              description: Count of supplied patient-context fields that
+                conflict with each other (e.g. sex and pregnancy_status).
               type: integer
               minimum: 0
         signals:
+          description: Safety signals raised across all requested domains. Empty
+            does not mean "safe" -- check domain_coverage and unavailable_domains
+            for what was actually evaluated.
           type: array
           items:
             $ref: '#/components/schemas/SafetySignal'
         domain_coverage:
+          description: Per-domain evaluation status for every domain that was
+            requested and could be evaluated.
           type: array
           items:
             $ref: '#/components/schemas/SafetyBoardDomainState'
           default: []
         unavailable_domains:
+          description: Per-domain status for requested domains that could not be
+            evaluated (e.g. insufficient context, domain not currently
+            supported). Treat these as unknown, not as clear.
           type: array
           items:
             $ref: '#/components/schemas/SafetyBoardDomainState'
           default: []
         limitations:
+          description: Caveats about this result's scope or confidence that
+            should be surfaced alongside signals.
           type: array
           items:
             $ref: '#/components/schemas/LocalizedString'
@@ -1133,6 +1163,9 @@ components:
         display_obligations:
           $ref: '#/components/schemas/DisplayObligations'
         correction_anchors:
+          description: Opaque anchors for reporting a correction against this
+            result. Present for future correction-workflow use; treat entries as
+            opaque.
           type: array
           items:
             type: object
@@ -1427,8 +1460,11 @@ components:
       - review_deadline_policy
       properties:
         required:
+          description: Whether professional review is required before this
+            result may be relied upon.
           type: boolean
         status:
+          description: Current review workflow state.
           type: string
           enum:
           - not_required
@@ -1440,11 +1476,14 @@ components:
           - escalated
           - expired
         reason_codes:
+          description: Machine-readable reasons review was triggered.
           type: array
           items:
             type: string
           default: []
         minimum_reviewer_role:
+          description: Minimum reviewer qualification required to satisfy this
+            review requirement.
           type: string
           enum:
           - none
@@ -1452,6 +1491,8 @@ components:
           - qualified_professional
           - pharmaceutical_reviewer
         review_deadline_policy:
+          description: When review must be completed relative to relying on or
+            completing the workflow this result belongs to.
           type: string
           enum:
           - before_relying_on_output
@@ -1459,6 +1500,8 @@ components:
           - optional
           - not_applicable
         review_outcome:
+          description: Recorded outcome once review has been performed; null
+            until then.
           type:
           - string
           - 'null'
@@ -1472,6 +1515,7 @@ components:
         review_note:
           $ref: '#/components/schemas/LocalizedString'
         reviewed_at:
+          description: When review_outcome was recorded; null until reviewed.
           type:
           - string
           - 'null'
@@ -1485,6 +1529,7 @@ components:
       - code
       properties:
         domain:
+          description: Which of the six safety domains this state describes.
           type: string
           enum:
           - ddi
@@ -1494,6 +1539,9 @@ components:
           - allergy
           - clinical_dose
         status:
+          description: evaluated means the domain was actually assessed for this
+            request; every other value means it was not, for the reason given --
+            treat non-evaluated domains as unknown, not as clear.
           type: string
           enum:
           - evaluated
@@ -1504,6 +1552,7 @@ components:
           - unavailable
           - failed
         code:
+          description: Machine-readable reason code for this domain's status.
           type: string
         display_label:
           $ref: '#/components/schemas/LocalizedString'
@@ -1526,8 +1575,10 @@ components:
       - source_provenance
       properties:
         signal_id:
+          description: Stable identifier for this signal.
           type: string
         domain:
+          description: Which of the six safety domains raised this signal.
           type: string
           enum:
           - ddi
@@ -1537,6 +1588,7 @@ components:
           - allergy
           - clinical_dose
         severity:
+          description: Canonical severity of this signal.
           type: string
           enum:
           - informational
@@ -1545,6 +1597,9 @@ components:
           - high
           - critical
         action_bucket:
+          description: Recommended action category. Use this, not severity alone,
+            to decide how to surface the signal -- e.g. urgent_review demands
+            stronger UI treatment than reference even within the same severity.
           type: string
           enum:
           - urgent_review
@@ -1559,6 +1614,8 @@ components:
         justification:
           $ref: '#/components/schemas/LocalizedString'
         equivalent_options:
+          description: Suggested equivalent alternatives, when available. Not
+            present for every signal.
           type: array
           items:
             type: object
@@ -1573,20 +1630,26 @@ components:
                 $ref: '#/components/schemas/LocalizedString'
           default: []
         evidence_refs:
+          description: References backing this signal. Opaque identifiers, not
+            fetchable content.
           type: array
           minItems: 1
           items:
             type: object
             additionalProperties: false
         confidence:
+          description: Confidence in this specific signal, 0-1.
           type: number
           minimum: 0
           maximum: 1
         review_required:
+          description: Whether this specific signal requires professional review,
+            independent of the result-level review requirement.
           type: boolean
         source_provenance:
           $ref: '#/components/schemas/SourceProvenance'
         limitations:
+          description: Caveats specific to this signal.
           type: array
           items:
             $ref: '#/components/schemas/LocalizedString'
