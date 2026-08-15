@@ -1,5 +1,17 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "saferx-pharma"
 version = "2.0.2rc1"
+description = "Signed Python client for the SafeRx Enterprise API"
+readme = "README.md"
 requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "SafeRx"}]
 dependencies = []
+
+[project.urls]
+Homepage = "https://docs.saferx.online"
+Repository = "https://github.com/KaRamHelal/SafeRx_Pharma"

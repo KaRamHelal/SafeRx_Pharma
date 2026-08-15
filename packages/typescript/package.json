@@ -1,6 +1,10 @@
 {
   "name": "saferx-pharma-sdk",
   "version": "2.0.2-preview.1",
+  "description": "Signed TypeScript client for the SafeRx Enterprise API",
+  "license": "MIT",
+  "homepage": "https://docs.saferx.online",
+  "repository": {"type": "git", "url": "https://github.com/KaRamHelal/SafeRx_Pharma"},
   "private": true,
   "type": "module",
   "exports": {".": "./dist/client.js"},

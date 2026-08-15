@@ -22,7 +22,13 @@
   "subject": [
     {
       "digest": {
-        "sha256": "929e4dec18fe516bf93ce021952963b872274da4117a59daa041850b51e5aaa9"
+        "sha256": "39390db6f5e1bc612d1cb6306de3e5ff203b04d6c65a71560abab8239ef16d85"
+      },
+      "name": "packages/csharp/README.md"
+    },
+    {
+      "digest": {
+        "sha256": "60b4fc2ace9efbca1f7e5d1f8c8932800545a4815b16a267b3fbecc9fbf036bd"
       },
       "name": "packages/csharp/SafeRx.csproj"
     },
@@ -34,7 +40,13 @@
     },
     {
       "digest": {
-        "sha256": "73a0b7aafd7f700c46dfbb96ee0a349c25b79257c4c3969e2b6a9d411d23fdaa"
+        "sha256": "b9b57c6a7ebd2be5728b7dd8fa6babff066bf098de67cf39fc763c4f8a0dc349"
+      },
+      "name": "packages/python/README.md"
+    },
+    {
+      "digest": {
+        "sha256": "da8ff86f88a9a6ffb4e8cc407c2c2037bfc1e35ce5066a5d0eaf443338bb9576"
       },
       "name": "packages/python/pyproject.toml"
     },
@@ -52,7 +64,13 @@
     },
     {
       "digest": {
-        "sha256": "3e3a9eedd39986604e23029b893ffbf3b7e7ed946e3a5975911de1e1990f40e8"
+        "sha256": "9537b13b5fe69bd033cb1c9664dc14b319eb9a7f6e70655b00d584058b32a159"
+      },
+      "name": "packages/typescript/README.md"
+    },
+    {
+      "digest": {
+        "sha256": "1d9eb937d7e735102626652d39d2748c75855f9af5299957ce0cc48d69f92b76"
       },
       "name": "packages/typescript/package.json"
     },

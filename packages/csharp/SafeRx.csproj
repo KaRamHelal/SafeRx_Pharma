@@ -6,8 +6,15 @@
     <Authors>SafeRx</Authors>
     <Description>Signing-aware SafeRx Enterprise API preview client.</Description>
     <PackageTags>saferx;enterprise-api;medication-safety</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://docs.saferx.online</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/KaRamHelal/SafeRx_Pharma</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 </Project>
