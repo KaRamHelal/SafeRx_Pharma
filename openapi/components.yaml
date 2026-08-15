@@ -153,22 +153,34 @@ components:
       additionalProperties: false
       properties:
         age_years:
+          description: Current age in years. Prefer date_of_birth when available;
+            supply this only with age_reference_date if you have a snapshot age
+            rather than a birth date.
           type:
           - number
           - 'null'
           minimum: 0
           maximum: 150
         date_of_birth:
+          description: Preferred age anchor. The current age is derived from this
+            at evaluation time, so age-dependent guidance stays correct on later
+            requests without resending an updated age_years.
           type:
           - string
           - 'null'
           format: date
         age_reference_date:
+          description: Date on which the supplied age_years was true. Required
+            alongside age_years when date_of_birth is not available, so age can
+            still be advanced correctly over time.
           type:
           - string
           - 'null'
           format: date
         sex:
+          description: Biological sex, used for domains where it affects
+            evaluation (e.g. dosing). Use unknown rather than omitting the field
+            when truly unknown.
           type:
           - string
           - 'null'
@@ -179,11 +191,16 @@ components:
           - unknown
           - null
         weight_kg:
+          description: Body weight in kilograms, used for weight-sensitive dosing
+            guidance where supported.
           type:
           - number
           - 'null'
           minimum: 0
         pregnancy_status:
+          description: Current pregnancy status. not_applicable is distinct from
+            unknown -- use it when pregnancy status genuinely does not apply
+            (e.g. sex is male).
           type:
           - string
           - 'null'
@@ -194,6 +211,8 @@ components:
           - not_applicable
           - null
         lactation_status:
+          description: Current lactation status. not_applicable is distinct from
+            unknown -- use it when lactation status genuinely does not apply.
           type:
           - string
           - 'null'
@@ -204,67 +223,97 @@ components:
           - not_applicable
           - null
         pregnancy_context:
+          description: Stage-aware pregnancy detail. Gestational age and trimester
+            are derived server-side from these fields at evaluation time; do not
+            compute trimester locally and send only the derived value.
           type: object
           additionalProperties: false
           properties:
             lmp_date:
+              description: Last menstrual period date. Preferred source for
+                deriving current gestational age when available.
               type:
               - string
               - 'null'
               format: date
             gestational_age_reference_date:
+              description: Date on which the supplied gestational_age_weeks or
+                gestational_age_months_approx was true. Required alongside those
+                fields when lmp_date is not available, so gestational age can
+                still be advanced correctly over time.
               type:
               - string
               - 'null'
               format: date
             gestational_age_weeks:
+              description: Gestational age in weeks as of gestational_age_reference_date,
+                when lmp_date is not available.
               type:
               - number
               - 'null'
               minimum: 0
               maximum: 45
             gestational_age_months_approx:
+              description: Approximate gestational age in months as of
+                gestational_age_reference_date, when a more precise weeks value
+                is not available.
               type:
               - number
               - 'null'
               minimum: 0
               maximum: 11
         lactation_context:
+          description: Infant-age detail used for lactation-specific guidance.
+            Infant age is advanced server-side from these fields at evaluation
+            time when an exact date of birth is not available.
           type: object
           additionalProperties: false
           properties:
             infant_age_reference_date:
+              description: Date on which the supplied infant_age_days or
+                infant_age_months_approx was true.
               type:
               - string
               - 'null'
               format: date
             infant_age_days:
+              description: Infant age in days as of infant_age_reference_date.
               type:
               - number
               - 'null'
               minimum: 0
               maximum: 3650
             infant_age_months_approx:
+              description: Approximate infant age in months as of
+                infant_age_reference_date, when an exact day count is not
+                available.
               type:
               - number
               - 'null'
               minimum: 0
               maximum: 120
         renal:
+          description: Renal function context used for dose and interaction
+            guidance in renally-cleared medications.
           type: object
           additionalProperties: false
           properties:
             crcl_ml_min:
+              description: Creatinine clearance in mL/min, when known directly.
               type:
               - number
               - 'null'
               minimum: 0
             egfr_ml_min_1_73m2:
+              description: Estimated glomerular filtration rate (mL/min/1.73m²),
+                when known directly.
               type:
               - number
               - 'null'
               minimum: 0
             status:
+              description: Categorical renal function status. Supply this when a
+                numeric crcl_ml_min/egfr_ml_min_1_73m2 value is not available.
               type:
               - string
               - 'null'
@@ -278,10 +327,13 @@ components:
               - unknown
               - null
         hepatic:
+          description: Hepatic function context used for dose and interaction
+            guidance in hepatically-cleared medications.
           type: object
           additionalProperties: false
           properties:
             child_pugh:
+              description: Child-Pugh class, when known directly.
               type:
               - string
               - 'null'
@@ -292,6 +344,8 @@ components:
               - unknown
               - null
             status:
+              description: Categorical hepatic function status. Supply this when
+                a Child-Pugh class is not available.
               type:
               - string
               - 'null'
@@ -303,6 +357,8 @@ components:
               - unknown
               - null
         conditions:
+          description: Normalized clinical-dose condition identifiers relevant to
+            dosing and interaction guidance.
           type: array
           maxItems: 50
           items:
@@ -334,6 +390,8 @@ components:
           - has_entries
           - null
         allergies:
+          description: Individual allergy entries. Only meaningful alongside
+            allergy_state == has_entries.
           type: array
           maxItems: 50
           items:
@@ -343,8 +401,12 @@ components:
             - input_text
             properties:
               input_text:
+                description: Free-text allergy description as reported.
                 type: string
               entry_type:
+                description: How input_text should be interpreted for matching --
+                  a free-text description, a known allergy family, or a specific
+                  product.
                 type:
                 - string
                 - 'null'
@@ -354,10 +416,16 @@ components:
                 - product
                 - null
         diet_profile:
+          description: Diet, supplement, and fasting context used for
+            food-interaction and meal-timing guidance.
           type: object
           additionalProperties: false
           properties:
             diet_patterns:
+              description: Active diet patterns. Currently source-backed patterns
+                are vegan, keto_low_carb, high_protein_fitness, mediterranean,
+                intermittent_fasting, and ramadan_fasting; other values are
+                accepted as non-signaling context.
               type: array
               uniqueItems: true
               maxItems: 20
@@ -383,6 +451,8 @@ components:
                 - intermittent_fasting
                 - other
             fasting_pattern:
+              description: Active fasting pattern, relevant to meal-timing
+                guidance for medications with food/timing constraints.
               type:
               - string
               - 'null'
@@ -394,6 +464,9 @@ components:
               - unknown
               - null
             food_exposures:
+              description: Confirmed or reported dietary/food exposures relevant
+                to food-interaction guidance (e.g. grapefruit, tyramine-rich
+                foods).
               type: array
               maxItems: 50
               items:
@@ -404,6 +477,7 @@ components:
                 - confirmation_state
                 properties:
                   exposure_id:
+                    description: Which food exposure this entry reports.
                     type: string
                     enum:
                     - alcohol
@@ -423,6 +497,8 @@ components:
                     - fava_beans
                     - other
                   confirmation_state:
+                    description: How confidently this exposure applies to the
+                      patient right now.
                     type: string
                     enum:
                     - confirmed_current
@@ -431,6 +507,8 @@ components:
                     - avoids
                     - unknown
             supplement_exposures:
+              description: Confirmed or reported supplement use relevant to
+                interaction guidance.
               type: array
               maxItems: 50
               items:
@@ -441,6 +519,7 @@ components:
                 - confirmation_state
                 properties:
                   exposure_id:
+                    description: Which supplement this entry reports.
                     type: string
                     enum:
                     - protein_powder_whey_casein
@@ -453,6 +532,8 @@ components:
                     - herbal_supplement
                     - other
                   confirmation_state:
+                    description: How confidently this supplement use applies to
+                      the patient right now.
                     type: string
                     enum:
                     - confirmed_current
