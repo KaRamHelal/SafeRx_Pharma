@@ -3,7 +3,7 @@ info:
   title: SafeRx Enterprise API
   version: 2026.07.28
   summary: Contract-first medication intelligence for enterprise integrations
-  description: The current MIS Enterprise developer surface for registry lookup and
+  description: The current SafeRx Enterprise developer surface for registry lookup and
     medication safety review, allergy reference, and prescription OCR workflows.
     Responses are bilingual, bounded, and closed-schema. Access requires an issued
     Enterprise API key with the route entitlement for the requested operation.

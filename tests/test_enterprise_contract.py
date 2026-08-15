@@ -32,7 +32,7 @@ EXPECTED_OPERATIONS = {
 
 # Present in the OpenAPI (documented, honestly marked x-status: deferred) but must
 # never carry a success response or ship in a generated SDK client -- the maintained
-# MIS OpenAPI only defines 501 for these operations today.
+# backend OpenAPI only defines 501 for these operations today.
 DEFERRED_OPERATIONS = {
     "enterprise_capabilities",
     "enterprise_status",
@@ -126,7 +126,7 @@ def test_safety_check_request_is_request_scoped_patient_context() -> None:
 
 
 def test_sdk_clients_carry_no_private_route_metadata() -> None:
-    # route_class/response_profile/quota_metric are internal MIS routing/accounting
+    # route_class/response_profile/quota_metric are internal backend routing/accounting
     # vocabulary and were always emitted as a hardcoded fallback (no OpenAPI
     # x-route-class/x-response-profile/x-quota-metric extension ever set them) --
     # pure private-naming leakage into every consumer's dependency tree.
@@ -156,8 +156,7 @@ def test_sdk_clients_honor_retry_after_on_429() -> None:
 def test_sdk_clients_support_multipart_upload_signing() -> None:
     # enterprise_ocr_prescription_create is multipart/form-data-only per
     # PrescriptionUploadRequest; the gateway signs over the exact raw request bytes
-    # regardless of content type (apps/gateway/cmd/gateway/identity_mode.go:
-    # bodyHash := sha256.Sum256(bodyBytes)), so a JSON-only client can never call
+    # regardless of content type, so a JSON-only client can never call
     # this operation correctly. All three SDK clients must build a real multipart
     # body and sign over those exact bytes.
     from saferx_pharma import MultipartFile, encode_multipart, sign_request
@@ -209,11 +208,9 @@ def test_every_operation_has_a_summary_and_description() -> None:
 
 def test_medication_resolution_request_is_actually_constructible_by_a_client() -> None:
     # Previously required educational_context/source_provenance/review/summary --
-    # response-shaped fields no client could construct, matching neither
-    # resolver-service's real request contract (services/resolver-service/src/
-    # saferx_resolver/schemas/resolution.py::MedicationResolutionRequest,
-    # request_parser.py) nor the hosted MCP's resolve_medications tool schema,
-    # which the same backend validates against.
+    # response-shaped fields no client could construct, matching neither the
+    # real backend request contract nor the hosted MCP's resolve_medications
+    # tool schema, which the same backend validates against.
     components = yaml.safe_load((ROOT / "openapi/components.yaml").read_text())
     schema = components["components"]["schemas"]["MedicationResolutionRequest"]
     for private_field in ("educational_context", "source_provenance", "review", "summary", "display_obligations"):
@@ -226,8 +223,8 @@ def test_medication_resolution_request_is_actually_constructible_by_a_client() -
 def test_safety_capabilities_matches_the_real_backend_contract() -> None:
     # Previously required educational_context/source_provenance/locale/review/
     # display_name/summary/items -- none of which are actual fields of the real
-    # backend contract (SafeRx-MIS contracts/safety-capabilities.schema.json),
-    # for an actively-available operation. Also confirms the two fields
+    # backend response contract, for an actively-available operation. Also
+    # confirms the two fields
     # deliberately dropped from the real contract (action_readiness, which mixes
     # in Browser/admin-only workflow names, and preload, an app-preload caching
     # implementation detail) never reappear.
@@ -246,9 +243,7 @@ def test_safety_capabilities_matches_the_real_backend_contract() -> None:
 def test_registry_response_field_names_match_the_real_backend() -> None:
     # RegistryProductDetail/RegistryProductSummaryList/RegistrySuggestionList
     # previously used invented field names (display_name, generic_name) that
-    # don't exist in the real registry-search-service response
-    # (services/registry-search-service/src/saferx_registry_search/
-    # product_detail.py, autocomplete_builder.py: "tradename"/"generic"). A
+    # don't exist in the real backend response ("tradename"/"generic"). A
     # client built against the old schema would fail to read every real
     # response.
     components = yaml.safe_load((ROOT / "openapi/components.yaml").read_text())
@@ -271,9 +266,8 @@ def test_registry_response_field_names_match_the_real_backend() -> None:
 def test_prescription_result_matches_the_real_backend_contract() -> None:
     # candidate_medications was typed as an always-empty object and
     # document_context was missing entirely, despite both being real,
-    # required fields of PrescriptionResult (SafeRx-MIS api/openapi/
-    # components.yaml, x-contract-status implementation_ready). A client
-    # built against the old schema would have failed to parse any real
+    # required fields of PrescriptionResult in the real backend response
+    # contract. A client built against the old schema would have failed to parse any real
     # response once OCR/resolution had actually produced content.
     components = yaml.safe_load((ROOT / "openapi/components.yaml").read_text())
     schema = components["components"]["schemas"]["PrescriptionResult"]
@@ -290,7 +284,7 @@ def test_prescription_transitions_and_evidence_refs_are_not_always_empty() -> No
     # Same always-empty-object bug: PrescriptionResult.transitions and
     # SafetySignal.evidence_refs were both additionalProperties: false with
     # zero declared properties, which would reject any real, populated entry
-    # (SafeRx-MIS EnterprisePrescriptionEvent, EvidenceReference).
+    # in the real backend response contract.
     components = yaml.safe_load((ROOT / "openapi/components.yaml").read_text())
     schemas = components["components"]["schemas"]
     transition_item = schemas["PrescriptionResult"]["properties"]["transitions"]["items"]
@@ -320,8 +314,7 @@ def test_example_fixtures_are_current_and_valid() -> None:
 
 def test_erx_safety_check_uses_its_own_request_schema() -> None:
     # Was type: object, additionalProperties: false -- an inline placeholder
-    # that would reject any real request. The real backend contract
-    # (SafeRx-MIS ErxSafetyCheckRequest, x-contract-status implementation_ready)
+    # that would reject any real request. The real backend response contract
     # takes erx_payload + locale, not the free-text medications[] shape of
     # ClientSafetyCheckRequest.
     spec = yaml.safe_load((ROOT / "openapi/enterprise-v1.yaml").read_text())

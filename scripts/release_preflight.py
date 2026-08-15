@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -40,7 +41,7 @@ EXPECTED_AVAILABLE_OPERATION_IDS = {
     "enterprise_ocr_prescription_safety",
     "enterprise_ocr_prescription_review",
 }
-# These operations exist in the maintained MIS OpenAPI with no non-501 success
+# These operations exist in the maintained backend OpenAPI with no non-501 success
 # response yet. They stay present in the public spec (so the API surface and its
 # migration state are honestly documented) but must never carry an invented 200/202
 # and must never appear as available in the release manifest, SDKs, or docs.
@@ -118,9 +119,29 @@ FORBIDDEN_SHIPPED_PATTERNS = (
     r"(?i)(api[_-]?key|client[_-]?secret|password)\s*[:=]\s*['\"](?=[^'\"]*[a-z])(?=[^'\"]*[0-9])[A-Za-z0-9_\-]{12,}['\"]",
 )
 # Pre-2.0 candidate versions are forbidden in anything shipped to a public registry:
-# see RELEASE_CHECKLIST.md ("all releases from now on are v2.0.0+, separate from the
-# pre-MIS era") and contracts/public-package-catalog.yaml (initial_version '2.0.1').
+# see RELEASE_CHECKLIST.md ("all releases from now on are v2.0.0+").
 LEGACY_VERSION_PATTERN = re.compile(r'"version"\s*:\s*"0\.|version\s*=\s*"0\.|<Version>0\.')
+
+# This entire repository is public on GitHub, not just the narrower set of files that
+# get packaged into a registry artifact or docs page (PUBLIC_SHIPPED_ROOTS above).
+# README.md previously shipped a real private release identifier
+# (mis-enterprise-2026.07.28-authenticated.1) and several source comments named the
+# private backend repository and its internal file/service layout -- none of that was
+# ever scanned because it wasn't inside PUBLIC_SHIPPED_ROOTS. This checks every
+# git-tracked file in the repository (i.e. everything actually visible on GitHub) for
+# the small set of internal-identifier patterns that must never appear anywhere here,
+# regardless of whether the file is "shipped" in the packaging sense.
+REPO_WIDE_FORBIDDEN_PATTERNS = (
+    re.compile(r"SafeRx-MIS", re.IGNORECASE),
+    re.compile(r"\bMIS\b"),
+    re.compile(r"apps/gateway/cmd"),
+    re.compile(r"apps/browser/src"),
+    re.compile(r"services/[a-z][a-z-]*-service/src"),
+)
+REPO_WIDE_EXCLUDE_EXTENSIONS = {
+    ".ico", ".svg", ".png", ".jpg", ".jpeg", ".gif", ".lock",
+}
+REPO_WIDE_EXCLUDE_FILES = {"package-lock.json"}
 
 
 def _iter_public_shipped_files() -> list[Path]:
@@ -136,6 +157,22 @@ def _iter_public_shipped_files() -> list[Path]:
                 continue
             if PUBLIC_SHIPPED_EXCLUDE_DIRS & set(path.relative_to(ROOT).parts):
                 continue
+            files.append(path)
+    return files
+
+
+def _iter_tracked_files() -> list[Path]:
+    output = subprocess.run(
+        ["git", "ls-files"], cwd=ROOT, capture_output=True, text=True, check=True
+    ).stdout
+    files = []
+    for line in output.splitlines():
+        if not line:
+            continue
+        path = ROOT / line
+        if path.suffix in REPO_WIDE_EXCLUDE_EXTENSIONS or path.name in REPO_WIDE_EXCLUDE_FILES:
+            continue
+        if path.is_file():
             files.append(path)
     return files
 
@@ -238,6 +275,17 @@ def main() -> int:
                     errors.append(f"forbidden internal pattern in {path.relative_to(ROOT)}: {pattern}")
             if LEGACY_VERSION_PATTERN.search(text):
                 errors.append(f"pre-2.0 candidate version string in publicly-shipped file {path.relative_to(ROOT)}")
+
+        for path in _iter_tracked_files():
+            if path == Path(__file__).resolve():
+                continue  # this file's own pattern definitions, not a leak
+            try:
+                text = path.read_text(encoding="utf-8")
+            except (UnicodeDecodeError, OSError):
+                continue
+            for pattern in REPO_WIDE_FORBIDDEN_PATTERNS:
+                if pattern.search(text):
+                    errors.append(f"forbidden internal reference in {path.relative_to(ROOT)}: {pattern.pattern}")
 
     if errors:
         print("Enterprise public preflight failed:")

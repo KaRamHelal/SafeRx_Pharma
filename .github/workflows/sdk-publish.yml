@@ -1,6 +1,6 @@
 name: Publish Enterprise SDKs
 
-# mcp-server is NOT published here: SafeRx-MIS's public-availability-state-machine.yaml
+# mcp-server is NOT published here: the backend's availability-state configuration
 # marks mcp-stdio as internal_only/public_eligible:false. It was previously published to
 # npm in error (see public-package-catalog.yaml history); that live package is being
 # replaced by the hosted MCP surface and is not re-published from this workflow.
@@ -58,7 +58,7 @@ jobs:
           from pathlib import Path
           manifest = yaml.safe_load(Path("release/current.yaml").read_text())
           if manifest.get("status") != "available" or manifest.get("publishable") is not True:
-              raise SystemExit("publication is blocked: the checked-in MIS release is not available")
+              raise SystemExit("publication is blocked: the checked-in release is not available")
           PY
 
       - name: Require a matching CHANGELOG.md entry

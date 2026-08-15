@@ -22,8 +22,7 @@ entitles you to.
 
 This repository contains a public API contract and generated client code. It
 does not contain the production service implementation, credentials, or
-protected health information — see `contracts/public-artifact-projection.yaml`
-in the SafeRx-MIS repository for what is deliberately excluded from this
-projection. Issues with the live API's behavior (as opposed to this
-repository's contract/SDK code) should also be reported through the address
-above.
+protected health information — those are deliberately excluded from this
+projection by our internal release-governance process. Issues with the live
+API's behavior (as opposed to this repository's contract/SDK code) should
+also be reported through the address above.

@@ -908,10 +908,8 @@ components:
           type: boolean
       additionalProperties: false
     RegistryProductDetail:
-      description: Corrected against the real backend contract (SafeRx-MIS
-        services/registry-search-service/src/saferx_registry_search/product_detail.py
-        and api/openapi/components.yaml, x-contract-status implementation_ready)
-        -- the previous version of this schema used invented field names
+      description: Corrected against the real backend response contract --
+        the previous version of this schema used invented field names
         (display_name/generic_name/generic_components) that don't match the
         real response (tradename/generic), and typed pharmacology/prose_details/
         warnings as always-empty objects, which would have rejected every real
@@ -1212,9 +1210,9 @@ components:
       additionalProperties: false
     SafetyCapabilities:
       description: Release and domain readiness metadata. Rebuilt to match the
-        real backend contract (contracts/safety-capabilities.schema.json in
-        SafeRx-MIS) -- the previous version of this schema did not match the
-        actual response shape at all. Fields present only for internal/Browser
+        real backend response contract -- the previous version of this schema
+        did not match the actual response shape at all. Fields present only
+        for internal/Browser
         workflows (action_readiness.prescriber_review, .pharmacy_workbench;
         preload.shared_via_cow, an app-preload caching implementation detail)
         are intentionally omitted from this public projection.
@@ -1587,8 +1585,7 @@ components:
         review: {$ref: '#/components/schemas/ReviewState'}
     PrescriptionResult:
       description: candidate_medications and document_context were corrected
-        against the real backend contract (SafeRx-MIS api/openapi/components.yaml,
-        x-contract-status implementation_ready) -- candidate_medications was
+        against the real backend response contract -- candidate_medications was
         typed as an always-empty object, which would have rejected every real
         response once resolution had actually run, and document_context was
         missing entirely despite being required.

@@ -37,7 +37,7 @@ Entries below are not a backfilled reconstruction of that history.
   would reject any real populated response; given their real structure.
   `PrescriptionResult` was also missing the required `document_context`
   field.
-- Removed private MIS routing/accounting metadata (route class, response
+- Removed private backend routing/accounting metadata (route class, response
   profile, quota metric) that every generated SDK client shipped as inert
   hardcoded fallback values.
 - SDK clients now honor `Retry-After` and retry `429`, and support real

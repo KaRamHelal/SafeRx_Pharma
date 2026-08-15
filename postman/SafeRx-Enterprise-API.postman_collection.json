@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "SafeRx Enterprise API preview",
-    "description": "Signed-request examples for the MIS Enterprise preview contract. Inject the key locally; never save a credential in this collection.",
+    "description": "Signed-request examples for the SafeRx Enterprise API. Inject the key locally; never save a credential in this collection.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [

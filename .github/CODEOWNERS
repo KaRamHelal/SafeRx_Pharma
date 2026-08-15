@@ -1,6 +1,6 @@
 # Review requirements for surfaces where an unreviewed change could leak
-# private MIS detail, break the signed request contract, or ship a bad
-# release (plan v2, Workstream G).
+# private backend detail, break the signed request contract, or ship a bad
+# release.
 
 # The public API contract itself.
 /openapi/                          @KaRamHelal

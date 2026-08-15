@@ -11,7 +11,7 @@ source for the developer documentation at [docs.saferx.online](https://docs.safe
 
 The Enterprise API is available to approved customers with an issued API key
 and the entitlement for each route. This repository does not issue keys —
-access is provisioned through the MIS Enterprise release process (see
+access is provisioned through SafeRx's Enterprise release process (see
 [Developer access](https://docs.saferx.online/authentication/developer-portal)).
 
 ## Surface
@@ -87,7 +87,7 @@ packages/csharp/                 # signing-aware C# client
 packages/mcp-server/             # stdio MCP adapter (internal-only, being superseded)
 fern/                            # Fern API reference and documentation source
 postman/                         # signed-request examples
-release/current.yaml             # current MIS release manifest
+release/current.yaml             # current release manifest
 scripts/release_preflight.py     # release and mirror validation
 scripts/generate_enterprise_sdks.py  # SDK/client generation
 CHANGELOG.md                     # release history
@@ -101,8 +101,7 @@ python scripts/generate_enterprise_sdks.py --check
 cd packages/mcp-server && npm ci && npm run build
 ```
 
-The API availability record is bound to
-`mis-enterprise-2026.07.28-authenticated.1`.
+The current public release identity is recorded in `release/current.yaml`.
 
 ## Documentation
 

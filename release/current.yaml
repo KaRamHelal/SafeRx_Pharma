@@ -40,7 +40,7 @@ notes:
     and therefore excluded from the public bundle, SDK clients, and docs until they
     have a real success schema and evidence (see openapi/enterprise-v1.yaml x-status).
   - Hosted MCP was promoted from internal_only to preview on 2026-08-15 in
-    SafeRx-MIS's public-availability-state-machine.yaml and documentation-bindings.yaml.
+    the backend's availability and documentation-binding configuration.
     It exposes exactly the three tools listed above with no resources or prompts.
   - The legacy stdio @saferx_pharma/mcp-server package remains internal_only and
     deprecated; it is not the supported MCP integration path.
