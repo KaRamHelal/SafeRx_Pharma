@@ -6,7 +6,7 @@
     "materials": [
       {
         "digest": {
-          "sha256": "7b136697f1268574d9c51689a938a8ee9c6f8edb442d1e89a9bd947092853f68"
+          "sha256": "1ee5320413a04716e0cf5120a4fed5af52558e6a37f80156edbdffef02b1a9de"
         },
         "uri": "openapi/components.yaml"
       },
@@ -58,7 +58,7 @@
     },
     {
       "digest": {
-        "sha256": "8d64dad91d9c015542adbeb1dc669a2d9cd7bc92ba943ae5675510c7a01bd7be"
+        "sha256": "9730b7faff4839d8ef4219d9cbf99743f884c0840972d1993375df44dd27fe61"
       },
       "name": "packages/python/src/saferx_pharma/client.py"
     },
@@ -76,7 +76,7 @@
     },
     {
       "digest": {
-        "sha256": "fd5fed2d5c7c422164fbfc68b0b1e48fedac175797ed08cebef9df125846656b"
+        "sha256": "16ee6af5773f3a4b572f9f71354826ce91b3424b7fe2d0814f7d60b327971a45"
       },
       "name": "packages/typescript/src/client.ts"
     },

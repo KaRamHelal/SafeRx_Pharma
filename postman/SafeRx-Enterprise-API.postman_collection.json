@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "SafeRx Enterprise API preview",
-    "description": "Signed-request examples for the SafeRx Enterprise API. Inject the key locally; never save a credential in this collection.",
+    "description": "Signed SafeRx Enterprise API requests. Set `api_key`, then send. The pre-request script implements saferx-hmac-sha256-v1 exactly as the SDKs do. Every request here is an available operation on the self-service enterprise_free plan.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -11,11 +11,13 @@
     },
     {
       "key": "api_key",
-      "value": ""
+      "value": "",
+      "description": "Your Enterprise key. Never commit a collection with this filled in."
     },
     {
       "key": "idempotency_key",
-      "value": "postman-safety-001"
+      "value": "postman-safety-001",
+      "description": "Change this for every new logical safety check; reuse it to retry the same one."
     }
   ],
   "event": [
@@ -25,75 +27,194 @@
         "type": "text/javascript",
         "exec": [
           "const CryptoJS = require('crypto-js');",
-          "const url = pm.request.url.toString();",
-          "const parsed = new URL(url);",
-          "const query = [...parsed.searchParams.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`).join('&');",
-          "const query = parsed.search.replace(/^\\?/, '');",
-          "const body = pm.request.body && pm.request.body.mode === 'raw' ? pm.request.body.raw : '';",
+          "// saferx-hmac-sha256-v1 -- see https://docs.saferx.online/authentication/overview",
+          "const resolved = pm.variables.replaceIn(pm.request.url.toString());",
+          "const parsed = new URL(resolved);",
+          "const base = new URL(pm.variables.replaceIn('{{base_url}}'));",
+          "// Signed path = the base URL path + the operation path, percent-encoded the way the SDKs do it.",
+          "const path = encodeURI(parsed.pathname);",
+          "// Signed query = RFC 3986 encoded pairs, sorted by key then value, joined with '&'.",
+          "const query = [...parsed.searchParams.entries()]",
+          "  .map(([key, value]) => [encodeURIComponent(key).replace(/[!'()*]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase()), encodeURIComponent(value).replace(/[!'()*]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase())])",
+          "  .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0))",
+          "  .map(([key, value]) => `${key}=${value}`)",
+          "  .join('&');",
+          "const body = pm.request.body && pm.request.body.mode === 'raw' ? pm.variables.replaceIn(pm.request.body.raw) : '';",
           "const timestamp = new Date().toISOString();",
           "const nonce = pm.variables.replaceIn('{{$guid}}');",
           "const bodyHash = CryptoJS.SHA256(body).toString(CryptoJS.enc.Hex);",
-          "const canonical = [pm.request.method.toUpperCase(), encodeURI(path), query, bodyHash, timestamp, nonce].join('\\n');",
+          "const canonical = [pm.request.method.toUpperCase(), path, query, bodyHash, timestamp, nonce].join('\\n');",
           "const signature = CryptoJS.HmacSHA256(canonical, pm.variables.get('api_key')).toString(CryptoJS.enc.Base64).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
-          "pm.request.headers.upsert({key:'X-SafeRx-API-Key', value:pm.variables.get('api_key')});",
-          "pm.request.headers.upsert({key:'X-SafeRx-Timestamp', value:timestamp});",
-          "pm.request.headers.upsert({key:'X-SafeRx-Nonce', value:nonce});",
-          "pm.request.headers.upsert({key:'X-SafeRx-Signature', value:signature});"
+          "pm.request.headers.upsert({ key: 'X-SafeRx-API-Key', value: pm.variables.get('api_key') });",
+          "pm.request.headers.upsert({ key: 'X-SafeRx-Timestamp', value: timestamp });",
+          "pm.request.headers.upsert({ key: 'X-SafeRx-Nonce', value: nonce });",
+          "pm.request.headers.upsert({ key: 'X-SafeRx-Signature', value: signature });"
         ]
       }
     }
   ],
   "item": [
     {
-      "name": "Status",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": "{{base_url}}/status"
-      }
-    },
-    {
-      "name": "Capabilities",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": "{{base_url}}/capabilities"
-      }
-    },
-    {
       "name": "Registry search",
       "request": {
         "method": "GET",
-        "header": [],
-        "url": "{{base_url}}/registry/search?q=Augmentin&locale=en&limit=10"
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/registry/search?limit=10&locale=en&q=Augmentin",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "registry",
+            "search"
+          ],
+          "query": [
+            {
+              "key": "limit",
+              "value": "10"
+            },
+            {
+              "key": "locale",
+              "value": "en"
+            },
+            {
+              "key": "q",
+              "value": "Augmentin"
+            }
+          ]
+        },
+        "description": "enterprise_registry_search -- bilingual registry search (drug_lookups quota class)."
       }
     },
     {
-      "name": "Safety check",
-      "event": [
-        {
-          "listen": "prerequest",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.request.headers.upsert({key:'Idempotency-Key', value:pm.variables.get('idempotency_key')});"
-            ]
+      "name": "Registry autocomplete",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
           }
-        }
-      ],
+        ],
+        "url": {
+          "raw": "{{base_url}}/registry/suggest?limit=5&locale=en&q=amox",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "registry",
+            "suggest"
+          ],
+          "query": [
+            {
+              "key": "limit",
+              "value": "5"
+            },
+            {
+              "key": "locale",
+              "value": "en"
+            },
+            {
+              "key": "q",
+              "value": "amox"
+            }
+          ]
+        },
+        "description": "enterprise_registry_autocomplete -- bounded suggestions (autocomplete quota class)."
+      }
+    },
+    {
+      "name": "Registry resolve",
       "request": {
         "method": "POST",
         "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
           {
             "key": "Content-Type",
             "value": "application/json"
           }
         ],
+        "url": {
+          "raw": "{{base_url}}/registry/resolve",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "registry",
+            "resolve"
+          ]
+        },
+        "description": "enterprise_registry_resolve -- free-text medication resolution.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"locale\": \"en\",\n  \"medications\": [\n    {\n      \"input_text\": \"amoxicillin 500mg\"\n    }\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "Safety capabilities",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/safety/capabilities",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "safety",
+            "capabilities"
+          ]
+        },
+        "description": "enterprise_safety_capabilities -- release and per-domain readiness; a metadata read that draws no quota."
+      }
+    },
+    {
+      "name": "Safety check",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotency_key}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/safety/checks",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "safety",
+            "checks"
+          ]
+        },
+        "description": "enterprise_safety_check -- requires Idempotency-Key (safety_boards quota class).",
         "body": {
           "mode": "raw",
           "raw": "{\n  \"locale\": \"en\",\n  \"medications\": [\n    {\n      \"input_text\": \"Augmentin 1g\"\n    }\n  ],\n  \"requested_domains\": [\n    \"ddi\",\n    \"food_interactions\"\n  ]\n}"
-        },
-        "url": "{{base_url}}/safety/checks"
+        }
       }
     }
   ]

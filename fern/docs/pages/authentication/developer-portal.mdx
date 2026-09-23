@@ -4,17 +4,24 @@ subtitle: Self-service signup for the existing free plan
 ---
 
 Enterprise access for the existing self-service **`enterprise_free`** plan
-is self-service: sign in with a verified identity through the Partner
-portal, then complete signup. No manual approval step is required for the
-free plan.
+is self-service: open the Partner portal signup at
+[saferx.online/partner-portal/self-serve/signup](https://saferx.online/partner-portal/self-serve/signup),
+sign in with a verified identity, then complete signup. No manual approval
+step is required for the free plan.
 
 Your organization is provisioned on `enterprise_free` and issued an API key
 immediately on signup. **The key is shown exactly once at issuance** — store
 it securely right away; it cannot be retrieved again later, only rotated.
 Signup is limited to one free-tier organization per verified identity.
 
+`enterprise_free` grants every documented surface: registry lookup, safety
+checks, eRx safety, prescription OCR, and the hosted MCP server, within the
+allowances in [Limits and retries](/authentication/rate-limits).
+
 Larger plans (Starter, Growth, Scale, Custom) are admin-assigned rather than
-self-service today — contact SafeRx to discuss those.
+self-service today — contact SafeRx to discuss those. Key rotation and
+revocation are currently handled by SafeRx on request; the Partner portal
+key console is not yet self-service.
 
 Use the exact base URL and operation IDs in this documentation once your key
 is issued. See [Authentication overview](/authentication/overview) for exact

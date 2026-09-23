@@ -27,9 +27,11 @@ the `mcp_standard` entitlement enabled on the key. OAuth/OIDC is the preferred
 long-term credential mode for hosted MCP clients; API-key compatibility is
 supported today.
 
-A key without `mcp_standard` can authenticate to the gateway but every tool
-call is denied with a policy error — `tools/list` returns only the tools the
-caller's entitlements allow, which may be an empty list.
+The whole endpoint is gated on that entitlement at the gateway: a key without
+`mcp_standard` is denied with `403 API_KEY_NOT_ENTITLED` for every JSON-RPC
+method, including `initialize` and `tools/list`, before the request reaches
+the MCP server. The self-service `enterprise_free` plan includes
+`mcp_standard`.
 
 ## The three tools
 

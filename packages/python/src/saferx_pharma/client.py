@@ -171,30 +171,34 @@ class SafeRxClient:
         canonical_q = canonical_query(query)
         target = f"{self.base_url}{path}{('?' + canonical_q) if canonical_q else ''}"
         request_id = secrets.token_hex(16)
-        timestamp = datetime.now(UTC).isoformat(timespec="seconds")
-        nonce = secrets.token_urlsafe(24)
         signing_path = urlsplit(self.base_url).path.rstrip("/") + path
-        headers = {
-            "Accept": "application/json",
-            "X-SafeRx-API-Key": self.api_key,
-            "X-SafeRx-Timestamp": timestamp,
-            "X-SafeRx-Nonce": nonce,
-            "X-SafeRx-Signature": sign_request(self.api_key, operation.method, signing_path, canonical_q, body_bytes, timestamp, nonce),
-            "X-Request-ID": request_id,
-            "X-SafeRx-Client-Kind": CLIENT_KIND,
-            "X-SafeRx-Client-Name": self.client_name,
-            "X-SafeRx-Client-Version": SDK_VERSION,
-            "X-SafeRx-SDK-Language": SDK_LANGUAGE,
-            "X-SafeRx-SDK-Version": SDK_VERSION,
-        }
-        if content_type is not None:
-            headers["Content-Type"] = content_type
         if operation.idempotency_required and not idempotency_key:
             raise ValueError(f"{operation_id} requires idempotency_key")
-        if idempotency_key:
-            headers["Idempotency-Key"] = idempotency_key
-        request = Request(target, data=body_bytes or None, headers=headers, method=operation.method)
         for attempt in range(MAX_ATTEMPTS):
+            # Every attempt is signed afresh: the API rejects a reused nonce as a replay,
+            # so re-sending the first attempt's headers turns a transient 429/5xx into a
+            # hard 401 API_KEY_NONCE_REJECTED. The same request_id and Idempotency-Key are
+            # kept so the server can correlate and de-duplicate the retry.
+            timestamp = datetime.now(UTC).isoformat(timespec="seconds")
+            nonce = secrets.token_urlsafe(24)
+            headers = {
+                "Accept": "application/json",
+                "X-SafeRx-API-Key": self.api_key,
+                "X-SafeRx-Timestamp": timestamp,
+                "X-SafeRx-Nonce": nonce,
+                "X-SafeRx-Signature": sign_request(self.api_key, operation.method, signing_path, canonical_q, body_bytes, timestamp, nonce),
+                "X-Request-ID": request_id,
+                "X-SafeRx-Client-Kind": CLIENT_KIND,
+                "X-SafeRx-Client-Name": self.client_name,
+                "X-SafeRx-Client-Version": SDK_VERSION,
+                "X-SafeRx-SDK-Language": SDK_LANGUAGE,
+                "X-SafeRx-SDK-Version": SDK_VERSION,
+            }
+            if content_type is not None:
+                headers["Content-Type"] = content_type
+            if idempotency_key:
+                headers["Idempotency-Key"] = idempotency_key
+            request = Request(target, data=body_bytes or None, headers=headers, method=operation.method)
             try:
                 with urlopen(request, timeout=self.timeout) as response:
                     raw = response.read()

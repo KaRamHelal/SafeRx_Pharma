@@ -817,7 +817,19 @@ components:
             contacting support about a specific failure.
           type: string
         code:
-          description: Stable machine-readable error code. Safe to switch on.
+          description: |-
+            Stable machine-readable error code. Safe to switch on. Signed-request
+            failures use these codes:
+
+            - `API_KEY_REQUIRED` (401): no `X-SafeRx-API-Key` header.
+            - `API_KEY_SIGNATURE_REQUIRED` (401): timestamp, nonce, or signature header missing.
+            - `API_KEY_INVALID` (401): the key is not recognized.
+            - `API_KEY_SIGNATURE_INVALID` (401): the signature does not match the canonical request.
+            - `API_KEY_TIMESTAMP_INVALID` (401): timestamp unparseable, offset-less, or outside the clock-skew window.
+            - `API_KEY_NONCE_REJECTED` (401): nonce reused or malformed -- sign every attempt, including retries, with a fresh nonce.
+            - `API_KEY_NOT_ENTITLED` (403): the key's plan does not include this operation.
+            - `API_KEY_EXPIRED` (403): the key has passed its expiry.
+            - `API_KEY_DENIED` (403): the key or its organization is suspended, revoked, or otherwise not authorized.
           type: string
         retry_after_seconds:
           description: Seconds to wait before retrying, when applicable (e.g.
@@ -1040,6 +1052,17 @@ components:
               oneOf:
               - $ref: '#/components/schemas/LocalizedString'
               - type: 'null'
+            mechanism:
+              description: English mechanism-of-action summary, when available.
+              type:
+              - string
+              - 'null'
+            summary:
+              description: Pipe-delimited pharmacological class summary (for
+                example `Penicillins|Monocomponent`), when available.
+              type:
+              - string
+              - 'null'
         prose_details:
           description: Additional free-form educational detail about this
             product, when available.
@@ -1061,6 +1084,12 @@ components:
               oneOf:
               - $ref: '#/components/schemas/LocalizedString'
               - type: 'null'
+            directions_en:
+              description: English directions-for-use text as carried by the
+                registry source, when available. Not yet localized.
+              type:
+              - string
+              - 'null'
         warnings:
           description: Structured warning reference detail, when available.
           type: object
@@ -1070,6 +1099,12 @@ components:
               description: Whether this product's warnings require professional
                 review before relying on them.
               type: boolean
+            warnings_en:
+              description: English warnings text as carried by the registry
+                source, when available. Not yet localized.
+              type:
+              - string
+              - 'null'
         domain_availability:
           description: Per-safety-domain availability for this product, keyed by
             domain id.
@@ -1881,13 +1916,15 @@ components:
       - ar
       properties:
         en:
-          description: English text.
+          description: English text. An empty string means no English text
+            exists for this field in the registry (for example the route of a
+            product whose source record only carries Arabic); render the other
+            language or omit the field rather than treating it as an error.
           type: string
-          minLength: 1
         ar:
-          description: Arabic text.
+          description: Arabic text. An empty string means no Arabic text exists
+            for this field in the registry; see `en`.
           type: string
-          minLength: 1
         transliteration:
           description: Latin transliteration of the Arabic text, when available.
           type:
@@ -1953,6 +1990,12 @@ components:
         claim_catalog_version:
           description: Claim catalog version applied to this response, when
             applicable.
+          type:
+          - string
+          - 'null'
+        arabic_content_snapshot_id:
+          description: Arabic content snapshot used for the Arabic text in this
+            response, when the response carries registry content.
           type:
           - string
           - 'null'

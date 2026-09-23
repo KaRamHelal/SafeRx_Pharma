@@ -11,57 +11,87 @@ Releases tracking. For the complete published version history, see
 and [NuGet (SafeRx)](https://www.nuget.org/packages/SafeRx#versions-body-tab).
 Entries below are not a backfilled reconstruction of that history.
 
-## [2.0.3] - 2026-08-15
+## [2.0.3] - 2026-09-23
 
-No SDK code changed. Documentation/contract-only release, published because
-`scripts/release_preflight.py` now prohibits overwriting an already-published
-`release_version`'s content -- see `### Changed` below.
+Outside-developer blackbox pass (published 2.0.2 packages, public repository
+and docs.saferx.online only, real signed calls against production) found the
+defects below. Backend corrections shipped in SafeRx production the same day;
+this release carries the client and contract side.
 
 ### Fixed
-- `enterprise_registry_search`, `enterprise_registry_autocomplete`, and
-  `enterprise_registry_product_detail` were live-confirmed to return
-  `correction_anchors` (internal correction-workflow routing/policy
-  metadata) and three internal Arabic-normalization keys (`eg_ar`,
-  `ar_normalized`, `source_locale`) on every `LocalizedString`-shaped field
-  — none of it part of this contract, all of it now stripped server-side
-  before an Enterprise API response leaves the building.
-  `enterprise_registry_product_detail` also dropped 14 fields
-  (`name_strength`, `pharma_uses`, `drug_type`, `population`, `form`,
-  `route_type`, `specialty`, `price`, `in_stock`, `icd10_code`/`icd10_text`,
-  `icd11_code`/`icd11_text`, `indications`) that were never part of this
-  contract and are not stripped as a mixed bag of clinical- and
-  commercial-looking data pending a deliberate decision on what (if any) of
-  it belongs in a future public release.
+- **Python and TypeScript clients reused the first attempt's nonce, timestamp,
+  and signature on every retry.** The API rejects a reused nonce as a replay,
+  so any transient `429`/`502`/`503`/`504` followed by the client's own retry
+  ended in a hard denial instead of the retried result. Both clients now sign
+  every attempt afresh (same `X-Request-ID` and `Idempotency-Key`, new nonce).
+  The C# client already did this. Regression-tested behaviorally.
+- **The Postman collection could never sign a request**: its pre-request
+  script declared `query` twice (a syntax error, so it never ran) and signed
+  an undefined `path`. It also targeted `/status` and `/capabilities`, two
+  deferred operations no key can reach. Rewritten to a working
+  `saferx-hmac-sha256-v1` implementation covering registry search,
+  autocomplete, resolve, safety capabilities, and a safety check.
+- `LocalizedString.en`/`.ar` no longer require a non-empty string: real
+  registry records carry an empty string where no text exists in that
+  language (for example `route.ar` on many products), so a strict validator
+  rejected every live search, autocomplete, and product-detail response.
+- `SourceProvenance` documents `arabic_content_snapshot_id`, present on every
+  registry response. `model_release_id`, `resolver_version`, and
+  `search_artifact_id` (pipeline identity the schema description already
+  excluded) are now stripped server-side instead of leaking.
+- `RegistryProductDetail`: documented `pharmacology.mechanism`,
+  `pharmacology.summary`, `prose_details.directions_en`, and
+  `warnings.warnings_en`, all returned live and previously undeclared; the
+  internal `warnings.safety_check_actions` and the resolve echo's
+  `query.source` are stripped server-side.
+- `ProblemDetails.code` now documents the signed-request denial codes. Until
+  this release every authentication or authorization failure was a single
+  `403 API_KEY_DENIED`, so a wrong signature, a replayed nonce, and a missing
+  entitlement were indistinguishable; the API now returns `401` with
+  `API_KEY_INVALID` / `API_KEY_SIGNATURE_INVALID` / `API_KEY_TIMESTAMP_INVALID`
+  / `API_KEY_NONCE_REJECTED`, and `403` with `API_KEY_NOT_ENTITLED` /
+  `API_KEY_EXPIRED` / `API_KEY_DENIED`. The authentication guide carries the
+  table.
+- MCP guide: a key without `mcp_standard` is denied at the gateway for every
+  JSON-RPC method (there is no filtered `tools/list`), and the hosted MCP
+  endpoint no longer leaks `policy_id` in its denials.
+- Developer access guide: links the actual self-service signup page and states
+  that `enterprise_free` grants every documented surface (registry, safety,
+  eRx, OCR, hosted MCP). Self-serve and admin-issued keys had been issued
+  with registry-only route access because the plan catalog named entitlement
+  bundles that did not exist; keys now derive their access from the
+  organization's plan at validation time.
+- Key rotation and revocation are described as handled by SafeRx on request;
+  the Partner portal key console is not yet self-service, and the previous
+  wording told developers to use it.
 - `enterprise_capabilities`, `enterprise_status`, `enterprise_safety_check_read`,
   `enterprise_safety_check_batch`, `enterprise_allergy_resolve`,
   `enterprise_allergy_families`, and `enterprise_allergy_substances` were
-  documented as returning `501` once reached. Live-confirmed this was never
-  true: no backend implements any of them and no API key on any plan is
-  entitled to call them, so every caller gets `403` (policy-denied) instead
-  -- the `501` code path was unreachable. Corrected the documented response
-  for all seven.
+  documented as returning `501` once reached. No backend implements them and
+  no plan grants them, so every caller gets `403` (now `API_KEY_NOT_ENTITLED`).
+  Corrected the documented response for all seven.
+- Registry search/autocomplete/product-detail responses had carried
+  `correction_anchors` and three internal Arabic-normalization keys on every
+  `LocalizedString`; product detail also carried 14 undeclared fields. All
+  stripped server-side (deployed 2026-09-14; confirmed absent in this pass).
 
 ### Added
-- `RegistryProductSummaryList` and `RegistrySuggestionList` items were
-  missing several fields every real response actually returns
-  (`manufacturer`, `product_tier`, `name_strength`, `match_reason`,
-  `score`, plus `generic`/`strength`/`supplier`/`pharma_uses`/structured
-  `match` on suggestions) — documented, not previously part of the
-  contract's `additionalProperties: false` allowlist.
-- `MedicationResolution.candidates` used an invented `{sfrx_id, label,
-  score}` shape no real response ever returned; rebuilt to match the real
-  contract (`candidate_id`, `confidence`, `display_name`,
-  `normalized_name`, `dosage_form`, `route`, `manufacturer`, `strength`,
-  `ingredient_names`, `match_reasons`, `equivalent_candidates`,
-  `registry_concept_id`, `review`, `source_provenance`).
+- `RegistryProductSummaryList` and `RegistrySuggestionList` items document
+  `manufacturer`, `product_tier`, `name_strength`, `match_reason`, `score`,
+  and (for suggestions) `generic`/`strength`/`supplier`/`pharma_uses`/
+  structured `match`.
+- `MedicationResolution.candidates` rebuilt to the real shape
+  (`candidate_id`, `confidence`, `display_name`, `normalized_name`,
+  `dosage_form`, `route`, `manufacturer`, `strength`, `ingredient_names`,
+  `match_reasons`, `equivalent_candidates`, `registry_concept_id`, `review`,
+  `source_provenance`).
 
 ### Changed
-- `scripts/release_preflight.py` now fails if `release/current.yaml`'s
+- `scripts/release_preflight.py` fails if `release/current.yaml`'s
   `release_version` matches an already-tagged (`vX.Y.Z`) release whose
   `openapi/enterprise-v1.yaml`, `openapi/components.yaml`, or
-  `release/current.yaml` content differs from what's checked in now --
-  regenerating or correcting the contract always requires a new version;
-  silently overwriting a published version's content is no longer possible.
+  `release/current.yaml` content differs from what is checked in: a corrected
+  contract always ships under a new version.
 
 ## [2.0.2] - 2026-08-15
 

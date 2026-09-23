@@ -155,6 +155,59 @@ def test_sdk_clients_honor_retry_after_on_429() -> None:
     assert "429" in cs_source and "RetryAfter" in cs_source
 
 
+def test_sdk_clients_sign_every_retry_attempt() -> None:
+    """A retried attempt must carry a fresh timestamp, nonce, and signature.
+
+    The API rejects a reused nonce as a replay, so re-sending the first attempt's
+    headers turns a transient 429/5xx into a hard 401. Live-confirmed 2026-09-23 with
+    the published 2.0.2 Python client: a 502 followed by the SDK's own retry produced
+    403 nonce_replayed for a plain validation error.
+    """
+    import io
+    from urllib.error import HTTPError
+
+    import saferx_pharma.client as client_module
+
+    nonces: list[str] = []
+    calls = {"count": 0}
+
+    class _Response:
+        def __init__(self, body: bytes) -> None:
+            self._body = body
+
+        def read(self) -> bytes:
+            return self._body
+
+        def __enter__(self) -> "_Response":
+            return self
+
+        def __exit__(self, *_: object) -> None:
+            return None
+
+    def fake_urlopen(request, timeout=None):  # noqa: ANN001
+        nonces.append(request.get_header("X-saferx-nonce"))
+        calls["count"] += 1
+        if calls["count"] == 1:
+            raise HTTPError(request.full_url, 503, "unavailable", {"Retry-After": "0"}, io.BytesIO(b'{"status":503}'))
+        return _Response(b'{"ok":true}')
+
+    original_urlopen, original_sleep = client_module.urlopen, client_module.time.sleep
+    client_module.urlopen, client_module.time.sleep = fake_urlopen, lambda _seconds: None
+    try:
+        client = client_module.SafeRxClient(base_url="https://saferx.online/api/enterprise/v1", api_key="k")
+        assert client.request("enterprise_registry_search", query={"q": "amox", "locale": "en"}) == {"ok": True}
+    finally:
+        client_module.urlopen, client_module.time.sleep = original_urlopen, original_sleep
+    assert calls["count"] == 2 and len(set(nonces)) == 2 and all(nonces)
+
+    ts_source = (ROOT / "packages/typescript/src/client.ts").read_text()
+    loop_start = ts_source.index("for (let attempt = 0;")
+    assert "crypto.randomUUID(); const nonce" not in ts_source[:loop_start], "TypeScript signs before the retry loop"
+    assert "const nonce = crypto.randomUUID()" in ts_source[loop_start:], "TypeScript must mint the nonce inside the retry loop"
+    cs_source = (ROOT / "packages/csharp/SafeRxClient.cs").read_text()
+    assert cs_source.index("for (var attempt = 0;") < cs_source.index("var nonce = "), "C# must mint the nonce inside the retry loop"
+
+
 def test_sdk_clients_support_multipart_upload_signing() -> None:
     # enterprise_ocr_prescription_create is multipart/form-data-only per
     # PrescriptionUploadRequest; the gateway signs over the exact raw request bytes

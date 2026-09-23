@@ -179,7 +179,19 @@ def _iter_tracked_files() -> list[Path]:
     return files
 
 
+def _materialized(path: Path) -> Path:
+    """Follow a symlink that a symlink-less filesystem stored as its target text."""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        return path
+    if "\n" not in text.strip() and text.strip().startswith("../") and len(text) < 200:
+        return (path.parent / text.strip()).resolve()
+    return path
+
+
 def _load(path: Path) -> dict[str, Any]:
+    path = _materialized(path)
     value = yaml.safe_load(path.read_text(encoding="utf-8"))
     if not isinstance(value, dict):
         raise ValueError(f"{path.relative_to(ROOT)} must contain a mapping")
@@ -210,6 +222,7 @@ def _available_operation_ids(spec: dict[str, Any]) -> set[str]:
 
 
 def _sha256(path: Path) -> str:
+    path = _materialized(path)
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 

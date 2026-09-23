@@ -245,30 +245,34 @@ class SafeRxClient:
         canonical_q = canonical_query(query)
         target = f"{{self.base_url}}{{path}}{{('?' + canonical_q) if canonical_q else ''}}"
         request_id = secrets.token_hex(16)
-        timestamp = datetime.now(UTC).isoformat(timespec="seconds")
-        nonce = secrets.token_urlsafe(24)
         signing_path = urlsplit(self.base_url).path.rstrip("/") + path
-        headers = {{
-            "Accept": "application/json",
-            "{key_header}": self.api_key,
-            "{timestamp_header}": timestamp,
-            "{nonce_header}": nonce,
-            "{signature_header}": sign_request(self.api_key, operation.method, signing_path, canonical_q, body_bytes, timestamp, nonce),
-            "X-Request-ID": request_id,
-            "X-SafeRx-Client-Kind": CLIENT_KIND,
-            "X-SafeRx-Client-Name": self.client_name,
-            "X-SafeRx-Client-Version": SDK_VERSION,
-            "X-SafeRx-SDK-Language": SDK_LANGUAGE,
-            "X-SafeRx-SDK-Version": SDK_VERSION,
-        }}
-        if content_type is not None:
-            headers["Content-Type"] = content_type
         if operation.idempotency_required and not idempotency_key:
             raise ValueError(f"{{operation_id}} requires idempotency_key")
-        if idempotency_key:
-            headers["Idempotency-Key"] = idempotency_key
-        request = Request(target, data=body_bytes or None, headers=headers, method=operation.method)
         for attempt in range(MAX_ATTEMPTS):
+            # Every attempt is signed afresh: the API rejects a reused nonce as a replay,
+            # so re-sending the first attempt's headers turns a transient 429/5xx into a
+            # hard 401 API_KEY_NONCE_REJECTED. The same request_id and Idempotency-Key are
+            # kept so the server can correlate and de-duplicate the retry.
+            timestamp = datetime.now(UTC).isoformat(timespec="seconds")
+            nonce = secrets.token_urlsafe(24)
+            headers = {{
+                "Accept": "application/json",
+                "{key_header}": self.api_key,
+                "{timestamp_header}": timestamp,
+                "{nonce_header}": nonce,
+                "{signature_header}": sign_request(self.api_key, operation.method, signing_path, canonical_q, body_bytes, timestamp, nonce),
+                "X-Request-ID": request_id,
+                "X-SafeRx-Client-Kind": CLIENT_KIND,
+                "X-SafeRx-Client-Name": self.client_name,
+                "X-SafeRx-Client-Version": SDK_VERSION,
+                "X-SafeRx-SDK-Language": SDK_LANGUAGE,
+                "X-SafeRx-SDK-Version": SDK_VERSION,
+            }}
+            if content_type is not None:
+                headers["Content-Type"] = content_type
+            if idempotency_key:
+                headers["Idempotency-Key"] = idempotency_key
+            request = Request(target, data=body_bytes or None, headers=headers, method=operation.method)
             try:
                 with urlopen(request, timeout=self.timeout) as response:
                     raw = response.read()
@@ -398,13 +402,17 @@ export class SafeRxClient {{
       bodyBytes = bytes(""); sendBody = undefined;
     }}
     const query = canonicalQuery(options.query);
-    const timestamp = new Date().toISOString(); const nonce = crypto.randomUUID(); const requestId = crypto.randomUUID();
+    const requestId = crypto.randomUUID();
     const signingPath = new URL(this.baseUrl).pathname.replace(/\\/+$/, "") + path;
-    const signature = await hmac(this.apiKey, canonicalRequest(operation.method, signingPath, query, await sha256(bodyBytes), timestamp, nonce));
-    const headers: Record<string, string> = {{ Accept: "application/json", "{key_header}": this.apiKey, "{timestamp_header}": timestamp, "{nonce_header}": nonce, "{signature_header}": signature, "X-Request-ID": requestId, "X-SafeRx-Client-Kind": CLIENT_KIND, "X-SafeRx-Client-Name": this.clientName, "X-SafeRx-Client-Version": SDK_VERSION, "X-SafeRx-SDK-Language": SDK_LANGUAGE, "X-SafeRx-SDK-Version": SDK_VERSION }};
-    if (contentType !== undefined) headers["Content-Type"] = contentType; if (options.idempotencyKey) headers["Idempotency-Key"] = options.idempotencyKey;
+    const bodyHash = await sha256(bodyBytes);
     const target = `${{this.baseUrl.replace(/\\/+$/, "")}}${{path}}${{query ? `?${{query}}` : ""}}`;
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {{
+      // Every attempt is signed afresh: a reused nonce is rejected as a replay (401
+      // API_KEY_NONCE_REJECTED), so a retry must carry a new timestamp, nonce and signature.
+      const timestamp = new Date().toISOString(); const nonce = crypto.randomUUID();
+      const signature = await hmac(this.apiKey, canonicalRequest(operation.method, signingPath, query, bodyHash, timestamp, nonce));
+      const headers: Record<string, string> = {{ Accept: "application/json", "{key_header}": this.apiKey, "{timestamp_header}": timestamp, "{nonce_header}": nonce, "{signature_header}": signature, "X-Request-ID": requestId, "X-SafeRx-Client-Kind": CLIENT_KIND, "X-SafeRx-Client-Name": this.clientName, "X-SafeRx-Client-Version": SDK_VERSION, "X-SafeRx-SDK-Language": SDK_LANGUAGE, "X-SafeRx-SDK-Version": SDK_VERSION }};
+      if (contentType !== undefined) headers["Content-Type"] = contentType; if (options.idempotencyKey) headers["Idempotency-Key"] = options.idempotencyKey;
       try {{ const response = await this.fetchImpl(target, {{ method: operation.method, headers, body: sendBody as BodyInit | undefined, signal: options.signal }}); const raw = await response.text(); const parsed = raw ? JSON.parse(raw) : undefined;
         if (response.ok) return parsed; if ([429, 502, 503, 504].includes(response.status) && attempt + 1 < MAX_ATTEMPTS) {{ await new Promise((resolve) => setTimeout(resolve, retryDelaySeconds(response.headers.get("Retry-After"), attempt) * 1000)); continue; }}
         throw new SafeRxProblemDetailsError(response.status, (parsed ?? {{ status: response.status, title: "REQUEST_FAILED" }}) as JsonObject, requestId);

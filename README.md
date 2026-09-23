@@ -86,7 +86,7 @@ packages/typescript/             # signing-aware TypeScript client
 packages/csharp/                 # signing-aware C# client
 packages/mcp-server/             # stdio MCP adapter (internal-only, being superseded)
 fern/                            # Fern API reference and documentation source
-postman/                         # signed-request examples
+postman/                         # signed-request collection (working pre-request signer)
 release/current.yaml             # current release manifest
 scripts/release_preflight.py     # release and mirror validation
 scripts/generate_enterprise_sdks.py  # SDK/client generation

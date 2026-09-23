@@ -105,4 +105,17 @@ The API denies unsigned requests, invalid signatures, stale timestamps,
 replayed nonces, unsupported authentication modes, and credentials that lack
 the required Enterprise entitlement for the requested operation. Denials use
 the documented [problem response shape](/api-reference) with a stable `code`
-you can switch on.
+you can switch on. Authentication failures are `401`; a verified key that may
+not perform the operation is `403`:
+
+| Status | `code` | Meaning |
+|---|---|---|
+| 401 | `API_KEY_REQUIRED` | No `X-SafeRx-API-Key` header. |
+| 401 | `API_KEY_SIGNATURE_REQUIRED` | Timestamp, nonce, or signature header missing. |
+| 401 | `API_KEY_INVALID` | The key is not recognized. |
+| 401 | `API_KEY_SIGNATURE_INVALID` | The signature does not match the canonical request — check the method, escaped path, sorted query, body digest, timestamp, and nonce you signed. |
+| 401 | `API_KEY_TIMESTAMP_INVALID` | Timestamp unparseable, offset-less, or outside the 300-second window. |
+| 401 | `API_KEY_NONCE_REJECTED` | Nonce reused or malformed. Sign every attempt, including retries, with a fresh nonce. |
+| 403 | `API_KEY_NOT_ENTITLED` | The key's plan does not include this operation. |
+| 403 | `API_KEY_EXPIRED` | The key has passed its expiry. |
+| 403 | `API_KEY_DENIED` | The key or its organization is suspended, revoked, or otherwise not authorized. |

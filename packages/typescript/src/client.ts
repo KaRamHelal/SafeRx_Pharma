@@ -100,13 +100,17 @@ export class SafeRxClient {
       bodyBytes = bytes(""); sendBody = undefined;
     }
     const query = canonicalQuery(options.query);
-    const timestamp = new Date().toISOString(); const nonce = crypto.randomUUID(); const requestId = crypto.randomUUID();
+    const requestId = crypto.randomUUID();
     const signingPath = new URL(this.baseUrl).pathname.replace(/\/+$/, "") + path;
-    const signature = await hmac(this.apiKey, canonicalRequest(operation.method, signingPath, query, await sha256(bodyBytes), timestamp, nonce));
-    const headers: Record<string, string> = { Accept: "application/json", "X-SafeRx-API-Key": this.apiKey, "X-SafeRx-Timestamp": timestamp, "X-SafeRx-Nonce": nonce, "X-SafeRx-Signature": signature, "X-Request-ID": requestId, "X-SafeRx-Client-Kind": CLIENT_KIND, "X-SafeRx-Client-Name": this.clientName, "X-SafeRx-Client-Version": SDK_VERSION, "X-SafeRx-SDK-Language": SDK_LANGUAGE, "X-SafeRx-SDK-Version": SDK_VERSION };
-    if (contentType !== undefined) headers["Content-Type"] = contentType; if (options.idempotencyKey) headers["Idempotency-Key"] = options.idempotencyKey;
+    const bodyHash = await sha256(bodyBytes);
     const target = `${this.baseUrl.replace(/\/+$/, "")}${path}${query ? `?${query}` : ""}`;
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      // Every attempt is signed afresh: a reused nonce is rejected as a replay (401
+      // API_KEY_NONCE_REJECTED), so a retry must carry a new timestamp, nonce and signature.
+      const timestamp = new Date().toISOString(); const nonce = crypto.randomUUID();
+      const signature = await hmac(this.apiKey, canonicalRequest(operation.method, signingPath, query, bodyHash, timestamp, nonce));
+      const headers: Record<string, string> = { Accept: "application/json", "X-SafeRx-API-Key": this.apiKey, "X-SafeRx-Timestamp": timestamp, "X-SafeRx-Nonce": nonce, "X-SafeRx-Signature": signature, "X-Request-ID": requestId, "X-SafeRx-Client-Kind": CLIENT_KIND, "X-SafeRx-Client-Name": this.clientName, "X-SafeRx-Client-Version": SDK_VERSION, "X-SafeRx-SDK-Language": SDK_LANGUAGE, "X-SafeRx-SDK-Version": SDK_VERSION };
+      if (contentType !== undefined) headers["Content-Type"] = contentType; if (options.idempotencyKey) headers["Idempotency-Key"] = options.idempotencyKey;
       try { const response = await this.fetchImpl(target, { method: operation.method, headers, body: sendBody as BodyInit | undefined, signal: options.signal }); const raw = await response.text(); const parsed = raw ? JSON.parse(raw) : undefined;
         if (response.ok) return parsed; if ([429, 502, 503, 504].includes(response.status) && attempt + 1 < MAX_ATTEMPTS) { await new Promise((resolve) => setTimeout(resolve, retryDelaySeconds(response.headers.get("Retry-After"), attempt) * 1000)); continue; }
         throw new SafeRxProblemDetailsError(response.status, (parsed ?? { status: response.status, title: "REQUEST_FAILED" }) as JsonObject, requestId);
