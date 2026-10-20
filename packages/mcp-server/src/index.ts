@@ -94,14 +94,18 @@ server.tool(
   "Run a bounded medication safety check and preserve review and limitation states.",
   {
     locale: z.enum(["ar-EG", "ar", "en", "mixed"]),
+    // input_text or sfrx_id (or both). dose_text, route and dosage_form only pick the
+    // registry product; the safety evaluation does not read them. A bare name is
+    // evaluated as its default systemic variant (review carries default_variant_selected).
     medications: z.array(z.object({
       client_medication_id: z.string().nullable().optional(),
-      input_text: z.string().min(1),
-      sfrx_id: z.string().nullable().optional(),
+      input_text: z.string().min(1).nullable().optional(),
+      sfrx_id: z.string().regex(/^SRX-[0-9]{3}-[0-9]{6}$/).nullable().optional(),
       dose_text: z.string().nullable().optional(),
       route: z.string().nullable().optional(),
-      frequency_text: z.string().nullable().optional(),
-    })).min(1).max(50),
+      dosage_form: z.string().nullable().optional(),
+      role: z.enum(["target_medication", "current_medication"]).optional(),
+    }).refine((m) => Boolean(m.input_text || m.sfrx_id), { message: "input_text or sfrx_id is required" })).min(1).max(50),
     requested_domains: z.array(z.enum(["pllr", "ddi", "clinical_dose", "food_interactions", "meal_timing", "allergy"])).min(1),
     idempotencyKey: z.string().min(8),
   },

@@ -84,53 +84,65 @@ components:
           - en
           - mixed
         medications:
-          description: Medications to evaluate. Use free-text input_text when you
-            only have a description; supply sfrx_id when you already have a
-            resolved registry identifier.
+          description: Medications to evaluate. Give free-text input_text, a
+            registry sfrx_id, or both; input_text may be omitted when sfrx_id is
+            given. A bare name that matches one medicine in several strengths or
+            forms is evaluated as its default systemic variant and the response
+            review carries default_variant_selected; add dose_text, route or
+            dosage_form, or pass sfrx_id, to pin the exact product.
           type: array
           minItems: 1
           maxItems: 50
           items:
             type: object
             additionalProperties: false
-            required:
-            - input_text
+            anyOf:
+            - required:
+              - input_text
+            - required:
+              - sfrx_id
             properties:
               client_medication_id:
                 description: Caller-supplied identifier echoed back for
-                  correlating this entry with its evaluation, not interpreted by
+                  correlating this entry with its evaluation (and with
+                  resolved_medications in the response), not interpreted by
                   the API.
                 type:
                 - string
                 - 'null'
               input_text:
                 description: Free-text medication description, e.g. as written on
-                  a prescription.
-                type: string
+                  a prescription. Strength, form and route written inline
+                  ("Warfarin 5 mg tablet") are parsed. Optional when sfrx_id is given.
+                type:
+                - string
+                - 'null'
                 minLength: 1
               sfrx_id:
                 description: Registry identifier, when already known from a prior
-                  resolve/search call. Takes precedence over input_text for
-                  matching when both are supplied.
+                  resolve/search call. Authoritative when supplied; an unknown
+                  id is reported as sfrx_id_unknown and is never replaced by a
+                  text match.
                 type:
                 - string
                 - 'null'
                 pattern: ^SRX-[0-9]{3}-[0-9]{6}$
               dose_text:
-                description: Free-text dose as written, used for dose-sensitive
-                  guidance where supported.
+                description: Strength as written ("5 mg", "1 g"). Used only to
+                  select the registry product; the safety evaluation does not
+                  read it.
                 type:
                 - string
                 - 'null'
               route:
-                description: Free-text administration route, when relevant to
-                  evaluation.
+                description: Administration route ("oral", "IV"). Used only to
+                  select the registry product.
                 type:
                 - string
                 - 'null'
-              frequency_text:
-                description: Free-text dosing frequency, when relevant to
-                  evaluation.
+              dosage_form:
+                description: Dosage form ("tablet", "syrup"). Used only to
+                  select the registry product.
                 type:
                 - string
                 - 'null'
@@ -733,15 +745,18 @@ components:
           - en
           - mixed
         medications:
-          description: Medications to resolve.
+          description: Medications to resolve. Give input_text, sfrx_id, or both.
           type: array
           minItems: 1
           maxItems: 50
           items:
             type: object
             additionalProperties: false
-            required:
-            - input_text
+            anyOf:
+            - required:
+              - input_text
+            - required:
+              - sfrx_id
             properties:
               client_medication_id:
                 description: Caller-supplied identifier echoed back for
@@ -752,24 +767,35 @@ components:
                 - 'null'
               input_text:
                 description: Free-text medication description to resolve.
-                type: string
+                  Strength, form and route written inline are parsed. Optional
+                  when sfrx_id is given.
+                type:
+                - string
+                - 'null'
                 minLength: 1
               sfrx_id:
-                description: Registry identifier, when already known -- narrows
-                  resolution rather than performing a fresh free-text match.
+                description: Registry identifier, when already known. Authoritative
+                  when supplied; the product is fetched directly and an unknown id
+                  is reported as sfrx_id_unknown rather than matched by text.
                 type:
                 - string
                 - 'null'
                 pattern: ^SRX-[0-9]{3}-[0-9]{6}$
               dose_text:
-                description: Free-text dose as written, used to disambiguate
-                  between candidate strengths/forms where supported.
+                description: Strength as written ("5 mg", "1 g"), used to pick the
+                  candidate strength (1 g and 1000 mg are equivalent).
                 type:
                 - string
                 - 'null'
               route:
-                description: Free-text administration route, when relevant to
-                  disambiguation.
+                description: Administration route ("oral", "IV"), used to pick the
+                  candidate route.
+                type:
+                - string
+                - 'null'
+              dosage_form:
+                description: Dosage form ("tablet", "syrup"), used to pick the
+                  candidate form.
                 type:
                 - string
                 - 'null'
@@ -1413,6 +1439,57 @@ components:
       - display_obligations
       - correction_anchors
       properties:
+        resolved_medications:
+          description: Which registry product each request medication was
+            evaluated as, in request order. resolution_status is resolved,
+            ambiguous or unresolved. review_reason_codes explains a resolved
+            item that still needs review (default_variant_selected when a bare
+            name was evaluated as its default systemic variant,
+            equivalent_product_selected when several listings share the same
+            strength and form) or why nothing resolved (ambiguous_candidates,
+            unmapped_medication, sfrx_id_unknown, query_rejected).
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - medication_ref
+            - role
+            - sfrx_id
+            - resolution_status
+            - review_reason_codes
+            properties:
+              medication_ref:
+                description: The request's client_medication_id, or
+                  request_medication_<index> when none was given.
+                type: string
+              role:
+                type: string
+                enum:
+                - target_medication
+                - current_medication
+              sfrx_id:
+                type:
+                - string
+                - 'null'
+              display_name:
+                oneOf:
+                - $ref: '#/components/schemas/LocalizedString'
+                - type: 'null'
+              strength:
+                type:
+                - string
+                - 'null'
+              resolution_status:
+                type: string
+                enum:
+                - resolved
+                - ambiguous
+                - unresolved
+              review_reason_codes:
+                type: array
+                items:
+                  type: string
         request_id:
           description: Echo of the request identifier for correlation.
           type: string

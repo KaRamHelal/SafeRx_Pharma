@@ -267,13 +267,40 @@ def build() -> dict[str, dict[str, Any]]:
         "request": {
             "body": {
                 "locale": "en",
-                "medications": [{"input_text": "amoxicillin 500mg", "role": "target_medication"}],
+                "medications": [
+                    {"client_medication_id": "rx-line-1", "input_text": "amoxicillin 500mg", "role": "target_medication"},
+                    {"client_medication_id": "current-1", "sfrx_id": "SRX-101-000042", "role": "current_medication"},
+                ],
                 "requested_domains": ["ddi", "allergy"],
                 "idempotency_key": "example-safety-check-0001",
             },
             "headers": {"Idempotency-Key": "example-safety-check-0001"},
         },
-        "response": safety_check_response,
+        "response": {
+            **safety_check_response,
+            # Which product each request medication was evaluated as (2.0.4). A bare
+            # name would carry default_variant_selected here and in review.reason_codes.
+            "resolved_medications": [
+                {
+                    "medication_ref": "rx-line-1",
+                    "role": "target_medication",
+                    "sfrx_id": "SRX-101-000043",
+                    "display_name": {"en": "Amoxicillin 500 mg Oral Capsule", "ar": "أموكسيسيلين 500 مجم كبسولة"},
+                    "strength": "500 mg",
+                    "resolution_status": "resolved",
+                    "review_reason_codes": [],
+                },
+                {
+                    "medication_ref": "current-1",
+                    "role": "current_medication",
+                    "sfrx_id": "SRX-101-000042",
+                    "display_name": {"en": "Example Product 500 mg Oral Tablet", "ar": "منتج تجريبي 500 مجم قرص"},
+                    "strength": "500 mg",
+                    "resolution_status": "resolved",
+                    "review_reason_codes": [],
+                },
+            ],
+        },
     }
 
     examples["enterprise_erx_safety_check"] = {

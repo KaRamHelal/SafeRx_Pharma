@@ -272,7 +272,28 @@ def test_medication_resolution_request_is_actually_constructible_by_a_client() -
         assert private_field not in schema["properties"]
     assert set(schema["required"]) == {"locale", "medications"}
     medication_item = schema["properties"]["medications"]["items"]
-    assert medication_item["required"] == ["input_text"]
+    # A medication may be given by text, by registry identity, or both (2.0.4).
+    assert medication_item["anyOf"] == [{"required": ["input_text"]}, {"required": ["sfrx_id"]}]
+    assert "required" not in medication_item
+    assert {"input_text", "sfrx_id", "dose_text", "route", "dosage_form"} <= set(medication_item["properties"])
+
+
+def test_safety_check_medication_entry_matches_the_real_backend_contract() -> None:
+    # 2.0.4: input_text optional with sfrx_id; dose_text/route/dosage_form are resolution-only
+    # inputs the backend accepts; frequency_text was advertised but the backend refused it.
+    components = yaml.safe_load((ROOT / "openapi/components.yaml").read_text())
+    schemas = components["components"]["schemas"]
+    medication_item = schemas["ClientSafetyCheckRequest"]["properties"]["medications"]["items"]
+    assert medication_item["anyOf"] == [{"required": ["input_text"]}, {"required": ["sfrx_id"]}]
+    assert "required" not in medication_item
+    assert set(medication_item["properties"]) == {
+        "client_medication_id", "input_text", "sfrx_id", "dose_text", "route", "dosage_form", "role",
+    }
+    assert "frequency_text" not in medication_item["properties"]
+    echo = schemas["SafetyCheckResponse"]["properties"]["resolved_medications"]["items"]
+    assert echo["additionalProperties"] is False
+    assert set(echo["required"]) == {"medication_ref", "role", "sfrx_id", "resolution_status", "review_reason_codes"}
+    assert set(echo["properties"]["resolution_status"]["enum"]) == {"resolved", "ambiguous", "unresolved"}
 
 
 def test_safety_capabilities_matches_the_real_backend_contract() -> None:

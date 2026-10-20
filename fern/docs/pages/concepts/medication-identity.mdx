@@ -1,45 +1,93 @@
 ---
 title: Medication identity
-subtitle: Free text, SFRX IDs, and resolution
+subtitle: Free text, SFRX IDs, qualifiers, and how a product is chosen
 ---
 
-Medications can be identified two ways across the API, and most operations
-accept both.
+Safety checks evaluate registry **products** (a specific strength and form).
+Every medication list across the API (`enterprise_registry_resolve`,
+`enterprise_safety_check`'s `medications[]`, the hosted MCP's
+`resolve_medications` / `check_medication_safety`) accepts the same entry
+shape, and the API turns each entry into one product before anything else runs.
 
 ## Free text
 
 Send whatever text you have — a prescription line, a patient-reported name,
-an OCR-extracted string — as `input_text`. This is the right choice whenever
-you don't already have a resolved registry identifier. Every medication list
-input across the API (`enterprise_registry_resolve`,
-`enterprise_safety_check`'s `medications[]`, the hosted MCP's
-`resolve_medications`/`check_medication_safety`) accepts `input_text`.
+an OCR-extracted string — as `input_text`. Strength, form and route written
+inline are parsed: `"Warfarin 5 mg tablet"`, `"warfarin 5mg"`, `"Augmentin 1g"`
+(1 g and 1000 mg are equivalent), `"Diclofenac IM"`, and Arabic units
+(`"وارفارين 5 مجم"`) all narrow the match.
+
+## Qualifiers as fields
+
+`dose_text`, `route` and `dosage_form` carry the same information as separate
+fields: `{"input_text": "Warfarin", "dose_text": "5 mg", "dosage_form": "tablet"}`.
+They are **resolution inputs only**: they choose the registry product and are
+not read by the safety evaluation. Fields the evaluation cannot use (for
+example `frequency_text`) are refused with `422 enterprise.safety.request_invalid`
+naming the field, rather than accepted and ignored.
 
 ## SFRX IDs
 
 Once a medication has been resolved, you get back an `sfrx_id`
-(format `SRX-NNN-NNNNNN`) — a stable registry identifier. Passing `sfrx_id`
-on a later call (alongside or instead of `input_text`) skips ambiguous
-free-text matching and resolves directly to that registry entry. On
-`enterprise_registry_resolve`, `sfrx_id` takes precedence over `input_text`
-when both are supplied.
+(format `SRX-NNN-NNNNNN`), a stable registry identifier. Passing `sfrx_id`
+on a later call, alongside or **instead of** `input_text`, is authoritative:
+the product is fetched directly, no text matching can replace it, and an
+unknown id is reported as `sfrx_id_unknown` on that entry (a safety check whose
+only target is unknown returns `422 enterprise.safety.target_resolution_required`).
 
 Use `enterprise_registry_product_detail` with a known `sfrx_id` to fetch the
 full product record directly, rather than re-resolving from text.
 
-## Resolution ambiguity
+## A bare name: the default systemic variant
+
+A name alone (`"Warfarin"`, `"Aspirin"`) usually matches one medicine in
+several strengths, forms, packs or manufacturers. Rather than refusing, the
+Enterprise API and the hosted MCP select a **default systemic variant** and run
+the check: an oral tablet or capsule first, then other systemic forms, then a
+product with a stated strength, then the registry's preferred listing, with a
+deterministic tie-break. The result always says so:
+
+- the entry's `review_reason_codes` (in `resolved_medications[]`) and the
+  response `review.reason_codes` contain `default_variant_selected`, or
+  `equivalent_product_selected` when the candidates were the same strength and
+  form in different listings;
+- `limitations[]` names the selected product and tells the caller to pass its
+  `sfrx_id`, or `dose_text` / `route` / `dosage_form`, to pin the product;
+- `review.required` is `true`.
+
+This is conservative for ingredient-level domains (interactions, allergy,
+pregnancy and lactation). For anything dose-sensitive, pin the product.
+
+When the text names **different medicines** (two single-ingredient generics
+match equally well), nothing is selected: `ambiguous_candidates` is reported
+and, on a safety check, the `422 target_resolution_required` detail lists the
+candidates with strength, form and route so the caller can choose.
+
+## What was evaluated: `resolved_medications[]`
+
+Every successful safety check returns `resolved_medications[]`, one entry per
+request medication in request order: `medication_ref` (your
+`client_medication_id`, or `request_medication_<index>`), `role`, the evaluated
+`sfrx_id`, `display_name`, `strength`, `resolution_status`
+(`resolved` / `ambiguous` / `unresolved`) and `review_reason_codes`. Show it to
+the user: it is the only way to know which product an interaction was
+computed against.
+
+An entry whose text the registry cannot search (one character, or longer than
+80 characters) is `unresolved` with `query_rejected`; the other medications are
+still evaluated. A check needs at least one `target_medication` to resolve.
+
+## Resolution ambiguity on `enterprise_registry_resolve`
 
 `enterprise_registry_resolve` returns `candidates[]` — ranked possible
-matches, each with a `score` (0–1, **not comparable across different
-queries**). `selected_candidate_id` is populated only when resolution is
-confident enough to auto-select one candidate; when it's `null`, your
+matches, each with a `confidence` (0–1, **not comparable across different
+queries**) — and the same selection rules: `selected_candidate_id` is set when
+a product was chosen (by identity, by a confident text match, or as a default
+variant, in which case `review.reason_codes` says so). When it is `null`, your
 integration should present the candidates for the caller to choose, rather
-than assuming the first one.
-
-An empty `candidates` array means no confident match was found — it does
-not mean "no such product exists in the registry." Consider prompting for
-more specific input (dose, form) before concluding the medication is truly
-unknown.
+than assuming the first one. An empty `candidates` array means no match was
+found — it does not mean the product does not exist; prompt for more specific
+input (dose, form) before concluding the medication is unknown.
 
 ## current vs. target medication roles
 
@@ -56,7 +104,8 @@ saved list of current medications; it only sees what's on this request.
 ## Review behavior
 
 Resolution results carry their own `review` state (`ReviewState`), separate
-from a safety check's review state. A resolution that's ambiguous or
-low-confidence may require review before you rely on the selected candidate
-— check `review.required` on the resolution result, not just on a
-downstream safety check.
+from a safety check's review state. A resolution that's ambiguous, that was
+selected as a default variant, or that is low-confidence requires review
+before you rely on the selected candidate — check `review.required` and
+`review.reason_codes` on the resolution result, not just on a downstream
+safety check.

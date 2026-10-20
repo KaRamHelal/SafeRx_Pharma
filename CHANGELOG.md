@@ -11,6 +11,39 @@ Releases tracking. For the complete published version history, see
 and [NuGet (SafeRx)](https://www.nuget.org/packages/SafeRx#versions-body-tab).
 Entries below are not a backfilled reconstruction of that history.
 
+## [2.0.4] - 2026-10-21
+
+A support ticket could not run a DDI check at all: plain names returned
+`422 target_resolution_required`, and `sfrx_id` values returned `503`. The
+backend now resolves the way customers write medicines; this release carries
+the contract and client side.
+
+### Added
+- **Medications may be given by `sfrx_id` alone.** `input_text` is optional
+  when `sfrx_id` is present on `enterprise_safety_check` and
+  `enterprise_registry_resolve` (and the hosted MCP tools). An explicit
+  `sfrx_id` is authoritative and an unknown one is reported as
+  `sfrx_id_unknown`, never replaced by a text match.
+- **`dose_text`, `route` and `dosage_form` on safety-check medications.** They
+  select the registry product (strength, route, form) and are not read by the
+  safety evaluation. Inline qualifiers in `input_text` ("Warfarin 5 mg tablet",
+  "Augmentin 1g", Arabic units) are parsed the same way.
+- **A bare name runs the check.** "Warfarin" or "Aspirin" is evaluated as its
+  default systemic variant with `review.required: true`,
+  `default_variant_selected` (or `equivalent_product_selected`) in the reason
+  codes, and a limitation naming the product and how to pin it.
+- **`resolved_medications[]`** on `SafetyCheckResponse`: which registry product
+  each request medication was evaluated as, with `resolution_status` and
+  `review_reason_codes` (table in the Safety results concept page).
+
+### Fixed
+- `frequency_text` was advertised on safety-check medications but the backend
+  refused it with `422`; it is removed from the contract and the MCP server
+  schema. The backend now names the refused field in `request_invalid`.
+- A one-character or over-long `input_text` next to other medications no longer
+  fails the whole request (it was a `503 dependency_unavailable`); that entry is
+  `unresolved` with `query_rejected` and the rest are evaluated.
+
 ## [2.0.3] - 2026-09-23
 
 Outside-developer blackbox pass (published 2.0.2 packages, public repository

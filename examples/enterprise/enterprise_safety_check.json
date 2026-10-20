@@ -5,8 +5,14 @@
       "locale": "en",
       "medications": [
         {
+          "client_medication_id": "rx-line-1",
           "input_text": "amoxicillin 500mg",
           "role": "target_medication"
+        },
+        {
+          "client_medication_id": "current-1",
+          "role": "current_medication",
+          "sfrx_id": "SRX-101-000042"
         }
       ],
       "requested_domains": [
@@ -66,6 +72,32 @@
     "limitations": [],
     "locale": "en",
     "request_id": "req_example_0001",
+    "resolved_medications": [
+      {
+        "display_name": {
+          "ar": "أموكسيسيلين 500 مجم كبسولة",
+          "en": "Amoxicillin 500 mg Oral Capsule"
+        },
+        "medication_ref": "rx-line-1",
+        "resolution_status": "resolved",
+        "review_reason_codes": [],
+        "role": "target_medication",
+        "sfrx_id": "SRX-101-000043",
+        "strength": "500 mg"
+      },
+      {
+        "display_name": {
+          "ar": "منتج تجريبي 500 مجم قرص",
+          "en": "Example Product 500 mg Oral Tablet"
+        },
+        "medication_ref": "current-1",
+        "resolution_status": "resolved",
+        "review_reason_codes": [],
+        "role": "current_medication",
+        "sfrx_id": "SRX-101-000042",
+        "strength": "500 mg"
+      }
+    ],
     "result_id": "res_example_0002",
     "review": {
       "minimum_reviewer_role": "none",

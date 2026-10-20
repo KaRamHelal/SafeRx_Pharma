@@ -96,4 +96,24 @@ result.
 
 Caveats about the result's scope or confidence that should be surfaced
 alongside signals, at both the result level (`SafetyCheckResponse.limitations`)
-and the signal level (`SafetySignal.limitations`).
+and the signal level (`SafetySignal.limitations`). When a medication was
+evaluated as a default systemic variant, the result-level limitation names the
+product that was chosen and how to pin a different one.
+
+## resolved_medications
+
+Which registry product each request medication was evaluated as, in request
+order (`medication_ref`, `role`, `sfrx_id`, `display_name`, `strength`,
+`resolution_status`, `review_reason_codes`). Read it with `review.reason_codes`:
+
+| Reason code | Meaning |
+|---|---|
+| `default_variant_selected` | The text named one medicine in several variants; a default systemic variant was evaluated. Review required. |
+| `equivalent_product_selected` | Several listings share the same strength and form (packs, manufacturers); one was evaluated. Review required. |
+| `registry_field_conflict` | The text contradicts the registry record of the supplied `sfrx_id`; the `sfrx_id` was used. |
+| `ambiguous_candidates` | The text matches different medicines; nothing was selected for that entry. |
+| `unmapped_medication` | No registry candidate was found for that entry. |
+| `sfrx_id_unknown` | The supplied `sfrx_id` is not an active registry product. |
+| `query_rejected` | The text could not be searched (shorter than 2 or longer than 80 characters). |
+
+See [Medication identity](/concepts/medication-identity) for how a product is chosen.
