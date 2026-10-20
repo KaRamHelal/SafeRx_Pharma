@@ -1,5 +1,5 @@
-release_id: enterprise-v1-2026.09.23
-release_version: 2.0.3
+release_id: enterprise-v1-2026.10.20
+release_version: 2.0.4
 status: available
 publishable: true
 
@@ -12,9 +12,9 @@ api_contract:
   response_policy: closed_schema
 
 artifacts:
-  python: saferx-pharma==2.0.3
-  typescript: saferx-pharma-sdk@2.0.3
-  csharp: SafeRx==2.0.3
+  python: saferx-pharma==2.0.4
+  typescript: saferx-pharma-sdk@2.0.4
+  csharp: SafeRx==2.0.4
 
 hosted_mcp:
   status: preview
@@ -41,6 +41,14 @@ notes:
     and no entitlement grant on any plan (403 API_KEY_NOT_ENTITLED for every caller) and
     therefore excluded from the public bundle, SDK clients, and docs until they have a
     real success schema and evidence (see openapi/enterprise-v1.yaml x-status).
+  - >-
+    2.0.4 -- a safety-check or resolve medication may be given by sfrx_id alone;
+    dose_text, route and dosage_form select the registry product; a bare name is
+    evaluated as its default systemic variant and the response says so
+    (default_variant_selected, limitations, the new resolved_medications[]);
+    frequency_text, which the backend always refused, is removed. Backend corrections
+    shipped to production 2026-10-20 and verified live with the committed enterprise
+    journey. See CHANGELOG.md [2.0.4].
   - >-
     2.0.3 -- Python and TypeScript clients re-sign every retry attempt (a reused nonce
     was rejected as a replay, so a retried 5xx ended as a hard denial); Postman

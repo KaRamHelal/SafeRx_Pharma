@@ -23,7 +23,7 @@
    and push the tag — `sdk-publish.yml` publishes all artifacts and creates the
    matching GitHub Release automatically.
 
-The current checked-in release is `2.0.3` (see `release/current.yaml`; the filename is
+The current checked-in release is `2.0.4` (see `release/current.yaml`; the filename is
 stable across releases, only its contents change). Publication is triggered only by a
-`git tag v2.0.3` + push, or the `sdk-publish.yml` `workflow_dispatch` with
-`version: 2.0.3`.
+`git tag v2.0.4` + push, or the `sdk-publish.yml` `workflow_dispatch` with
+`version: 2.0.4`.
