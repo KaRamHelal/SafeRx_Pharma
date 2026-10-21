@@ -27,15 +27,31 @@ The existing self-service **`enterprise_free`** plan's daily allowances:
 | `ocr_prescriptions` | 30 |
 | `mcp_calls` | 180 |
 
-Quota resets on a fixed daily window. Overage is denied, not billed —
-`enterprise_free` has no overage charge; requests past the allowance return
-`429` until the window resets.
+Daily quota is a rolling 24-hour window: each request stops counting 24 hours
+after it was made, so an exhausted allowance recovers as earlier usage ages out
+rather than at midnight. Overage is denied, not billed — `enterprise_free` has
+no overage charge; requests past the allowance return `429` until usage falls
+back under it.
+
+### Short-term ceiling on self-serve plans
+
+Self-serve plans (Free and Trial) also have a short-term ceiling per API key in
+addition to the daily quota: sustained high-rate use within an hour is throttled
+even when daily allowance remains. Paid plans have no hourly ceiling and are
+bounded only by their daily quota and the route's rate tier. Spread batch work
+over time, or move to a paid plan for sustained volume.
 
 ## Reading a quota error
 
 A `429` (or a quota-exhausted `403`) carries `quota` in the problem
 response: `metric` (which class), `limit`, `remaining`, `reset_at`, and
-`window_seconds`. Use `reset_at` to schedule a retry rather than polling.
+`window_seconds`. Use `reset_at` to schedule a retry rather than polling: it is
+when your usage next falls below the limit.
+
+The code is `quota.exceeded` for both ceilings. The short-term ceiling sets
+`quota.window` to `"hour"` (`window_seconds: 3600`); the daily quota has
+`window_seconds: 86400`. A quota `429` may not carry a `Retry-After` header —
+use `quota.reset_at`.
 
 ## Retry-After and safe retries
 

@@ -22,6 +22,12 @@ Entries below are not a backfilled reconstruction of that history.
   Until this release no documented eRx body could succeed: the previous `erx_payload` was an
   empty closed object the backend refused.
 
+### Changed
+- Self-serve plans (Free, Trial) have a short-term per-key ceiling in addition to the daily
+  quota. A trip returns `429 quota.exceeded` with `quota.window: "hour"`. Paid plans are
+  unaffected. The rate-limits page now also states that daily quota is a rolling 24-hour
+  window, not a fixed calendar day.
+
 ### Fixed
 - `SafetyCheckResponse` `signals[].risk_display.raw_source_label` is nullable; production
   returns `null` when the source carries no native label.
