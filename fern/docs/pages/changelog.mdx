@@ -31,6 +31,12 @@ Entries below are not a backfilled reconstruction of that history.
   returns `null` when the source carries no native label.
 - The five deferred operations declare the `503 capability_unavailable` they return to an
   entitled caller, beside the `403 API_KEY_NOT_ENTITLED` every other caller receives.
+- Enterprise OCR responses now match the published `PrescriptionCreated` and `PrescriptionResult`
+  schemas (no extra fields; complete `educational_context`). `enterprise_ocr_prescription_read`,
+  `resolve`, `safety` and `review` no longer fail with a gateway 502, and
+  `enterprise_ocr_prescription_events` returns `text/event-stream` as documented. A backend
+  4xx on eRx or OCR now reaches the caller with its real status instead of `503
+  trusted_accounting_finalization_unavailable`. (Server-side fixes; no SDK change.)
 
 ## [2.0.4] - 2026-10-21
 

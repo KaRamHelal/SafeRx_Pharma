@@ -48,6 +48,14 @@ than assuming a fixed processing time. The result carries `status`,
 (classification of the uploaded image itself — was it a prescription, did
 it contain medications, which section).
 
+`enterprise_ocr_prescription_events` returns a finite `text/event-stream` snapshot:
+one `event: transition` frame per recorded transition, whose `data` is the same
+object as an entry of `transitions[]`, followed by one `event: status` frame
+(`request_id`, `prescription_id`, `status`, `review`); the stream then ends.
+Reconnect, or poll `enterprise_ocr_prescription_read`, for later transitions. A
+transition's `payload` is always `{}` today. Until a line has been resolved,
+`educational_context.source_snapshot_id` is `unresolved`.
+
 ## 3. Resolve
 
 Once OCR has produced text, `enterprise_ocr_prescription_resolve` matches
