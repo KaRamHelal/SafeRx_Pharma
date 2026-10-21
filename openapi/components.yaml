@@ -182,11 +182,15 @@ components:
           - 'null'
       additionalProperties: false
     ErxSafetyCheckRequest:
-      description: Request body for enterprise_erx_safety_check. Distinct from
-        ClientSafetyCheckRequest -- an eRx submission carries the prescription
-        as an integration-specific payload rather than a free-text medication
-        list.
+      description: >-
+        One electronic prescription to safety-check (2.0.5). lines are the medications being
+        prescribed; current_medications are what the patient already takes and are checked
+        against the lines. Each is identified like a safety-check medication: input_text,
+        sfrx_id, or both, with dose_text, route and dosage_form selecting the registry
+        product. frequency_text and duration_text are echoed in the response's erx object
+        and are not evaluated. The response is a SafetyCheckResponse with an erx echo.
       type: object
+      additionalProperties: false
       required:
       - erx_payload
       - locale
@@ -199,17 +203,139 @@ components:
           - ar
           - en
           - mixed
+        requested_domains:
+          description: Domains to evaluate. All six when omitted.
+          type: array
+          uniqueItems: true
+          minItems: 1
+          items:
+            type: string
+            enum:
+            - pllr
+            - ddi
+            - clinical_dose
+            - food_interactions
+            - meal_timing
+            - allergy
+        idempotency_key:
+          description: Client-supplied idempotency key; must equal the Idempotency-Key
+            header when both are sent. A retry with the same key and body returns the
+            original result.
+          type:
+          - string
+          - 'null'
         erx_payload:
-          description: The eRx prescription payload. Shape is
-            integration-specific and not further constrained here.
+          description: The prescription. lines and current_medications together hold at
+            most 50 medications, and every line_ref and medication_ref is unique.
           type: object
           additionalProperties: false
-        idempotency_key:
-          description: Client-supplied idempotency key. A retried request with
-            the same key and body returns the original result rather than
-            creating a new check. Required on this operation.
-          type: string
-      additionalProperties: false
+          required:
+          - prescription_ref
+          - lines
+          properties:
+            prescription_ref:
+              description: Your identifier for the prescription; echoed in the response.
+              type: string
+              minLength: 1
+              maxLength: 128
+            lines:
+              description: The medications being prescribed (1-50).
+              type: array
+              minItems: 1
+              maxItems: 50
+              items:
+                type: object
+                additionalProperties: false
+                required:
+                - line_ref
+                anyOf:
+                - required: [input_text]
+                - required: [sfrx_id]
+                properties:
+                  line_ref:
+                    description: Your identifier for the line; echoed in the response.
+                    type: string
+                    minLength: 1
+                    maxLength: 64
+                    pattern: ^[A-Za-z0-9._:-]+$
+                  input_text:
+                    description: The medication as written. Optional when sfrx_id is given.
+                    type: ['string', 'null']
+                    minLength: 1
+                  sfrx_id:
+                    description: Registry identifier; authoritative when supplied.
+                    type: ['string', 'null']
+                    pattern: ^SRX-[0-9]{3}-[0-9]{6}$
+                  dose_text:
+                    description: Strength as written ("5 mg"). Selects the registry product only.
+                    type: ['string', 'null']
+                    minLength: 1
+                    maxLength: 80
+                  route:
+                    description: Administration route ("oral"). Selects the registry product only.
+                    type: ['string', 'null']
+                    minLength: 1
+                    maxLength: 80
+                  dosage_form:
+                    description: Dosage form ("tablet"). Selects the registry product only.
+                    type: ['string', 'null']
+                    minLength: 1
+                    maxLength: 80
+                  frequency_text:
+                    description: Frequency as written ("once daily"). Echoed only; not evaluated.
+                    type: ['string', 'null']
+                    minLength: 1
+                    maxLength: 120
+                  duration_text:
+                    description: Duration as written ("30 days"). Echoed only; not evaluated.
+                    type: ['string', 'null']
+                    minLength: 1
+                    maxLength: 80
+            current_medications:
+              description: Medications the patient already takes, checked against the lines.
+              type: array
+              maxItems: 49
+              default: []
+              items:
+                type: object
+                additionalProperties: false
+                required:
+                - medication_ref
+                anyOf:
+                - required: [input_text]
+                - required: [sfrx_id]
+                properties:
+                  medication_ref:
+                    description: Your identifier for the medication; echoed in resolved_medications.
+                    type: string
+                    minLength: 1
+                    maxLength: 64
+                    pattern: ^[A-Za-z0-9._:-]+$
+                  input_text:
+                    description: The medication as written. Optional when sfrx_id is given.
+                    type: ['string', 'null']
+                    minLength: 1
+                  sfrx_id:
+                    description: Registry identifier; authoritative when supplied.
+                    type: ['string', 'null']
+                    pattern: ^SRX-[0-9]{3}-[0-9]{6}$
+                  dose_text:
+                    description: Strength as written ("5 mg"). Selects the registry product only.
+                    type: ['string', 'null']
+                    minLength: 1
+                    maxLength: 80
+                  route:
+                    description: Administration route ("oral"). Selects the registry product only.
+                    type: ['string', 'null']
+                    minLength: 1
+                    maxLength: 80
+                  dosage_form:
+                    description: Dosage form ("tablet"). Selects the registry product only.
+                    type: ['string', 'null']
+                    minLength: 1
+                    maxLength: 80
+            patient_context:
+              $ref: '#/components/schemas/PatientSafetyContext'
     PatientSafetyContext:
       description: Optional patient factors considered for this single request only.
         Enterprise never reads or writes a saved profile; omitted fields are treated
@@ -1437,6 +1563,43 @@ components:
       - display_obligations
       - correction_anchors
       properties:
+        erx:
+          description: Present only on enterprise_erx_safety_check responses (2.0.5) -- the
+            prescription as evaluated, line by line, in request order.
+          type: object
+          additionalProperties: false
+          required:
+          - prescription_ref
+          - lines
+          properties:
+            prescription_ref:
+              type: string
+            lines:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                required:
+                - line_ref
+                - sfrx_id
+                - resolution_status
+                - frequency_text
+                - duration_text
+                properties:
+                  line_ref:
+                    type: string
+                  sfrx_id:
+                    type: ['string', 'null']
+                  resolution_status:
+                    type: string
+                    enum:
+                    - resolved
+                    - ambiguous
+                    - unresolved
+                  frequency_text:
+                    type: ['string', 'null']
+                  duration_text:
+                    type: ['string', 'null']
         resolved_medications:
           description: Which registry product each request medication was
             evaluated as, in request order. resolution_status is resolved,
@@ -2779,7 +2942,10 @@ components:
               - string
               - 'null'
             raw_source_label:
-              $ref: '#/components/schemas/LocalizedString'
+              description: The source's own label for the value; null when the source carries none.
+              oneOf:
+              - $ref: '#/components/schemas/LocalizedString'
+              - type: 'null'
             mapping_version:
               type: string
             source_text_policy:

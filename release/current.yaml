@@ -1,5 +1,5 @@
-release_id: enterprise-v1-2026.10.20
-release_version: 2.0.4
+release_id: enterprise-v1-2026.10.21
+release_version: 2.0.5
 status: available
 publishable: true
 
@@ -12,9 +12,9 @@ api_contract:
   response_policy: closed_schema
 
 artifacts:
-  python: saferx-pharma==2.0.4
-  typescript: saferx-pharma-sdk@2.0.4
-  csharp: SafeRx==2.0.4
+  python: saferx-pharma==2.0.5
+  typescript: saferx-pharma-sdk@2.0.5
+  csharp: SafeRx==2.0.5
 
 hosted_mcp:
   status: preview
@@ -35,6 +35,13 @@ availability:
   key_required: true
 
 notes:
+  - >-
+    2.0.5 -- enterprise_erx_safety_check has a real request contract: erx_payload is a
+    structured prescription (prescription_ref, lines[], current_medications[],
+    patient_context) mapped onto the safety check, and the response adds an erx echo;
+    until 2.0.5 no documented eRx body could succeed. risk_display.raw_source_label is
+    nullable as production emits it; the five deferred operations declare the 503
+    capability_unavailable they return to entitled callers. Verified live 2026-10-21.
   - >-
     operation_count reflects only operations with a complete, live-verified success
     contract; deferred_operation_count lists operations with no backend implementation

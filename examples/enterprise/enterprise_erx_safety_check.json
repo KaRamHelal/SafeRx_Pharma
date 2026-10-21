@@ -1,12 +1,34 @@
 {
   "request": {
     "body": {
-      "erx_payload": {},
-      "idempotency_key": "example-erx-0001",
-      "locale": "en"
+      "erx_payload": {
+        "current_medications": [
+          {
+            "input_text": "Aspirin",
+            "medication_ref": "home-1"
+          }
+        ],
+        "lines": [
+          {
+            "dosage_form": "tablet",
+            "dose_text": "5 mg",
+            "duration_text": "30 days",
+            "frequency_text": "once daily",
+            "input_text": "Warfarin",
+            "line_ref": "1",
+            "route": "oral"
+          }
+        ],
+        "prescription_ref": "RX-7781"
+      },
+      "idempotency_key": "RX-7781-v1",
+      "locale": "en",
+      "requested_domains": [
+        "ddi"
+      ]
     },
     "headers": {
-      "Idempotency-Key": "example-erx-0001"
+      "Idempotency-Key": "RX-7781-v1"
     }
   },
   "response": {
@@ -55,6 +77,18 @@
         "ar",
         "en"
       ]
+    },
+    "erx": {
+      "lines": [
+        {
+          "duration_text": "30 days",
+          "frequency_text": "once daily",
+          "line_ref": "1",
+          "resolution_status": "resolved",
+          "sfrx_id": null
+        }
+      ],
+      "prescription_ref": "RX-7781"
     },
     "limitations": [],
     "locale": "en",

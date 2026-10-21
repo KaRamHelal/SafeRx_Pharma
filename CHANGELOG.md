@@ -11,6 +11,23 @@ Releases tracking. For the complete published version history, see
 and [NuGet (SafeRx)](https://www.nuget.org/packages/SafeRx#versions-body-tab).
 Entries below are not a backfilled reconstruction of that history.
 
+## [2.0.5] - 2026-10-21
+
+### Added
+- `enterprise_erx_safety_check` has a working request contract. `erx_payload` is a structured
+  prescription: `prescription_ref`, `lines[]` (1-50; `line_ref`, `input_text` and/or `sfrx_id`,
+  `dose_text`/`route`/`dosage_form` to pick the product, `frequency_text`/`duration_text`
+  echoed only), `current_medications[]` and `patient_context`. `requested_domains` is optional.
+  The response is a `SafetyCheckResponse` with an `erx` echo of the prescription, line by line.
+  Until this release no documented eRx body could succeed: the previous `erx_payload` was an
+  empty closed object the backend refused.
+
+### Fixed
+- `SafetyCheckResponse` `signals[].risk_display.raw_source_label` is nullable; production
+  returns `null` when the source carries no native label.
+- The five deferred operations declare the `503 capability_unavailable` they return to an
+  entitled caller, beside the `403 API_KEY_NOT_ENTITLED` every other caller receives.
+
 ## [2.0.4] - 2026-10-21
 
 A support ticket could not run a DDI check at all: plain names returned

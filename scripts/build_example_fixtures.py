@@ -7,6 +7,7 @@ consistent across examples. Run with --check to verify fixtures are current.
 
 from __future__ import annotations
 
+import copy
 import json
 from pathlib import Path
 from typing import Any
@@ -1575,18 +1576,51 @@ def build() -> dict[str, dict[str, Any]]:
         },
     }
 
+    # eRx (2.0.5): one prescription -- lines plus the patient's current medications -- mapped
+    # onto the safety check. The response is the safety result above with every medication
+    # named by the caller's line_ref / medication_ref, plus the erx echo.
+    erx_refs = ["1", "home-1"]
+    erx_response = copy.deepcopy(safety_check_response)
+    for ref, item in zip(erx_refs, erx_response.get("resolved_medications", [])):
+        item["medication_ref"] = ref
+    first_line = (erx_response.get("resolved_medications") or [{}])[0]
+    erx_response["erx"] = {
+        "prescription_ref": "RX-7781",
+        "lines": [
+            {
+                "line_ref": "1",
+                "sfrx_id": first_line.get("sfrx_id"),
+                "resolution_status": first_line.get("resolution_status", "resolved"),
+                "frequency_text": "once daily",
+                "duration_text": "30 days",
+            }
+        ],
+    }
     examples["enterprise_erx_safety_check"] = {
         "request": {
             "body": {
                 "locale": "en",
-                # erx_payload's shape is integration-specific; left empty here since
-                # this repo does not further constrain it (see ErxSafetyCheckRequest).
-                "erx_payload": {},
-                "idempotency_key": "example-erx-0001",
+                "requested_domains": ["ddi"],
+                "idempotency_key": "RX-7781-v1",
+                "erx_payload": {
+                    "prescription_ref": "RX-7781",
+                    "lines": [
+                        {
+                            "line_ref": "1",
+                            "input_text": "Warfarin",
+                            "dose_text": "5 mg",
+                            "route": "oral",
+                            "dosage_form": "tablet",
+                            "frequency_text": "once daily",
+                            "duration_text": "30 days",
+                        }
+                    ],
+                    "current_medications": [{"medication_ref": "home-1", "input_text": "Aspirin"}],
+                },
             },
-            "headers": {"Idempotency-Key": "example-erx-0001"},
+            "headers": {"Idempotency-Key": "RX-7781-v1"},
         },
-        "response": safety_check_response,
+        "response": erx_response,
     }
 
     examples["enterprise_ocr_prescription_create"] = {

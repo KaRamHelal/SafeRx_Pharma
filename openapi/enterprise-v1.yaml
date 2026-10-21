@@ -301,6 +301,8 @@ paths:
       responses:
         '403':
           $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
         default:
           $ref: '#/components/responses/Problem'
   /safety/check-batches:
@@ -323,6 +325,8 @@ paths:
               additionalProperties: false
       responses:
         '403':
+          $ref: '#/components/responses/Problem'
+        '503':
           $ref: '#/components/responses/Problem'
         default:
           $ref: '#/components/responses/Problem'
@@ -374,6 +378,8 @@ paths:
       responses:
         '403':
           $ref: '#/components/responses/Problem'
+        '503':
+          $ref: '#/components/responses/Problem'
         default:
           $ref: '#/components/responses/Problem'
   /allergies/families:
@@ -387,6 +393,8 @@ paths:
       x-status: deferred
       responses:
         '403':
+          $ref: '#/components/responses/Problem'
+        '503':
           $ref: '#/components/responses/Problem'
         default:
           $ref: '#/components/responses/Problem'
@@ -408,6 +416,8 @@ paths:
           minLength: 2
       responses:
         '403':
+          $ref: '#/components/responses/Problem'
+        '503':
           $ref: '#/components/responses/Problem'
         default:
           $ref: '#/components/responses/Problem'
