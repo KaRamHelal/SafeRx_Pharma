@@ -64,6 +64,7 @@ jobs:
           PY
 
       - name: Require a matching CHANGELOG.md entry
+        id: changelog
         run: |
           python - <<'PY'
           import os
@@ -97,7 +98,7 @@ jobs:
         # Each registry publishes independently: an expired token for one must not
         # leave the others unpublished. The job still fails, and the release step
         # (default success() condition) runs only when every registry succeeded.
-        if: ${{ !cancelled() && steps.version.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.changelog.outcome == 'success' }}
         uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -107,7 +108,7 @@ jobs:
         # Each registry publishes independently: an expired token for one must not
         # leave the others unpublished. The job still fails, and the release step
         # (default success() condition) runs only when every registry succeeded.
-        if: ${{ !cancelled() && steps.version.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.changelog.outcome == 'success' }}
         working-directory: packages/typescript
         run: |
           npm install
@@ -120,7 +121,7 @@ jobs:
         # Each registry publishes independently: an expired token for one must not
         # leave the others unpublished. The job still fails, and the release step
         # (default success() condition) runs only when every registry succeeded.
-        if: ${{ !cancelled() && steps.version.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.changelog.outcome == 'success' }}
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
@@ -129,7 +130,7 @@ jobs:
         # Each registry publishes independently: an expired token for one must not
         # leave the others unpublished. The job still fails, and the release step
         # (default success() condition) runs only when every registry succeeded.
-        if: ${{ !cancelled() && steps.version.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.changelog.outcome == 'success' }}
         working-directory: packages/csharp
         run: |
           dotnet pack -c Release -o nupkg
