@@ -55,8 +55,9 @@ quota `429` may not carry a `Retry-After` header, so use `retry_after` or
 ## Retry-After and safe retries
 
 Treat `429`, `502`, `503`, and `504` as typed, retryable outcomes and honor
-the `Retry-After` header, or `retry_after` (seconds) in the problem body,
-when present — it reflects the server's actual state, not a
+the `Retry-After` header, or the seconds in the problem body, when present:
+`retry_after` on a quota `429` (`quota.exceeded`), `retry_after_seconds` on a
+rate-limit `429` (`rate-limit-exceeded`) — it reflects the server's actual state, not a
 guess. All three SDKs already do this (bounded exponential backoff for
 502/503/504, honoring `Retry-After` for 429 up to a 60-second sanity
 ceiling).
