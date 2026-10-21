@@ -5,27 +5,25 @@ subtitle: Quotas, retries, idempotency, pagination, and request IDs
 
 ## Quota classes
 
-Every operation draws from one of five daily quota classes shared with
-SafeRx's other surfaces (so, for example, autocomplete traffic never eats
-into your search budget):
+Each operation has its own daily counter, named by the `quota.metric` in a quota
+error (for example `safety_check_enterprise`, `erx_safety_check`,
+`registry_search_enterprise`). Operations in the same class share an allowance
+**size**, not a counter: running eRx checks does not use up regular safety
+checks, and the other way round.
 
-| Class | Operations |
-|---|---|
-| `drug_lookups` | `enterprise_registry_search`, `enterprise_registry_product_detail`, `enterprise_registry_resolve`, `enterprise_registry_ingredients` |
-| `autocomplete` | `enterprise_registry_autocomplete` |
-| `safety_boards` | `enterprise_safety_check` and `enterprise_erx_safety_check` — eRx safety checks share the same daily pool as regular safety checks, not a separate allowance |
-| `ocr_prescriptions` | `enterprise_ocr_prescription_create` (the reads/resolve/review/events/safety that follow one upload, including `enterprise_ocr_prescription_safety`, draw 0 additional units — you're not billed again for reading back or evaluating work already paid for) |
-| `mcp_calls` | Every hosted MCP tool call (see [MCP Server](/ai-integration/mcp-server)); `tools/list` is a metadata read and draws 0 |
+Each call draws the operation's own units **plus one request unit**. A safety or
+eRx check therefore draws 2 units; a hosted MCP tool call draws the units of the
+operation it runs. An OCR read-back, events stream, resolve, review or safety
+step draws from its own OCR counter.
 
-The existing self-service **`enterprise_free`** plan's daily allowances:
+The self-service **`enterprise_free`** plan's daily allowance per operation:
 
-| Class | Daily allowance |
-|---|---|
-| `drug_lookups` | 180 |
-| `autocomplete` | 1,200 |
-| `safety_boards` | 180 |
-| `ocr_prescriptions` | 30 |
-| `mcp_calls` | 180 |
+| Class | Operations | Daily allowance per operation | When exhausted |
+|---|---|---|---|
+| Registry | search, suggest, resolve, product detail, ingredients | 1,380 units | Not denied (metered); the short-term ceiling below still applies |
+| Safety | `enterprise_safety_check`, `enterprise_erx_safety_check` | 180 units (90 checks) | `429 quota.exceeded` |
+| OCR | `enterprise_ocr_prescription_create` and each follow-up operation | 30 units | `429 quota.exceeded` |
+| Hosted MCP | every tool call | 180 units | `429 quota.exceeded` |
 
 Daily quota is a rolling 24-hour window: each request stops counting 24 hours
 after it was made, so an exhausted allowance recovers as earlier usage ages out
@@ -50,14 +48,15 @@ when your usage next falls below the limit.
 
 The code is `quota.exceeded` for both ceilings. The short-term ceiling sets
 `quota.window` to `"hour"` (`window_seconds: 3600`); the daily quota has
-`window_seconds: 86400`. A quota `429` may not carry a `Retry-After` header —
-use `quota.reset_at`.
+`window_seconds: 86400`. The problem also carries `retry_after` (seconds); a
+quota `429` may not carry a `Retry-After` header, so use `retry_after` or
+`quota.reset_at`.
 
 ## Retry-After and safe retries
 
 Treat `429`, `502`, `503`, and `504` as typed, retryable outcomes and honor
-the `Retry-After` header (also mirrored as `retry_after_seconds` in the
-problem body) when present — it reflects the server's actual state, not a
+the `Retry-After` header, or `retry_after` (seconds) in the problem body,
+when present — it reflects the server's actual state, not a
 guess. All three SDKs already do this (bounded exponential backoff for
 502/503/504, honoring `Retry-After` for 429 up to a 60-second sanity
 ceiling).
