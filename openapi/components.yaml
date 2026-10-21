@@ -1064,6 +1064,15 @@ components:
               - integer
               - 'null'
               minimum: 0
+            window:
+              description: Present as "hour" when the self-serve short-term ceiling was
+                exceeded (window_seconds 3600); absent for the daily quota.
+              type:
+              - string
+              - 'null'
+              enum:
+              - hour
+              - null
         safe_to_retry:
           description: Whether this exact request is safe to retry as-is (e.g.
             after a transient 503) without risk of duplicating a side-effecting
