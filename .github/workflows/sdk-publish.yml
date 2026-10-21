@@ -94,12 +94,20 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
 
       - name: Setup Node
+        # Each registry publishes independently: an expired token for one must not
+        # leave the others unpublished. The job still fails, and the release step
+        # (default success() condition) runs only when every registry succeeded.
+        if: ${{ !cancelled() && steps.version.outcome == 'success' }}
         uses: actions/setup-node@v4
         with:
           node-version: "22"
           registry-url: https://registry.npmjs.org
 
       - name: Build and publish TypeScript client
+        # Each registry publishes independently: an expired token for one must not
+        # leave the others unpublished. The job still fails, and the release step
+        # (default success() condition) runs only when every registry succeeded.
+        if: ${{ !cancelled() && steps.version.outcome == 'success' }}
         working-directory: packages/typescript
         run: |
           npm install
@@ -109,11 +117,19 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Setup .NET
+        # Each registry publishes independently: an expired token for one must not
+        # leave the others unpublished. The job still fails, and the release step
+        # (default success() condition) runs only when every registry succeeded.
+        if: ${{ !cancelled() && steps.version.outcome == 'success' }}
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
 
       - name: Pack and publish C# client
+        # Each registry publishes independently: an expired token for one must not
+        # leave the others unpublished. The job still fails, and the release step
+        # (default success() condition) runs only when every registry succeeded.
+        if: ${{ !cancelled() && steps.version.outcome == 'success' }}
         working-directory: packages/csharp
         run: |
           dotnet pack -c Release -o nupkg
