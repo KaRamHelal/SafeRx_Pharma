@@ -17,6 +17,10 @@ on:
 
 permissions:
   contents: write
+  # npm trusted publishing (OIDC): the npm publish step exchanges this job's identity
+  # for a short-lived publish credential, so no long-lived npm token is needed once
+  # the package's Trusted Publisher (this repo, sdk-publish.yml) is configured on npmjs.com.
+  id-token: write
 
 jobs:
   publish:
@@ -111,6 +115,8 @@ jobs:
         if: ${{ !cancelled() && steps.changelog.outcome == 'success' }}
         working-directory: packages/typescript
         run: |
+          # Trusted publishing needs npm >= 11.5.1; Node 22's bundled npm is older.
+          npm install -g npm@11.6.2
           npm install
           npm run build
           npm publish --access public

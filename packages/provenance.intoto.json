@@ -6,7 +6,7 @@
     "materials": [
       {
         "digest": {
-          "sha256": "128b2a6a75ff6ad0892f994091edd88eb4cff1ed79a5e332e50a1895a1113163"
+          "sha256": "b247488caa612b96dd155306aea0e1526ee193cd9f76310c64a41fcc5b1b8b50"
         },
         "uri": "openapi/components.yaml"
       },
@@ -70,7 +70,7 @@
     },
     {
       "digest": {
-        "sha256": "9086940c0781c7c413266682d2c79d42b09440ca50beffebfbf4cac8eaa9adcb"
+        "sha256": "e983aba232a7c50c3723652d403c6c766e063500f8f57070cf775a7ec162e84b"
       },
       "name": "packages/typescript/package.json"
     },
