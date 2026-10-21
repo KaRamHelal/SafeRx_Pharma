@@ -1,0 +1,36 @@
+name: Publish documentation
+
+# Publishes the Fern docs (docs.saferx.online) with the organization's FERN_TOKEN, so a
+# release does not depend on one maintainer's local Fern login. Run it after the SDKs for
+# a release are live: the docs must never describe packages that are not yet installable.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate release contract
+        run: |
+          python -m pip install --disable-pip-version-check "PyYAML==6.0.2" "jsonschema==4.23.0"
+          python scripts/release_preflight.py
+          python scripts/render_fern_changelog.py --check
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Publish docs
+        run: |
+          version="$(python -c 'import json; print(json.load(open("fern/fern.config.json"))["version"])')"
+          npm install --global "fern-api@${version}"
+          fern generate --docs --no-prompt
+        env:
+          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
