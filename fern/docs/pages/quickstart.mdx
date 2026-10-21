@@ -9,6 +9,12 @@ The existing `enterprise_free` plan is self-service — see
 [Developer access](/authentication/developer-portal). Your key is shown
 exactly once at issuance; store it securely right away.
 
+Once you have signed your first request (next section), `GET /capabilities`
+(`enterprise_capabilities`) is the right first call: it lists every operation
+with its activation state and the quota classes that apply to your key, and
+`GET /status` (`enterprise_status`) reports dependency health. Both are
+available since 2.0.4.
+
 ## 2. Sign and send a request
 
 Every Enterprise request is signed with `saferx-hmac-sha256-v1`. Send these headers:

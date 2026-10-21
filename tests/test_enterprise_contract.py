@@ -14,6 +14,8 @@ from saferx_pharma.client import canonical_request, sign_request  # noqa: E402
 
 
 EXPECTED_OPERATIONS = {
+    "enterprise_status",
+    "enterprise_capabilities",
     "enterprise_registry_autocomplete",
     "enterprise_registry_search",
     "enterprise_registry_resolve",
@@ -36,8 +38,6 @@ EXPECTED_OPERATIONS = {
 # reverification (2026-08-15) confirmed 403 (policy-denied), not the previously
 # documented 501, for every one of them.
 DEFERRED_OPERATIONS = {
-    "enterprise_capabilities",
-    "enterprise_status",
     "enterprise_safety_check_read",
     "enterprise_safety_check_batch",
     "enterprise_allergy_resolve",

@@ -36,7 +36,40 @@ the contract and client side.
   each request medication was evaluated as, with `resolution_status` and
   `review_reason_codes` (table in the Safety results concept page).
 
+- **`enterprise_capabilities` and `enterprise_status` are available.** Both were
+  published as deferred while production had been serving them to every entitled
+  key; they are promoted with their real schemas (`EnterpriseCapabilities`,
+  `EnterpriseStatus`), SDK methods and example fixtures, live-verified on
+  2026-10-21. 16 operations are now available, 5 remain deferred.
+- **Idempotent replay.** A retry with the same `Idempotency-Key` and body returns
+  the original response with `X-SafeRx-Idempotent-Replay: true`; the same key with
+  a different body is `409 quota.idempotency.conflict` (Rate limits page).
+- **`SafetyCheckResponse` declares every field production returns**:
+  `context_summary.context_sources` / `profile_context_version`,
+  `display_obligations.approved_summary_template_id`, per-domain and per-signal
+  `correction_anchors`, `SafetySignal.risk_display` / `title_origin` /
+  `patient_context_attribution`, `LocalizedString.ar_normalized` / `eg_ar` /
+  `source_locale`, and `SourceProvenance.model_release_id` / `resolver_version` /
+  `search_artifact_id`. A strict client built to 2.0.3 rejected real responses.
+
 ### Fixed
+- A retry with the same `Idempotency-Key` returned
+  `503 trusted_accounting_finalization_unavailable` on every idempotency-governed
+  operation (safety check, e-Rx check, OCR create), so the SDKs' retry loops never
+  recovered from a transient failure. Server-side defect, fixed 2026-10-21.
+- The hosted MCP tools `check_medication_safety` and `resolve_medications`
+  answered every real call with `isError: "SafeRx rejected an invalid upstream
+  response"`. Server-side defect in output validation, fixed 2026-10-21.
+- Deferred operations denied inconsistently: four returned `503
+  capability_unavailable` to callers without the bundle, one returned the
+  documented `403 API_KEY_NOT_ENTITLED`. Every route now authenticates and checks
+  entitlement first; `503 capability_unavailable` is reserved for an entitled
+  caller of a disabled capability (Authentication overview, "Denial order").
+- Internal per-domain adapter telemetry (`adapter_id`, `adapter_version`,
+  `adapter_health_status`, `adapter_limitations`, `missing_context_reasons`,
+  `schema_version`, `source_version`, `domain_release_id`) leaked on every
+  `domain_coverage` item. Removed server-side; the published item schema was
+  already right.
 - `frequency_text` was advertised on safety-check medications but the backend
   refused it with `422`; it is removed from the contract and the MCP server
   schema. The backend now names the refused field in `request_invalid`.

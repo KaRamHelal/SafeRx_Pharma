@@ -1,0 +1,634 @@
+{
+  "request": {},
+  "response": {
+    "auth_scheme": "api_key",
+    "available_operation_ids": [
+      "enterprise_capabilities",
+      "enterprise_status",
+      "enterprise_registry_autocomplete",
+      "enterprise_registry_search",
+      "enterprise_registry_resolve",
+      "enterprise_registry_product_detail",
+      "enterprise_registry_ingredients",
+      "enterprise_safety_check",
+      "enterprise_safety_check_read",
+      "enterprise_safety_check_batch",
+      "enterprise_safety_capabilities",
+      "enterprise_erx_safety_check",
+      "enterprise_allergy_resolve",
+      "enterprise_allergy_families",
+      "enterprise_allergy_substances",
+      "enterprise_ocr_prescription_create",
+      "enterprise_ocr_prescription_read",
+      "enterprise_ocr_prescription_events",
+      "enterprise_ocr_prescription_resolve",
+      "enterprise_ocr_prescription_safety",
+      "enterprise_ocr_prescription_review",
+      "mcp_hosted_streamable_http"
+    ],
+    "capability_refs": [
+      {
+        "capability_ref": "enterprise_metadata",
+        "operation_ids": [
+          "enterprise_capabilities",
+          "enterprise_status"
+        ],
+        "quota_metrics": [
+          "metadata_read"
+        ],
+        "response_profile_ids": [
+          "rp_enterprise_metadata"
+        ],
+        "status": "implemented"
+      },
+      {
+        "capability_ref": "registry",
+        "operation_ids": [
+          "enterprise_registry_autocomplete",
+          "enterprise_registry_search",
+          "enterprise_registry_resolve",
+          "enterprise_registry_product_detail",
+          "enterprise_registry_ingredients"
+        ],
+        "quota_metrics": [
+          "ingredient_search_enterprise",
+          "registry_product_detail_enterprise",
+          "registry_resolve_enterprise",
+          "registry_search_enterprise",
+          "registry_suggest_enterprise"
+        ],
+        "response_profile_ids": [
+          "rp_enterprise_registry_product",
+          "rp_enterprise_registry_search",
+          "rp_enterprise_registry_suggestion",
+          "rp_enterprise_resolution"
+        ],
+        "status": "implemented"
+      },
+      {
+        "capability_ref": "safety",
+        "operation_ids": [
+          "enterprise_safety_check",
+          "enterprise_safety_check_read",
+          "enterprise_safety_check_batch",
+          "enterprise_safety_capabilities",
+          "enterprise_erx_safety_check"
+        ],
+        "quota_metrics": [
+          "erx_safety_check",
+          "metadata_read",
+          "safety_check_batch_enterprise",
+          "safety_check_enterprise",
+          "safety_check_read_enterprise"
+        ],
+        "response_profile_ids": [
+          "rp_enterprise_batch",
+          "rp_enterprise_erx",
+          "rp_enterprise_metadata",
+          "rp_enterprise_safety_standard"
+        ],
+        "status": "implemented"
+      },
+      {
+        "capability_ref": "allergy",
+        "operation_ids": [
+          "enterprise_allergy_resolve",
+          "enterprise_allergy_families",
+          "enterprise_allergy_substances"
+        ],
+        "quota_metrics": [
+          "allergy_resolve_enterprise",
+          "allergy_substance_search",
+          "metadata_read"
+        ],
+        "response_profile_ids": [
+          "rp_enterprise_allergy"
+        ],
+        "status": "implemented"
+      },
+      {
+        "capability_ref": "ocr",
+        "operation_ids": [
+          "enterprise_ocr_prescription_create",
+          "enterprise_ocr_prescription_read",
+          "enterprise_ocr_prescription_events",
+          "enterprise_ocr_prescription_resolve",
+          "enterprise_ocr_prescription_safety",
+          "enterprise_ocr_prescription_review"
+        ],
+        "quota_metrics": [
+          "ocr_prescription_enterprise",
+          "ocr_prescription_events_enterprise",
+          "ocr_prescription_read_enterprise",
+          "ocr_prescription_resolve_enterprise",
+          "ocr_prescription_review_enterprise",
+          "ocr_prescription_safety_enterprise"
+        ],
+        "response_profile_ids": [
+          "rp_enterprise_ocr"
+        ],
+        "status": "implemented"
+      },
+      {
+        "capability_ref": "mcp",
+        "operation_ids": [
+          "mcp_hosted_streamable_http"
+        ],
+        "quota_metrics": [
+          "mcp_metadata_read"
+        ],
+        "response_profile_ids": [
+          "rp_mcp_capabilities"
+        ],
+        "status": "implemented"
+      }
+    ],
+    "clinical_intelligence_source": "owner_services_only",
+    "degraded": false,
+    "dependency_status": [
+      {
+        "capability_ref": "enterprise_metadata",
+        "reason_code": null,
+        "safe_to_retry": false,
+        "status": "implemented"
+      },
+      {
+        "capability_ref": "registry",
+        "reason_code": null,
+        "safe_to_retry": false,
+        "status": "implemented"
+      },
+      {
+        "capability_ref": "safety",
+        "reason_code": null,
+        "safe_to_retry": false,
+        "status": "implemented"
+      },
+      {
+        "capability_ref": "allergy",
+        "reason_code": null,
+        "safe_to_retry": false,
+        "status": "implemented"
+      },
+      {
+        "capability_ref": "ocr",
+        "reason_code": null,
+        "safe_to_retry": false,
+        "status": "implemented"
+      },
+      {
+        "capability_ref": "mcp",
+        "reason_code": null,
+        "safe_to_retry": false,
+        "status": "implemented"
+      }
+    ],
+    "generated_at_utc": "2026-10-21T01:20:22.048885+00:00",
+    "metadata_kind": "capabilities",
+    "operations": [
+      {
+        "auth_policy": "api_key",
+        "capability_ref": "enterprise_metadata",
+        "dependency_status": "implemented",
+        "display_obligations": {
+          "bilingual_required": false,
+          "educational_context_required": false,
+          "review_state_required": false,
+          "source_provenance_required": false
+        },
+        "idempotency_required": false,
+        "method": "GET",
+        "operation_id": "enterprise_capabilities",
+        "path": "/api/enterprise/v1/capabilities",
+        "quota_metric": "metadata_read",
+        "response_profile_id": "rp_enterprise_metadata",
+        "route_class": "enterprise_metadata"
+      },
+      {
+        "auth_policy": "api_key",
+        "capability_ref": "enterprise_metadata",
+        "dependency_status": "implemented",
+        "display_obligations": {
+          "bilingual_required": false,
+          "educational_context_required": false,
+          "review_state_required": false,
+          "source_provenance_required": false
+        },
+        "idempotency_required": false,
+        "method": "GET",
+        "operation_id": "enterprise_status",
+        "path": "/api/enterprise/v1/status",
+        "quota_metric": "metadata_read",
+        "response_profile_id": "rp_enterprise_metadata",
+        "route_class": "enterprise_metadata"
+      },
+      {
+        "auth_policy": "api_key_plus_catalog_policy",
+        "capability_ref": "registry",
+        "dependency_status": "implemented",
+        "display_obligations": {
+          "bilingual_required": true,
+          "educational_context_required": true,
+          "review_state_required": false,
+          "source_provenance_required": true
+        },
+        "idempotency_required": false,
+        "method": "GET",
+        "operation_id": "enterprise_registry_autocomplete",
+        "path": "/api/enterprise/v1/registry/suggest",
+        "quota_metric": "registry_suggest_enterprise",
+        "response_profile_id": "rp_enterprise_registry_suggestion",
+        "route_class": "enterprise_registry_read"
+      },
+      {
+        "auth_policy": "api_key_plus_catalog_policy",
+        "capability_ref": "registry",
+        "dependency_status": "implemented",
+        "display_obligations": {
+          "bilingual_required": true,
+          "educational_context_required": true,
+          "review_state_required": false,
+          "source_provenance_required": true
+        },
+        "idempotency_required": false,
+        "method": "GET",
+        "operation_id": "enterprise_registry_search",
+        "path": "/api/enterprise/v1/registry/search",
+        "quota_metric": "registry_search_enterprise",
+        "response_profile_id": "rp_enterprise_registry_search",
+        "route_class": "enterprise_registry_read"
+      },
+      {
+        "auth_policy": "api_key_plus_catalog_policy",
+        "capability_ref": "registry",
+        "dependency_status": "implemented",
+        "display_obligations": {
+          "bilingual_required": true,
+          "educational_context_required": true,
+          "review_state_required": true,
+          "source_provenance_required": true
+        },
+        "idempotency_required": false,
+        "method": "POST",
+        "operation_id": "enterprise_registry_resolve",
+        "path": "/api/enterprise/v1/registry/resolve",
+        "quota_metric": "registry_resolve_enterprise",
+        "response_profile_id": "rp_enterprise_resolution",
+        "route_class": "enterprise_registry_resolve"
+      },
+      {
+        "auth_policy": "api_key_plus_catalog_policy",
+        "capability_ref": "registry",
+        "dependency_status": "implemented",
+        "display_obligations": {
+          "bilingual_required": true,
+          "educational_context_required": true,
+          "review_state_required": false,
+          "source_provenance_required": true
+        },
+        "idempotency_required": false,
+        "method": "GET",
+        "operation_id": "enterprise_registry_product_detail",
+        "path": "/api/enterprise/v1/registry/products/{sfrx_id}",
+        "quota_metric": "registry_product_detail_enterprise",
+        "response_profile_id": "rp_enterprise_registry_product",
+        "route_class": "enterprise_registry_read"
+      },
+      {
+        "auth_policy": "api_key_plus_catalog_policy",
+        "capability_ref": "registry",
+        "dependency_status": "implemented",
+        "display_obligations": {
+          "bilingual_required": true,
+          "educational_context_required": true,
+          "review_state_required": false,
+          "source_provenance_required": true
+        },
+        "idempotency_required": false,
+        "method": "GET",
+        "operation_id": "enterprise_registry_ingredients",
+        "path": "/api/enterprise/v1/registry/ingredients",
+        "quota_metric": "ingredient_search_enterprise",
+        "response_profile_id": "rp_enterprise_registry_search",
+        "route_class": "enterprise_registry_read"
+      },
+      {
+        "auth_policy": "api_key_plus_entitlement_policy",
+        "capability_ref": "safety",
+        "dependency_status": "implemented",
+        "display_obligations": {
+          "bilingual_required": true,
+          "educational_context_required": true,
+          "review_state_required": true,
+          "source_provenance_required": true
+        },
+        "idempotency_required": true,
+        "method": "POST",
+        "operation_id": "enterprise_safety_check",
+        "path": "/api/enterprise/v1/safety/checks",
+        "quota_metric": "safety_check_enterprise",
+        "response_profile_id": "rp_enterprise_safety_standard",
+        "route_class": "enterprise_safety"
+      },
+      {
+        "auth_policy": "api_key_plus_entitlement_policy",
+        "capability_ref": "safety",
+        "dependency_status": "implemented",
+        "display_obligations": {
+          "bilingual_required": true,
+          "educational_context_required": true,
+          "review_state_required": true,
+          "source_provenance_required": true
+        },
+        "idempotency_required": false,
+        "method": "GET",
+        "operation_id": "enterprise_safety_check_read",
+        "path": "/api/enterprise/v1/safety/checks/{check_id}",
+        "quota_metric": "safety_check_read_enterprise",
+        "response_profile_id": "rp_enterprise_safety_standard",
+        "route_class": "enterprise_safety"
+      },
+      {
+        "auth_policy": "api_key_plus_batch_entitlement_policy",
+        "capability_ref": "safety",
+        "dependency_status": "implemented",
+        "display_obligations": {
+          "bilingual_required": true,
+          "educational_context_required": true,
+          "review_state_required": true,
+          "source_provenance_required": true
+        },
+        "idempotency_required": true,
+        "method": "POST",
+        "operation_id": "enterprise_safety_check_batch",
+        "path": "/api/enterprise/v1/safety/check-batches",
+        "quota_metric": "safety_check_batch_enterprise",
+        "response_profile_id": "rp_enterprise_batch",
+        "route_class": "enterprise_safety"
+      },
+      {
+        "auth_policy": "api_key",
+        "capability_ref": "safety",
+        "dependency_status": "implemented",
+        "display_obligations": {
+          "bilingual_required": true,
+          "educational_context_required": true,
+          "review_state_required": true,
+          "source_provenance_required": true
+        },
+        "idempotency_required": false,
+        "method": "GET",
+        "operation_id": "enterprise_safety_capabilities",
+        "path": "/api/enterprise/v1/safety/capabilities",
+        "quota_metric": "metadata_read",
+        "response_profile_id": "rp_enterprise_metadata",
+        "route_class": "enterprise_metadata"
+      },
+      {
+        "auth_policy": "api_key_plus_erx_entitlement_policy",
+        "capability_ref": "safety",
+        "dependency_status": "implemented",
+        "display_obligations": {
+          "bilingual_required": true,
+          "educational_context_required": true,
+          "review_state_required": true,
+          "source_provenance_required": true
+        },
+        "idempotency_required": true,
+        "method": "POST",
+        "operation_id": "enterprise_erx_safety_check",
+        "path": "/api/enterprise/v1/erx/safety-checks",
+        "quota_metric": "erx_safety_check",
+        "response_profile_id": "rp_enterprise_erx",
+        "route_class": "enterprise_safety"
+      },
+      {
+        "auth_policy": "api_key_plus_entitlement_policy",
+        "capability_ref": "allergy",
+        "dependency_status": "implemented",
+        "display_obligations": {
+          "bilingual_required": true,
+          "educational_context_required": true,
+          "review_state_required": true,
+          "source_provenance_required": true
+        },
+        "idempotency_required": false,
+        "method": "POST",
+        "operation_id": "enterprise_allergy_resolve",
+        "path": "/api/enterprise/v1/allergies/resolve",
+        "quota_metric": "allergy_resolve_enterprise",
+        "response_profile_id": "rp_enterprise_allergy",
+        "route_class": "enterprise_allergy_reference"
+      },
+      {
+        "auth_policy": "api_key_plus_entitlement_policy",
+        "capability_ref": "allergy",
+        "dependency_status": "implemented",
+        "display_obligations": {
+          "bilingual_required": true,
+          "educational_context_required": true,
+          "review_state_required": true,
+          "source_provenance_required": true
+        },
+        "idempotency_required": false,
+        "method": "GET",
+        "operation_id": "enterprise_allergy_families",
+        "path": "/api/enterprise/v1/allergies/families",
+        "quota_metric": "metadata_read",
+        "response_profile_id": "rp_enterprise_allergy",
+        "route_class": "enterprise_allergy_reference"
+      },
+      {
+        "auth_policy": "api_key_plus_entitlement_policy",
+        "capability_ref": "allergy",
+        "dependency_status": "implemented",
+        "display_obligations": {
+          "bilingual_required": true,
+          "educational_context_required": true,
+          "review_state_required": true,
+          "source_provenance_required": true
+        },
+        "idempotency_required": false,
+        "method": "GET",
+        "operation_id": "enterprise_allergy_substances",
+        "path": "/api/enterprise/v1/allergies/substances",
+        "quota_metric": "allergy_substance_search",
+        "response_profile_id": "rp_enterprise_allergy",
+        "route_class": "enterprise_allergy_reference"
+      },
+      {
+        "auth_policy": "api_key_plus_ocr_entitlement_policy",
+        "capability_ref": "ocr",
+        "dependency_status": "implemented",
+        "display_obligations": {
+          "bilingual_required": true,
+          "educational_context_required": true,
+          "review_state_required": true,
+          "source_provenance_required": true
+        },
+        "idempotency_required": true,
+        "method": "POST",
+        "operation_id": "enterprise_ocr_prescription_create",
+        "path": "/api/enterprise/v1/ocr/prescriptions",
+        "quota_metric": "ocr_prescription_enterprise",
+        "response_profile_id": "rp_enterprise_ocr",
+        "route_class": "enterprise_ocr"
+      },
+      {
+        "auth_policy": "api_key_plus_ocr_entitlement_policy",
+        "capability_ref": "ocr",
+        "dependency_status": "implemented",
+        "display_obligations": {
+          "bilingual_required": true,
+          "educational_context_required": true,
+          "review_state_required": true,
+          "source_provenance_required": true
+        },
+        "idempotency_required": false,
+        "method": "GET",
+        "operation_id": "enterprise_ocr_prescription_read",
+        "path": "/api/enterprise/v1/ocr/prescriptions/{prescription_id}",
+        "quota_metric": "ocr_prescription_read_enterprise",
+        "response_profile_id": "rp_enterprise_ocr",
+        "route_class": "enterprise_ocr"
+      },
+      {
+        "auth_policy": "api_key_plus_ocr_entitlement_policy",
+        "capability_ref": "ocr",
+        "dependency_status": "implemented",
+        "display_obligations": {
+          "bilingual_required": true,
+          "educational_context_required": true,
+          "review_state_required": true,
+          "source_provenance_required": true
+        },
+        "idempotency_required": false,
+        "method": "GET",
+        "operation_id": "enterprise_ocr_prescription_events",
+        "path": "/api/enterprise/v1/ocr/prescriptions/{prescription_id}/events",
+        "quota_metric": "ocr_prescription_events_enterprise",
+        "response_profile_id": "rp_enterprise_ocr",
+        "route_class": "enterprise_ocr"
+      },
+      {
+        "auth_policy": "api_key_plus_ocr_entitlement_policy",
+        "capability_ref": "ocr",
+        "dependency_status": "implemented",
+        "display_obligations": {
+          "bilingual_required": true,
+          "educational_context_required": true,
+          "review_state_required": true,
+          "source_provenance_required": true
+        },
+        "idempotency_required": false,
+        "method": "POST",
+        "operation_id": "enterprise_ocr_prescription_resolve",
+        "path": "/api/enterprise/v1/ocr/prescriptions/{prescription_id}/medications/resolve",
+        "quota_metric": "ocr_prescription_resolve_enterprise",
+        "response_profile_id": "rp_enterprise_ocr",
+        "route_class": "enterprise_ocr"
+      },
+      {
+        "auth_policy": "api_key_plus_ocr_entitlement_policy",
+        "capability_ref": "ocr",
+        "dependency_status": "implemented",
+        "display_obligations": {
+          "bilingual_required": true,
+          "educational_context_required": true,
+          "review_state_required": true,
+          "source_provenance_required": true
+        },
+        "idempotency_required": false,
+        "method": "POST",
+        "operation_id": "enterprise_ocr_prescription_safety",
+        "path": "/api/enterprise/v1/ocr/prescriptions/{prescription_id}/safety-checks",
+        "quota_metric": "ocr_prescription_safety_enterprise",
+        "response_profile_id": "rp_enterprise_ocr",
+        "route_class": "enterprise_ocr"
+      },
+      {
+        "auth_policy": "api_key_plus_ocr_entitlement_policy",
+        "capability_ref": "ocr",
+        "dependency_status": "implemented",
+        "display_obligations": {
+          "bilingual_required": true,
+          "educational_context_required": true,
+          "review_state_required": true,
+          "source_provenance_required": true
+        },
+        "idempotency_required": false,
+        "method": "POST",
+        "operation_id": "enterprise_ocr_prescription_review",
+        "path": "/api/enterprise/v1/ocr/prescriptions/{prescription_id}/review",
+        "quota_metric": "ocr_prescription_review_enterprise",
+        "response_profile_id": "rp_enterprise_ocr",
+        "route_class": "enterprise_ocr"
+      },
+      {
+        "auth_policy": "api_key_plus_entitlement_policy",
+        "capability_ref": "mcp",
+        "dependency_status": "implemented",
+        "display_obligations": {
+          "bilingual_required": false,
+          "educational_context_required": false,
+          "review_state_required": false,
+          "source_provenance_required": false
+        },
+        "idempotency_required": false,
+        "method": "POST",
+        "operation_id": "mcp_hosted_streamable_http",
+        "path": "/api/enterprise-mcp/v1/mcp",
+        "quota_metric": "mcp_metadata_read",
+        "response_profile_id": "rp_mcp_capabilities",
+        "route_class": "mcp_hosted_streamable_http"
+      }
+    ],
+    "policy_version": "pol_2026_06_21_p4r_preflight",
+    "quota_classes": [
+      "allergy_resolve_enterprise",
+      "allergy_substance_search",
+      "erx_safety_check",
+      "ingredient_search_enterprise",
+      "mcp_metadata_read",
+      "metadata_read",
+      "ocr_prescription_enterprise",
+      "ocr_prescription_events_enterprise",
+      "ocr_prescription_read_enterprise",
+      "ocr_prescription_resolve_enterprise",
+      "ocr_prescription_review_enterprise",
+      "ocr_prescription_safety_enterprise",
+      "registry_product_detail_enterprise",
+      "registry_resolve_enterprise",
+      "registry_search_enterprise",
+      "registry_suggest_enterprise",
+      "safety_check_batch_enterprise",
+      "safety_check_enterprise",
+      "safety_check_read_enterprise"
+    ],
+    "quota_metric": "metadata_read",
+    "request_id": "req_example_0001",
+    "response_profile_id": "rp_enterprise_metadata",
+    "response_profile_ids": [
+      "rp_enterprise_allergy",
+      "rp_enterprise_batch",
+      "rp_enterprise_erx",
+      "rp_enterprise_metadata",
+      "rp_enterprise_ocr",
+      "rp_enterprise_registry_product",
+      "rp_enterprise_registry_search",
+      "rp_enterprise_registry_suggestion",
+      "rp_enterprise_resolution",
+      "rp_enterprise_safety_standard",
+      "rp_mcp_capabilities"
+    ],
+    "route_class": "enterprise_metadata",
+    "source_provenance": {
+      "activation_contract": "contracts/enterprise-trusted-outcome-activation.yaml",
+      "quota_metrics_contract": "contracts/quota-metrics.yaml",
+      "response_profiles_contract": "contracts/response-profiles.yaml",
+      "route_policy_contract": "contracts/route-policy-map.yaml"
+    },
+    "stores_workflow_state": false,
+    "trace_id": "trc_example_0001"
+  }
+}

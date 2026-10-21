@@ -33,8 +33,10 @@ request schema.
 
 `Idempotency-Key` is required, same as `enterprise_safety_check`. Retried
 submissions of the same eRx prescription (same key, same body) return the
-original result instead of re-evaluating — important for eRx systems that
-may resend on their own retry/timeout logic. Use a key derived from the
+original result with `X-SafeRx-Idempotent-Replay: true` instead of
+re-evaluating — important for eRx systems that may resend on their own
+retry/timeout logic. A resend with the same key but a changed body is
+rejected with `409 quota.idempotency.conflict`. Use a key derived from the
 prescription's own identity (e.g. its eRx system reference) so a genuine
 resend from the eRx system naturally reuses the same key, rather than a
 random key that would let a resend double-evaluate.

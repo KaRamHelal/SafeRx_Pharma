@@ -54,11 +54,21 @@ outcome — that creates a second logical operation.
 ## Idempotency
 
 `enterprise_safety_check`, `enterprise_erx_safety_check`, and
-`enterprise_ocr_prescription_create` require `Idempotency-Key`. Reuse the
-exact same key (and the exact same request body) when retrying the same
-logical request — the API returns the original result instead of
-re-evaluating. A new key means a new logical operation; don't generate a
-fresh key on every retry attempt.
+`enterprise_ocr_prescription_create` require `Idempotency-Key`. The key
+identifies the request together with its body:
+
+| Retry | Result |
+|---|---|
+| Same key, same body, original completed | The original response, byte for byte, with the header `X-SafeRx-Idempotent-Replay: true`. Nothing runs again and nothing is charged again. |
+| Same key, same body, original still running or lost before it completed | The request runs normally. |
+| Same key, different body | `409` with code `quota.idempotency.conflict`. |
+| Same key, original completed but its response was too large to store (over 256 KiB) | The work runs again, is not charged twice, and the response carries `X-SafeRx-Idempotent-Replay: re-executed`. |
+
+A new key means a new logical operation; don't generate a fresh key on every
+retry attempt. The official SDKs reuse the key across their retry loop.
+
+Before 2.0.4 a same-key retry returned `503 trusted_accounting_finalization_unavailable`;
+that was a server-side defect, fixed on 2026-10-21, not a client error.
 
 ## Pagination
 

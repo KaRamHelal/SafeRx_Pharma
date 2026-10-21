@@ -39,6 +39,7 @@ class Operation:
 
 
 OPERATIONS = {
+    'enterprise_capabilities': Operation('enterprise_capabilities', 'GET', '/capabilities', False),
     'enterprise_erx_safety_check': Operation('enterprise_erx_safety_check', 'POST', '/erx/safety-checks', True),
     'enterprise_ocr_prescription_create': Operation('enterprise_ocr_prescription_create', 'POST', '/ocr/prescriptions', True),
     'enterprise_ocr_prescription_events': Operation('enterprise_ocr_prescription_events', 'GET', '/ocr/prescriptions/{prescription_id}/events', False),
@@ -53,6 +54,7 @@ OPERATIONS = {
     'enterprise_registry_search': Operation('enterprise_registry_search', 'GET', '/registry/search', False),
     'enterprise_safety_capabilities': Operation('enterprise_safety_capabilities', 'GET', '/safety/capabilities', False),
     'enterprise_safety_check': Operation('enterprise_safety_check', 'POST', '/safety/checks', True),
+    'enterprise_status': Operation('enterprise_status', 'GET', '/status', False),
 }
 
 

@@ -26,6 +26,8 @@ FERN_CSHARP_SPEC = ROOT / "fern/apis/enterprise-csharp/openapi/enterprise-v1.yam
 FERN_CSHARP_COMPONENTS = ROOT / "fern/apis/enterprise-csharp/openapi/components.yaml"
 RELEASE_MANIFEST = ROOT / "release/current.yaml"
 EXPECTED_AVAILABLE_OPERATION_IDS = {
+    "enterprise_status",
+    "enterprise_capabilities",
     "enterprise_registry_autocomplete",
     "enterprise_registry_search",
     "enterprise_registry_resolve",
@@ -48,8 +50,6 @@ EXPECTED_AVAILABLE_OPERATION_IDS = {
 # an invented 200/202 and must never appear as available in the release manifest,
 # SDKs, or docs.
 EXPECTED_DEFERRED_OPERATION_IDS = {
-    "enterprise_capabilities",
-    "enterprise_status",
     "enterprise_safety_check_read",
     "enterprise_safety_check_batch",
     "enterprise_allergy_resolve",

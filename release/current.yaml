@@ -6,8 +6,8 @@ publishable: true
 api_contract:
   source: openapi/enterprise-v1.yaml
   openapi_version: 3.1.1
-  operation_count: 14
-  deferred_operation_count: 7
+  operation_count: 16
+  deferred_operation_count: 5
   authentication: saferx-hmac-sha256-v1
   response_policy: closed_schema
 
@@ -41,6 +41,17 @@ notes:
     and no entitlement grant on any plan (403 API_KEY_NOT_ENTITLED for every caller) and
     therefore excluded from the public bundle, SDK clients, and docs until they have a
     real success schema and evidence (see openapi/enterprise-v1.yaml x-status).
+  - >-
+    2.0.4 -- enterprise_capabilities and enterprise_status are promoted to available
+    (live-verified 2026-10-21 with their real schemas); the five remaining deferred
+    operations deny unentitled callers with 403 API_KEY_NOT_ENTITLED and entitled callers
+    of a disabled capability with 503 capability_unavailable; a retry with the same
+    Idempotency-Key and body now returns the original result (X-SafeRx-Idempotent-Replay:
+    true) and a different body is 409 quota.idempotency.conflict; SafetyCheckResponse
+    declares every field production returns (context_sources, profile_context_version,
+    approved_summary_template_id, correction_anchors, risk_display, title_origin,
+    patient_context_attribution, LocalizedString.ar_normalized/eg_ar/source_locale,
+    SourceProvenance.model_release_id/resolver_version/search_artifact_id).
   - >-
     2.0.4 -- a safety-check or resolve medication may be given by sfrx_id alone;
     dose_text, route and dosage_form select the registry product; a bare name is

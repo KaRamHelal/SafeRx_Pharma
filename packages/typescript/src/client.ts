@@ -11,6 +11,7 @@ export const MAX_ATTEMPTS = 3;
 export const RETRY_BACKOFF_BASE_SECONDS = 0.1;
 export const RETRY_BACKOFF_MAX_SECONDS = 2.0;
 export const OPERATIONS: Record<string, EnterpriseOperation> = {
+  enterprise_capabilities: { operationId: 'enterprise_capabilities', method: 'GET', path: '/capabilities', idempotencyRequired: false },
   enterprise_erx_safety_check: { operationId: 'enterprise_erx_safety_check', method: 'POST', path: '/erx/safety-checks', idempotencyRequired: true },
   enterprise_ocr_prescription_create: { operationId: 'enterprise_ocr_prescription_create', method: 'POST', path: '/ocr/prescriptions', idempotencyRequired: true },
   enterprise_ocr_prescription_events: { operationId: 'enterprise_ocr_prescription_events', method: 'GET', path: '/ocr/prescriptions/{prescription_id}/events', idempotencyRequired: false },
@@ -25,6 +26,7 @@ export const OPERATIONS: Record<string, EnterpriseOperation> = {
   enterprise_registry_search: { operationId: 'enterprise_registry_search', method: 'GET', path: '/registry/search', idempotencyRequired: false },
   enterprise_safety_capabilities: { operationId: 'enterprise_safety_capabilities', method: 'GET', path: '/safety/capabilities', idempotencyRequired: false },
   enterprise_safety_check: { operationId: 'enterprise_safety_check', method: 'POST', path: '/safety/checks', idempotencyRequired: true },
+  enterprise_status: { operationId: 'enterprise_status', method: 'GET', path: '/status', idempotencyRequired: false },
 };
 
 export type MultipartFile = { filename: string; content: Uint8Array; contentType?: string };

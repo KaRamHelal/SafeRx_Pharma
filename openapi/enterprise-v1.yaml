@@ -67,17 +67,19 @@ paths:
   /capabilities:
     get:
       operationId: enterprise_capabilities
-      summary: 'Deferred: account/key capability metadata'
-      description: Not yet available. This operation is documented for contract
-        completeness, but no backend implements it and no key on any plan is
-        entitled to call it -- it returns `403` (policy-denied) for every caller,
-        not a `501`. It has no success response yet and must not be relied on.
-        Use `enterprise_safety_capabilities` for current safety-domain readiness
-        metadata instead.
-      x-status: deferred
+      summary: List the Enterprise operations and capabilities available to this key
+      description: Account-level capability metadata -- every Enterprise operation with
+        its activation state, the response profiles and quota classes that apply to the
+        calling key, and dependency health. Makes no clinical claim. Promoted in 2.0.4
+        after live verification; use `enterprise_safety_capabilities` for safety-domain
+        readiness.
       responses:
-        '403':
-          $ref: '#/components/responses/Problem'
+        '200':
+          description: Capability metadata for the calling key
+          content:
+            application/json:
+              schema:
+                $ref: ./components.yaml#/components/schemas/EnterpriseCapabilities
         default:
           $ref: '#/components/responses/Problem'
       parameters:
@@ -173,15 +175,17 @@ paths:
   /status:
     get:
       operationId: enterprise_status
-      summary: 'Deferred: current account/key status'
-      description: Not yet available. This operation is documented for contract
-        completeness, but no backend implements it and no key on any plan is
-        entitled to call it -- it returns `403` (policy-denied) for every caller,
-        not a `501`. It has no success response yet and must not be relied on.
-      x-status: deferred
+      summary: Current Enterprise service status for this key
+      description: Dependency health and degradation flags for the Enterprise API as seen
+        by the calling key, with the same operation metadata as `enterprise_capabilities`.
+        Makes no clinical claim. Promoted in 2.0.4 after live verification.
       responses:
-        '403':
-          $ref: '#/components/responses/Problem'
+        '200':
+          description: Service status for the calling key
+          content:
+            application/json:
+              schema:
+                $ref: ./components.yaml#/components/schemas/EnterpriseStatus
         default:
           $ref: '#/components/responses/Problem'
       parameters:
@@ -289,9 +293,9 @@ paths:
       operationId: enterprise_safety_check_read
       summary: 'Deferred: read back a previously created safety check'
       description: Not yet available. This operation is documented for contract
-        completeness, but no backend implements it and no key on any plan is
-        entitled to call it -- it returns `403` (policy-denied) for every caller,
-        not a `501`. Callers should retain the response from `enterprise_safety_check`
+        completeness, No plan grants its bundle, so every caller receives `403 API_KEY_NOT_ENTITLED`
+        after authentication; a key holding the bundle would receive `503
+        capability_unavailable` while the capability is disabled. Callers should retain the response from `enterprise_safety_check`
         directly rather than expecting to read it back later.
       x-status: deferred
       responses:
@@ -304,9 +308,9 @@ paths:
       operationId: enterprise_safety_check_batch
       summary: 'Deferred: run multiple safety checks in one call'
       description: Not yet available. This operation is documented for contract
-        completeness, but no backend implements it and no key on any plan is
-        entitled to call it -- it returns `403` (policy-denied) for every caller,
-        not a `501`. Run individual `enterprise_safety_check` calls until this is
+        completeness, No plan grants its bundle, so every caller receives `403 API_KEY_NOT_ENTITLED`
+        after authentication; a key holding the bundle would receive `503
+        capability_unavailable` while the capability is disabled. Run individual `enterprise_safety_check` calls until this is
         promoted.
       x-status: deferred
       x-idempotency-required: true
@@ -355,9 +359,9 @@ paths:
       operationId: enterprise_allergy_resolve
       summary: 'Deferred: resolve free-text allergy entries'
       description: Not yet available. This operation is documented for contract
-        completeness, but no backend implements it and no key on any plan is
-        entitled to call it -- it returns `403` (policy-denied) for every caller,
-        not a `501`. Allergy state can still be supplied on a safety check via
+        completeness, No plan grants its bundle, so every caller receives `403 API_KEY_NOT_ENTITLED`
+        after authentication; a key holding the bundle would receive `503
+        capability_unavailable` while the capability is disabled. Allergy state can still be supplied on a safety check via
         `patient_context.allergies` even though this dedicated resolver is deferred.
       x-status: deferred
       requestBody:
@@ -377,9 +381,9 @@ paths:
       operationId: enterprise_allergy_families
       summary: 'Deferred: list allergy families'
       description: Not yet available. This operation is documented for contract
-        completeness, but no backend implements it and no key on any plan is
-        entitled to call it -- it returns `403` (policy-denied) for every caller,
-        not a `501`.
+        completeness, No plan grants its bundle, so every caller receives `403 API_KEY_NOT_ENTITLED`
+        after authentication; a key holding the bundle would receive `503
+        capability_unavailable` while the capability is disabled.
       x-status: deferred
       responses:
         '403':
@@ -391,9 +395,9 @@ paths:
       operationId: enterprise_allergy_substances
       summary: 'Deferred: search allergy substances'
       description: Not yet available. This operation is documented for contract
-        completeness, but no backend implements it and no key on any plan is
-        entitled to call it -- it returns `403` (policy-denied) for every caller,
-        not a `501`.
+        completeness, No plan grants its bundle, so every caller receives `403 API_KEY_NOT_ENTITLED`
+        after authentication; a key holding the bundle would receive `503
+        capability_unavailable` while the capability is disabled.
       x-status: deferred
       parameters:
       - name: q

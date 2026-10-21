@@ -11,8 +11,10 @@
   },
   "response": {
     "context_summary": {
+      "context_sources": [],
       "contradiction_count": 0,
       "missing_context_count": 0,
+      "profile_context_version": null,
       "stale_context_count": 0,
       "status": "baseline_only"
     },

@@ -48,6 +48,7 @@ public sealed class SafeRxClient
     public const string SdkVersion = "2.0.4";
     public static readonly IReadOnlyDictionary<string, EnterpriseOperation> Operations = new Dictionary<string, EnterpriseOperation>
     {
+        ["enterprise_capabilities"] = new EnterpriseOperation("enterprise_capabilities", HttpMethod.Get, "/capabilities", false),
         ["enterprise_erx_safety_check"] = new EnterpriseOperation("enterprise_erx_safety_check", HttpMethod.Post, "/erx/safety-checks", true),
         ["enterprise_ocr_prescription_create"] = new EnterpriseOperation("enterprise_ocr_prescription_create", HttpMethod.Post, "/ocr/prescriptions", true),
         ["enterprise_ocr_prescription_events"] = new EnterpriseOperation("enterprise_ocr_prescription_events", HttpMethod.Get, "/ocr/prescriptions/{prescription_id}/events", false),
@@ -62,6 +63,7 @@ public sealed class SafeRxClient
         ["enterprise_registry_search"] = new EnterpriseOperation("enterprise_registry_search", HttpMethod.Get, "/registry/search", false),
         ["enterprise_safety_capabilities"] = new EnterpriseOperation("enterprise_safety_capabilities", HttpMethod.Get, "/safety/capabilities", false),
         ["enterprise_safety_check"] = new EnterpriseOperation("enterprise_safety_check", HttpMethod.Post, "/safety/checks", true),
+        ["enterprise_status"] = new EnterpriseOperation("enterprise_status", HttpMethod.Get, "/status", false),
     };
     private const int MaxAttempts = 3;
     private const double RetryBackoffBaseSeconds = 0.1;

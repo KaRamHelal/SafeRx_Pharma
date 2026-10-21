@@ -679,8 +679,7 @@ components:
                   this entry.
                 type: array
                 items:
-                  type: object
-                  additionalProperties: false
+                  $ref: '#/components/schemas/CorrectionAnchor'
             additionalProperties: false
         pagination:
           $ref: '#/components/schemas/Pagination'
@@ -1147,8 +1146,7 @@ components:
             product's data.
           type: array
           items:
-            type: object
-            additionalProperties: false
+            $ref: '#/components/schemas/CorrectionAnchor'
           default: []
       additionalProperties: false
     RegistryProductSummaryList:
@@ -1537,6 +1535,8 @@ components:
           - missing_context_count
           - stale_context_count
           - contradiction_count
+          - context_sources
+          - profile_context_version
           properties:
             status:
               description: request_context_applied means at least one
@@ -1547,6 +1547,24 @@ components:
               enum:
               - request_context_applied
               - baseline_only
+            context_sources:
+              description: Where the applied patient context came from. On the
+                Enterprise surface this is `["request"]` or empty, since there is
+                no saved profile. (Declared 2.0.4; production always returned it.)
+              type: array
+              uniqueItems: true
+              items:
+                type: string
+                enum:
+                - request
+                - saved_profile
+            profile_context_version:
+              description: Version of the context-composition rules applied.
+                Always `null` on the Enterprise surface, which has no saved
+                profile. (Declared 2.0.4; production always returned it.)
+              type:
+              - string
+              - 'null'
             missing_context_count:
               description: Count of patient-context fields relevant to the
                 requested domains that were not supplied.
@@ -1600,77 +1618,291 @@ components:
             opaque.
           type: array
           items:
-            type: object
-            additionalProperties: false
+            $ref: '#/components/schemas/CorrectionAnchor'
           default: []
-    EnterpriseStatus:
-      description: Response contract for the deferred enterprise_status operation.
-        Placeholder shape only -- this operation currently returns 501 upstream
-        and has no live-verified success response.
-      type: object
-      additionalProperties: false
-      required:
-      - request_id
-      - schema_version
-      - status
-      - capabilities
-      - supported_locales
-      properties:
-        request_id:
-          description: Echo of the request identifier for correlation.
-          type: string
-        schema_version:
-          description: Semantic version of this response's schema shape.
-          type: string
-          pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
-        status:
-          description: Status label.
-          type: string
-        capabilities:
-          description: Capability identifiers.
-          type: array
-          items:
-            type: string
-        supported_locales:
-          description: Locales this response's content is available in.
-          type: array
-          items:
-            $ref: '#/components/schemas/Locale'
-          minItems: 2
     EnterpriseCapabilities:
-      description: Response contract for the deferred enterprise_capabilities
-        operation. Placeholder shape only -- this operation currently returns
-        501 upstream and has no live-verified success response.
       type: object
       additionalProperties: false
       required:
+      - metadata_kind
+      - generated_at_utc
       - request_id
-      - schema_version
-      - status
-      - capabilities
-      - supported_locales
+      - trace_id
+      - policy_version
+      - auth_scheme
+      - route_class
+      - response_profile_id
+      - quota_metric
+      - available_operation_ids
+      - response_profile_ids
+      - quota_classes
+      - capability_refs
+      - operations
+      - dependency_status
+      - degraded
+      - stores_workflow_state
+      - clinical_intelligence_source
+      - source_provenance
       properties:
+        metadata_kind:
+          type: string
+          const: capabilities
+        generated_at_utc:
+          type: string
         request_id:
-          description: Echo of the request identifier for correlation.
           type: string
-        schema_version:
-          description: Semantic version of this response's schema shape.
+        trace_id:
           type: string
-          pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
-        status:
-          description: Status label.
+        policy_version:
           type: string
-        capabilities:
-          description: Capability identifiers.
+        auth_scheme:
+          type: string
+          const: api_key
+        route_class:
+          type: string
+        response_profile_id:
+          type: string
+        quota_metric:
+          type: string
+        available_operation_ids:
           type: array
           items:
             type: string
-        supported_locales:
-          description: Locales this response's content is available in.
+        response_profile_ids:
           type: array
           items:
-            $ref: '#/components/schemas/Locale'
-          minItems: 2
+            type: string
+        quota_classes:
+          type: array
+          items:
+            type: string
+        capability_refs:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnterpriseCapabilityReference'
+        operations:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnterpriseOperationMetadata'
+        dependency_status:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnterpriseDependencyStatus'
+        degraded:
+          type: boolean
+        stores_workflow_state:
+          type: boolean
+        clinical_intelligence_source:
+          type: string
+          const: owner_services_only
+        source_provenance:
+          $ref: '#/components/schemas/EnterpriseMetadataSourceProvenance'
+    EnterpriseStatus:
+      type: object
+      additionalProperties: false
+      required:
+      - metadata_kind
+      - generated_at_utc
+      - request_id
+      - trace_id
+      - policy_version
+      - auth_scheme
+      - route_class
+      - response_profile_id
+      - quota_metric
+      - available_operation_ids
+      - response_profile_ids
+      - quota_classes
+      - capability_refs
+      - operations
+      - dependency_status
+      - degraded
+      - stores_workflow_state
+      - clinical_intelligence_source
+      - source_provenance
+      properties:
+        metadata_kind:
+          type: string
+          const: status
+        generated_at_utc:
+          type: string
+        request_id:
+          type: string
+        trace_id:
+          type: string
+        policy_version:
+          type: string
+        auth_scheme:
+          type: string
+          const: api_key
+        route_class:
+          type: string
+        response_profile_id:
+          type: string
+        quota_metric:
+          type: string
+        available_operation_ids:
+          type: array
+          items:
+            type: string
+        response_profile_ids:
+          type: array
+          items:
+            type: string
+        quota_classes:
+          type: array
+          items:
+            type: string
+        capability_refs:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnterpriseCapabilityReference'
+        operations:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnterpriseOperationMetadata'
+        dependency_status:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnterpriseDependencyStatus'
+        degraded:
+          type: boolean
+        stores_workflow_state:
+          type: boolean
+        clinical_intelligence_source:
+          type: string
+          const: owner_services_only
+        source_provenance:
+          $ref: '#/components/schemas/EnterpriseMetadataSourceProvenance'
+    EnterpriseCapabilityReference:
+      type: object
+      additionalProperties: false
+      required:
+      - capability_ref
+      - status
+      - operation_ids
+      - response_profile_ids
+      - quota_metrics
+      properties:
+        capability_ref:
+          type: string
+        status:
+          $ref: '#/components/schemas/EnterpriseCapabilityState'
+        operation_ids:
+          type: array
+          items:
+            type: string
+        response_profile_ids:
+          type: array
+          items:
+            type: string
+        quota_metrics:
+          type: array
+          items:
+            type: string
+    EnterpriseCapabilityState:
+      type: string
+      enum:
+      - implemented
+      - degraded
+      - unavailable
+      - deferred
+      - scaffolded
+    EnterpriseDependencyStatus:
+      type: object
+      additionalProperties: false
+      required:
+      - capability_ref
+      - status
+      - reason_code
+      - safe_to_retry
+      properties:
+        capability_ref:
+          type: string
+        status:
+          $ref: '#/components/schemas/EnterpriseCapabilityState'
+        reason_code:
+          type:
+          - string
+          - 'null'
+        safe_to_retry:
+          type: boolean
+    EnterpriseDisplayObligations:
+      type: object
+      additionalProperties: false
+      required:
+      - bilingual_required
+      - educational_context_required
+      - source_provenance_required
+      - review_state_required
+      properties:
+        bilingual_required:
+          type: boolean
+        educational_context_required:
+          type: boolean
+        source_provenance_required:
+          type: boolean
+        review_state_required:
+          type: boolean
+    EnterpriseMetadataSourceProvenance:
+      type: object
+      additionalProperties: false
+      required:
+      - route_policy_contract
+      - response_profiles_contract
+      - quota_metrics_contract
+      - activation_contract
+      properties:
+        route_policy_contract:
+          type: string
+          const: contracts/route-policy-map.yaml
+        response_profiles_contract:
+          type: string
+          const: contracts/response-profiles.yaml
+        quota_metrics_contract:
+          type: string
+          const: contracts/quota-metrics.yaml
+        activation_contract:
+          type: string
+          const: contracts/enterprise-trusted-outcome-activation.yaml
+    EnterpriseOperationMetadata:
+      type: object
+      additionalProperties: false
+      required:
+      - operation_id
+      - method
+      - path
+      - route_class
+      - auth_policy
+      - response_profile_id
+      - quota_metric
+      - capability_ref
+      - display_obligations
+      - idempotency_required
+      - dependency_status
+      properties:
+        operation_id:
+          type: string
+        method:
+          type: string
+        path:
+          type: string
+        route_class:
+          type: string
+        auth_policy:
+          type: string
+        response_profile_id:
+          type: string
+        quota_metric:
+          type: string
+        capability_ref:
+          type: string
+        display_obligations:
+          $ref: '#/components/schemas/EnterpriseDisplayObligations'
+        idempotency_required:
+          type: boolean
+        dependency_status:
+          $ref: '#/components/schemas/EnterpriseCapabilityState'
     AllergyResolution:
       description: Response contract for the deferred enterprise_allergy_resolve
         operation. Placeholder shape only -- this operation currently returns
@@ -2013,6 +2245,24 @@ components:
           type:
           - string
           - 'null'
+        ar_normalized:
+          description: Normalized Arabic rendering used for matching and display
+            fallbacks, or null. (Declared 2.0.4; production returns it on safety
+            texts.)
+          type:
+          - string
+          - 'null'
+        eg_ar:
+          description: Egyptian-Arabic rendering when it differs from `ar`, or null.
+            (Declared 2.0.4.)
+          type:
+          - string
+          - 'null'
+        source_locale:
+          description: Locale the text was authored in, or null. (Declared 2.0.4.)
+          type:
+          - string
+          - 'null'
     Pagination:
       description: Cursor-based pagination state.
       type: object
@@ -2076,6 +2326,61 @@ components:
           type:
           - string
           - 'null'
+        model_release_id:
+          description: Release identifier of the clinical model that produced the
+            content, or null when none applies. (Declared 2.0.4.)
+          type:
+          - string
+          - 'null'
+        resolver_version:
+          description: Version of the medication resolver that identified the
+            products, or null. (Declared 2.0.4.)
+          type:
+          - string
+          - 'null'
+        search_artifact_id:
+          description: Identifier of the registry search artifact used, or null.
+            (Declared 2.0.4.)
+          type:
+          - string
+          - 'null'
+    CorrectionAnchor:
+      description: Opaque handle identifying one element of a response (a signal,
+        a recommendation, an evidence reference, a provenance block, a resolved
+        candidate) for a future correction-reporting workflow. Treat it as opaque;
+        only `correction_anchor_id` and the `target_*` fields are stable. (Declared
+        2.0.4; production returns these on every safety signal.)
+      type: object
+      additionalProperties: false
+      required:
+      - correction_anchor_id
+      - target_type
+      - target_field_path
+      - target_label
+      - locale
+      properties:
+        correction_anchor_id:
+          type: string
+        target_type:
+          type: string
+        target_field_path:
+          type: string
+        target_label:
+          $ref: '#/components/schemas/LocalizedString'
+        locale:
+          $ref: '#/components/schemas/Locale'
+        domain:
+          type: string
+        signal_id:
+          type: string
+        evidence_id:
+          type: string
+        sfrx_id:
+          type: string
+        registry_snapshot_id:
+          type: string
+        safety_release_id:
+          type: string
     DisplayObligations:
       description: Display requirements the caller must honor when presenting
         this response to an end user.
@@ -2117,6 +2422,13 @@ components:
             medical advice or a dispensing authorization.
           type: boolean
           const: true
+        approved_summary_template_id:
+          description: Identifier of the approved wording template used for the
+            summary, or null when none applies. Informational. (Declared 2.0.4;
+            production always returned it.)
+          type:
+          - string
+          - 'null'
     EducationalContext:
       description: Fixed educational-content framing attached to every response.
         Establishes that responses are pharmaceutical education, not medical
@@ -2290,6 +2602,13 @@ components:
           $ref: '#/components/schemas/LocalizedString'
         status_label:
           $ref: '#/components/schemas/LocalizedString'
+        correction_anchors:
+          description: Opaque anchors for reporting a correction against this
+            domain's evaluation. Treat entries as opaque. (Declared 2.0.4.)
+          type: array
+          items:
+            $ref: '#/components/schemas/CorrectionAnchor'
+          default: []
     SafetySignal:
       type: object
       additionalProperties: false
@@ -2422,6 +2741,110 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LocalizedString'
+          default: []
+        risk_display:
+          description: Canonical educational risk-band display derived from the
+            source severity. It never replaces the source's own reason or
+            justification text. (Declared 2.0.4; production returns it on every
+            signal.)
+          type: object
+          additionalProperties: false
+          required:
+          - canonical_severity
+          - display_label
+          - display_summary
+          - source_scale
+          - raw_source_value
+          - mapping_version
+          - source_text_policy
+          properties:
+            canonical_severity:
+              type: string
+              enum:
+              - informational
+              - low
+              - moderate
+              - high
+              - critical
+            display_label:
+              $ref: '#/components/schemas/LocalizedString'
+            display_summary:
+              $ref: '#/components/schemas/LocalizedString'
+            source_scale:
+              type: string
+            raw_source_value:
+              type:
+              - integer
+              - number
+              - string
+              - 'null'
+            raw_source_label:
+              $ref: '#/components/schemas/LocalizedString'
+            mapping_version:
+              type: string
+            source_text_policy:
+              type: string
+        title_origin:
+          description: Where the signal title came from -- always the safety
+            database release, never generated text. (Declared 2.0.4.)
+          type: object
+          additionalProperties: false
+          required:
+          - source_owner
+          - source_release_id
+          - source_field
+          - mapping_policy_id
+          properties:
+            source_owner:
+              type: string
+              enum:
+              - safety_database_release
+            source_release_id:
+              type: string
+            source_field:
+              type: string
+            mapping_policy_id:
+              type: string
+        patient_context_attribution:
+          description: Whether, and how, the supplied patient_context shaped this
+            finding. (Declared 2.0.4.)
+          type: object
+          additionalProperties: false
+          required:
+          - attribution
+          - inputs_used
+          - baseline_severity
+          properties:
+            attribution:
+              type: string
+              enum:
+              - none
+              - refined_by_context
+              - severity_raised_by_context
+            matched_allergens:
+              description: Allergen labels from patient_context that produced
+                this allergy finding.
+              type: array
+              items:
+                type: string
+              default: []
+            inputs_used:
+              type: array
+              items:
+                type: string
+              default: []
+            baseline_severity:
+              description: The severity this finding would have had without
+                patient_context; set only for severity_raised_by_context.
+              type:
+              - string
+              - 'null'
+        correction_anchors:
+          description: Opaque anchors for reporting a correction against this
+            signal. Treat entries as opaque. (Declared 2.0.4.)
+          type: array
+          items:
+            $ref: '#/components/schemas/CorrectionAnchor'
           default: []
     MedicationResolution:
       type: object
