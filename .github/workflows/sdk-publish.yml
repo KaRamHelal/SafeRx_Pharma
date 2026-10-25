@@ -118,12 +118,13 @@ jobs:
           # Trusted publishing needs npm >= 11.5.1; Node 22's bundled npm is older.
           npm install -g npm@11.6.2
           npm --version
+          if [ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then echo "OIDC token endpoint: available"; else echo "OIDC token endpoint: MISSING (id-token: write not granted)"; fi
           npm install
           npm run build
           # Authenticated by npm trusted publishing (OIDC, id-token: write) only. No
           # NODE_AUTH_TOKEN: the stored token cannot bypass 2FA, and a token present in the
           # environment would be sent instead of the OIDC exchange and fail with E403.
-          npm publish --access public
+          npm publish --access public --loglevel verbose 2>&1 | tee npm-publish.log | grep -iv "authorization" | grep -i "oidc\|trusted\|provenance\|publish\|error" ; exit "${PIPESTATUS[0]}"
 
       - name: Setup .NET
         # Each registry publishes independently: an expired token for one must not
