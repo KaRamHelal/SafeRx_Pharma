@@ -18,9 +18,11 @@ groups:
     generators:
       - name: fernapi/fern-typescript-sdk
         version: 3.48.2
+        # Not a publishing path. saferx-pharma-sdk is published ONLY by
+        # .github/workflows/sdk-publish.yml through npm trusted publishing (OIDC, no token);
+        # see RELEASE_CHECKLIST.md "Publishing". This group only renders locally if run.
         output:
-          location: npm
-          package-name: saferx-pharma-sdk
-          token: ${NPM_TOKEN}
+          location: local-file-system
+          path: ../../../build/fern-ts-sdk
         config:
           namespaceExport: SafeRx

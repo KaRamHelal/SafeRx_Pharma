@@ -27,3 +27,23 @@ The current checked-in release is `2.0.5` (see `release/current.yaml`; the filen
 stable across releases, only its contents change). Publication is triggered only by a
 `git tag v2.0.5` + push, or the `sdk-publish.yml` `workflow_dispatch` with
 `version: 2.0.5`.
+
+## Publishing (credentials)
+
+`sdk-publish.yml` publishes all three registries. Run it by pushing a `vX.Y.Z` tag, or with
+`gh workflow run sdk-publish.yml -R KaRamHelal/SafeRx_Pharma -f version=X.Y.Z`.
+
+- **npm (`saferx-pharma-sdk`): trusted publishing only, with no token.**
+  - The package's Trusted Publisher on npmjs.com (account `k_helal`, package Settings) is
+    user `KaRamHelal`, repository `SafeRx_Pharma`, workflow `sdk-publish.yml`, and no
+    environment.
+  - The job's GitHub `id-token` is exchanged for a one-time publish credential, and npm
+    attaches signed provenance.
+  - Do not add an npm token to the workflow or to Fern; npm is retiring tokens that bypass
+    2FA. If a publish fails with `OIDC token exchange error - package not found`, the
+    Trusted Publisher's four values no longer match this repository or workflow file
+    (renaming either breaks it).
+- **PyPI (`saferx-pharma`)** and **NuGet (`SafeRx`)** publish with the `PYPI_TOKEN` and
+  `NUGET_API_KEY` repository secrets.
+- Fern only builds the docs site (`docs-publish.yml`). Its SDK generator groups are not a
+  publishing path.

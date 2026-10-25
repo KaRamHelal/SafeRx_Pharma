@@ -115,16 +115,18 @@ jobs:
         if: ${{ !cancelled() && steps.changelog.outcome == 'success' }}
         working-directory: packages/typescript
         run: |
-          # Trusted publishing needs npm >= 11.5.1; Node 22's bundled npm is older.
+          # npm is published ONLY by trusted publishing (OIDC): npmjs.com's Trusted Publisher
+          # for saferx-pharma-sdk names this repository and this workflow file, and the job's
+          # id-token is exchanged for a one-time publish credential with signed provenance.
+          # There is no npm token anywhere -- npm is retiring tokens that bypass 2FA, and a
+          # token in the environment would only get in the way. Needs npm >= 11.5.1.
+          if [ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then
+            echo "::error::npm trusted publishing needs 'id-token: write' on this workflow"; exit 1
+          fi
           npm install -g npm@11.6.2
-          npm --version
-          if [ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then echo "OIDC token endpoint: available"; else echo "OIDC token endpoint: MISSING (id-token: write not granted)"; fi
           npm install
           npm run build
-          # Authenticated by npm trusted publishing (OIDC, id-token: write) only. No
-          # NODE_AUTH_TOKEN: the stored token cannot bypass 2FA, and a token present in the
-          # environment would be sent instead of the OIDC exchange and fail with E403.
-          npm publish --access public --loglevel verbose 2>&1 | tee npm-publish.log | grep -iv "authorization" | grep -i "oidc\|trusted\|provenance\|publish\|error" ; exit "${PIPESTATUS[0]}"
+          npm publish --access public
 
       - name: Setup .NET
         # Each registry publishes independently: an expired token for one must not
