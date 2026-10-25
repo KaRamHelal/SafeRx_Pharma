@@ -39,6 +39,13 @@ Entries below are not a backfilled reconstruction of that history.
   `enterprise_ocr_prescription_events` returns `text/event-stream` as documented. A backend
   4xx on eRx or OCR now reaches the caller with its real status instead of `503
   trusted_accounting_finalization_unavailable`. (Server-side fixes; no SDK change.)
+- Quota now works as documented (server-side, 2026-10-22). Each of the five classes
+  (`drug_lookups`, `autocomplete`, `safety_boards`, `ocr_prescriptions`, `mcp_calls`) is one
+  shared daily allowance, and a quota error names the class in `quota.metric`. A safety or eRx
+  check costs 1 unit (it cost 2), and eRx checks share the `safety_boards` pool. OCR follow-up
+  calls and MCP protocol requests that run no tool cost 0, and a request SafeRx refuses
+  (`4xx`) costs nothing. Before this fix each operation had its own counter and every call was
+  charged an extra unit. Registry lookups are now capped at the published daily allowance.
 
 ## [2.0.4] - 2026-10-21
 

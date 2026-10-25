@@ -5,25 +5,31 @@ subtitle: Quotas, retries, idempotency, pagination, and request IDs
 
 ## Quota classes
 
-Each operation has its own daily counter, named by the `quota.metric` in a quota
-error (for example `safety_check_enterprise`, `erx_safety_check`,
-`registry_search_enterprise`). Operations in the same class share an allowance
-**size**, not a counter: running eRx checks does not use up regular safety
-checks, and the other way round.
+Every metered operation draws from one of five daily classes. Each class is **one
+shared allowance**: every operation in it draws from the same counter, and a quota error
+names the class in `quota.metric`.
 
-Each call draws the operation's own units **plus one request unit**. A safety or
-eRx check therefore draws 2 units; a hosted MCP tool call draws the units of the
-operation it runs. An OCR read-back, events stream, resolve, review or safety
-step draws from its own OCR counter.
+| Class (`quota.metric`) | Operations | Units per call |
+|---|---|---|
+| `drug_lookups` | `enterprise_registry_search`, `enterprise_registry_product_detail`, `enterprise_registry_resolve`, `enterprise_registry_ingredients` | 1 |
+| `autocomplete` | `enterprise_registry_autocomplete` (separate, so typing never eats into your lookup budget) | 1 |
+| `safety_boards` | `enterprise_safety_check` and `enterprise_erx_safety_check` — eRx checks share the same pool as regular safety checks | 1 |
+| `ocr_prescriptions` | `enterprise_ocr_prescription_create`; the read, events, resolve, review and safety calls that follow one upload draw 0 | 1 / 0 |
+| `mcp_calls` | Every hosted MCP tool call (see [MCP Server](/ai-integration/mcp-server)); `initialize`, `tools/list` and other protocol requests draw 0 | 1 / 0 |
 
-The self-service **`enterprise_free`** plan's daily allowance per operation:
+A call costs the units above whatever its size: a 25-result search or a ten-medication
+safety check is still 1. A request SafeRx refuses (a `4xx` such as a validation error)
+draws nothing.
 
-| Class | Operations | Daily allowance per operation | When exhausted |
-|---|---|---|---|
-| Registry | search, suggest, resolve, product detail, ingredients | 1,380 units | Not denied (metered); the short-term ceiling below still applies |
-| Safety | `enterprise_safety_check`, `enterprise_erx_safety_check` | 180 units (90 checks) | `429 quota.exceeded` |
-| OCR | `enterprise_ocr_prescription_create` and each follow-up operation | 30 units | `429 quota.exceeded` |
-| Hosted MCP | every tool call | 180 units | `429 quota.exceeded` |
+The self-service **`enterprise_free`** plan's daily allowances:
+
+| Class | Daily allowance |
+|---|---|
+| `drug_lookups` | 180 |
+| `autocomplete` | 1,200 |
+| `safety_boards` | 180 |
+| `ocr_prescriptions` | 30 |
+| `mcp_calls` | 180 |
 
 Daily quota is a rolling 24-hour window: each request stops counting 24 hours
 after it was made, so an exhausted allowance recovers as earlier usage ages out
