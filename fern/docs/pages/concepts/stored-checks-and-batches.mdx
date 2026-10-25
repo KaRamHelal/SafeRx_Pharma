@@ -1,0 +1,51 @@
+---
+title: Stored checks and batches
+subtitle: Read a check back by its id, and run many checks asynchronously
+---
+
+## Every check is stored
+
+Every successful `POST /safety/checks` and `POST /erx/safety-checks` response carries a
+`check_id`. For **90 days**, `GET /safety/checks/{check_id}` returns:
+
+- `inputs`: the request as you submitted it;
+- `result`: the exact response you received;
+- `status`, `created_at` and `expires_at`.
+
+Reading costs 0 units. Any API key of your organization can read the check, so key rotation
+doesn't lose access. An unknown or expired `check_id`, or one belonging to another
+organization, returns `404 enterprise.safety.check_not_found`.
+
+A check is stored before it's returned. If storage is briefly unavailable, the request
+fails with `503 enterprise.safety.check_store_unavailable` at zero usage and is safe to
+retry.
+
+## Asynchronous batches
+
+`POST /safety/check-batches` takes up to **100** `items` and needs an `Idempotency-Key`.
+Each item is evaluated exactly like a single check. Batch-level `locale`,
+`requested_domains` and `patient_context` apply unless an item sets its own.
+
+```json
+{
+  "requested_domains": ["ddi"],
+  "items": [
+    {"client_item_id": "rx-1", "medications": [{"input_text": "Warfarin"}, {"input_text": "Aspirin"}]},
+    {"client_item_id": "rx-2", "medications": [{"input_text": "Ibuprofen"}, {"input_text": "Warfarin"}]}
+  ]
+}
+```
+
+The response is `202` with a `batch_id` and one `check_id` per item. Poll each with
+`GET /safety/checks/{check_id}`. An item reads `pending` until it's evaluated, then
+`completed` (with `result`) or `failed` (with `problem`, the RFC 9457 problem the item
+produced). One bad item never fails the rest.
+
+### What a batch costs
+
+1 `safety_boards` unit per **evaluated** item. A failed item costs nothing.
+
+- The units are held when the batch is accepted and settled when it finishes.
+- A batch larger than your remaining allowance, or than your plan's hourly
+  `safety_boards` ceiling, is refused whole with `429`.
+- More than 100 items is `422 request.collection_too_large`, and nothing is charged.

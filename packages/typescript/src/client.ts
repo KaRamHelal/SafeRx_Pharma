@@ -4,13 +4,16 @@ export type EnterpriseOperation = {
   operationId: string; method: string; path: string; idempotencyRequired: boolean;
 };
 
-export const SDK_VERSION = "2.0.5";
+export const SDK_VERSION = "2.1.0";
 export const CLIENT_KIND = "typescript_sdk";
 export const SDK_LANGUAGE = "typescript";
 export const MAX_ATTEMPTS = 3;
 export const RETRY_BACKOFF_BASE_SECONDS = 0.1;
 export const RETRY_BACKOFF_MAX_SECONDS = 2.0;
 export const OPERATIONS: Record<string, EnterpriseOperation> = {
+  enterprise_allergy_families: { operationId: 'enterprise_allergy_families', method: 'GET', path: '/allergies/families', idempotencyRequired: false },
+  enterprise_allergy_resolve: { operationId: 'enterprise_allergy_resolve', method: 'POST', path: '/allergies/resolve', idempotencyRequired: false },
+  enterprise_allergy_substances: { operationId: 'enterprise_allergy_substances', method: 'GET', path: '/allergies/substances', idempotencyRequired: false },
   enterprise_capabilities: { operationId: 'enterprise_capabilities', method: 'GET', path: '/capabilities', idempotencyRequired: false },
   enterprise_erx_safety_check: { operationId: 'enterprise_erx_safety_check', method: 'POST', path: '/erx/safety-checks', idempotencyRequired: true },
   enterprise_ocr_prescription_create: { operationId: 'enterprise_ocr_prescription_create', method: 'POST', path: '/ocr/prescriptions', idempotencyRequired: true },
@@ -26,6 +29,8 @@ export const OPERATIONS: Record<string, EnterpriseOperation> = {
   enterprise_registry_search: { operationId: 'enterprise_registry_search', method: 'GET', path: '/registry/search', idempotencyRequired: false },
   enterprise_safety_capabilities: { operationId: 'enterprise_safety_capabilities', method: 'GET', path: '/safety/capabilities', idempotencyRequired: false },
   enterprise_safety_check: { operationId: 'enterprise_safety_check', method: 'POST', path: '/safety/checks', idempotencyRequired: true },
+  enterprise_safety_check_batch: { operationId: 'enterprise_safety_check_batch', method: 'POST', path: '/safety/check-batches', idempotencyRequired: true },
+  enterprise_safety_check_read: { operationId: 'enterprise_safety_check_read', method: 'GET', path: '/safety/checks/{check_id}', idempotencyRequired: false },
   enterprise_status: { operationId: 'enterprise_status', method: 'GET', path: '/status', idempotencyRequired: false },
 };
 

@@ -27,7 +27,7 @@ RETRY_BACKOFF_BASE_SECONDS = 0.1
 RETRY_BACKOFF_MAX_SECONDS = 2.0
 CLIENT_KIND = "python_sdk"
 SDK_LANGUAGE = "python"
-SDK_VERSION = "2.0.5"
+SDK_VERSION = "2.1.0"
 
 
 @dataclass(frozen=True)
@@ -39,6 +39,9 @@ class Operation:
 
 
 OPERATIONS = {
+    'enterprise_allergy_families': Operation('enterprise_allergy_families', 'GET', '/allergies/families', False),
+    'enterprise_allergy_resolve': Operation('enterprise_allergy_resolve', 'POST', '/allergies/resolve', False),
+    'enterprise_allergy_substances': Operation('enterprise_allergy_substances', 'GET', '/allergies/substances', False),
     'enterprise_capabilities': Operation('enterprise_capabilities', 'GET', '/capabilities', False),
     'enterprise_erx_safety_check': Operation('enterprise_erx_safety_check', 'POST', '/erx/safety-checks', True),
     'enterprise_ocr_prescription_create': Operation('enterprise_ocr_prescription_create', 'POST', '/ocr/prescriptions', True),
@@ -54,6 +57,8 @@ OPERATIONS = {
     'enterprise_registry_search': Operation('enterprise_registry_search', 'GET', '/registry/search', False),
     'enterprise_safety_capabilities': Operation('enterprise_safety_capabilities', 'GET', '/safety/capabilities', False),
     'enterprise_safety_check': Operation('enterprise_safety_check', 'POST', '/safety/checks', True),
+    'enterprise_safety_check_batch': Operation('enterprise_safety_check_batch', 'POST', '/safety/check-batches', True),
+    'enterprise_safety_check_read': Operation('enterprise_safety_check_read', 'GET', '/safety/checks/{check_id}', False),
     'enterprise_status': Operation('enterprise_status', 'GET', '/status', False),
 }
 

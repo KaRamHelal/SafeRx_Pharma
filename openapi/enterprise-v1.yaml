@@ -291,43 +291,68 @@ paths:
   /safety/checks/{check_id}:
     get:
       operationId: enterprise_safety_check_read
-      summary: 'Deferred: read back a previously created safety check'
-      description: Not yet available. This operation is documented for contract
-        completeness, No plan grants its bundle, so every caller receives `403 API_KEY_NOT_ENTITLED`
-        after authentication; a key holding the bundle would receive `503
-        capability_unavailable` while the capability is disabled. Callers should retain the response from `enterprise_safety_check`
-        directly rather than expecting to read it back later.
-      x-status: deferred
+      summary: Read a stored safety check
+      description: >-
+        Returns a stored safety check -- the request as submitted (`inputs`) and
+        the exact response returned (`result`) -- for 90 days after it ran. Every
+        `POST /safety/checks`, `POST /erx/safety-checks` and batch item stores one and
+        returns its `check_id`. Any API key of the same organization may read it; an
+        unknown, expired or other-organization `check_id` returns `404
+        enterprise.safety.check_not_found`. A batch item reads `status: pending` until
+        evaluated, then `completed` (with `result`) or `failed` (with `problem`). Reading
+        costs 0 units.
+      parameters:
+      - $ref: ./components.yaml#/components/parameters/signedSignature
+      - $ref: ./components.yaml#/components/parameters/signedNonce
+      - $ref: ./components.yaml#/components/parameters/signedTimestamp
+      - name: check_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^chk_[0-9a-f]{32}$
       responses:
-        '403':
-          $ref: '#/components/responses/Problem'
-        '503':
-          $ref: '#/components/responses/Problem'
+        '200':
+          description: The stored safety check
+          content:
+            application/json:
+              schema:
+                $ref: ./components.yaml#/components/schemas/SafetyCheckRecord
         default:
           $ref: '#/components/responses/Problem'
   /safety/check-batches:
     post:
       operationId: enterprise_safety_check_batch
-      summary: 'Deferred: run multiple safety checks in one call'
-      description: Not yet available. This operation is documented for contract
-        completeness, No plan grants its bundle, so every caller receives `403 API_KEY_NOT_ENTITLED`
-        after authentication; a key holding the bundle would receive `503
-        capability_unavailable` while the capability is disabled. Run individual `enterprise_safety_check` calls until this is
-        promoted.
-      x-status: deferred
+      summary: Submit an asynchronous batch of safety checks
+      description: >-
+        Accepts up to 100 `items`, each evaluated exactly like `POST
+        /safety/checks` (batch-level `locale`, `requested_domains` and `patient_context`
+        apply unless an item sets its own). Returns `202` with a `batch_id` and one
+        `check_id` per item; poll `GET /safety/checks/{check_id}` for each result. Costs
+        1 `safety_boards` unit per evaluated item -- held at acceptance, settled when the
+        batch finishes, nothing for a failed item. A batch larger than the remaining
+        allowance (or the plan's hourly `safety_boards` ceiling) is refused whole with
+        `429`; more than 100 items is `422 request.collection_too_large`. Requires
+        `Idempotency-Key`.
       x-idempotency-required: true
+      parameters:
+      - $ref: ./components.yaml#/components/parameters/signedSignature
+      - $ref: ./components.yaml#/components/parameters/signedNonce
+      - $ref: ./components.yaml#/components/parameters/signedTimestamp
+      - $ref: ./components.yaml#/components/parameters/idempotencyKey
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              additionalProperties: false
+              $ref: ./components.yaml#/components/schemas/SafetyCheckBatchRequest
       responses:
-        '403':
-          $ref: '#/components/responses/Problem'
-        '503':
-          $ref: '#/components/responses/Problem'
+        '202':
+          description: Batch accepted; every item has its check_id
+          content:
+            application/json:
+              schema:
+                $ref: ./components.yaml#/components/schemas/SafetyCheckBatchReceipt
         default:
           $ref: '#/components/responses/Problem'
   /erx/safety-checks:
@@ -361,64 +386,113 @@ paths:
   /allergies/resolve:
     post:
       operationId: enterprise_allergy_resolve
-      summary: 'Deferred: resolve free-text allergy entries'
-      description: Not yet available. This operation is documented for contract
-        completeness, No plan grants its bundle, so every caller receives `403 API_KEY_NOT_ENTITLED`
-        after authentication; a key holding the bundle would receive `503
-        capability_unavailable` while the capability is disabled. Allergy state can still be supplied on a safety check via
-        `patient_context.allergies` even though this dedicated resolver is deferred.
-      x-status: deferred
+      summary: Resolve allergies to allergy families
+      description: >-
+        Resolves up to 50 declared allergies -- each by `input_text`,
+        `family_id`, `sfrx_id`, or a `substance_id` from `GET /allergies/substances` --
+        against the active allergy release. Text matches exactly after normalization
+        (case, Arabic letter variants and diacritics); use the substances search for
+        partial names. Each `normalized` result carries a `patient_context_entry` to pass
+        unchanged as one `patient_context.allergies[]` entry of a safety check, where it
+        resolves to the same families. Costs 1 `safety_boards` unit.
+      parameters:
+      - $ref: ./components.yaml#/components/parameters/signedSignature
+      - $ref: ./components.yaml#/components/parameters/signedNonce
+      - $ref: ./components.yaml#/components/parameters/signedTimestamp
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              additionalProperties: false
+              $ref: ./components.yaml#/components/schemas/AllergyResolutionRequest
       responses:
-        '403':
-          $ref: '#/components/responses/Problem'
-        '503':
-          $ref: '#/components/responses/Problem'
+        '200':
+          description: Each allergy resolved against the active allergy release
+          content:
+            application/json:
+              schema:
+                $ref: ./components.yaml#/components/schemas/AllergyResolutionResponse
         default:
           $ref: '#/components/responses/Problem'
   /allergies/families:
     get:
       operationId: enterprise_allergy_families
-      summary: 'Deferred: list allergy families'
-      description: Not yet available. This operation is documented for contract
-        completeness, No plan grants its bundle, so every caller receives `403 API_KEY_NOT_ENTITLED`
-        after authentication; a key holding the bundle would receive `503
-        capability_unavailable` while the capability is disabled.
-      x-status: deferred
+      summary: List allergy families
+      description: >-
+        Every allergy family in the active allergy release, with English and
+        Arabic names, clinical significance, reviewed aliases and cross-reactive families
+        (severity 1-5). Costs 0 units.
+      parameters:
+      - $ref: ./components.yaml#/components/parameters/signedSignature
+      - $ref: ./components.yaml#/components/parameters/signedNonce
+      - $ref: ./components.yaml#/components/parameters/signedTimestamp
+      - name: locale
+        in: query
+        required: false
+        schema:
+          $ref: ./components.yaml#/components/schemas/Locale
       responses:
-        '403':
-          $ref: '#/components/responses/Problem'
-        '503':
-          $ref: '#/components/responses/Problem'
+        '200':
+          description: Every allergy family in the active allergy release
+          content:
+            application/json:
+              schema:
+                $ref: ./components.yaml#/components/schemas/AllergyFamilyList
         default:
           $ref: '#/components/responses/Problem'
   /allergies/substances:
     get:
       operationId: enterprise_allergy_substances
-      summary: 'Deferred: search allergy substances'
-      description: Not yet available. This operation is documented for contract
-        completeness, No plan grants its bundle, so every caller receives `403 API_KEY_NOT_ENTITLED`
-        after authentication; a key holding the bundle would receive `503
-        capability_unavailable` while the capability is disabled.
-      x-status: deferred
+      summary: Search allergy substances
+      description: >-
+        Prefix search, in English and Arabic, over allergy families,
+        single-component ingredients and products that carry allergy data, each with its
+        allergen families. `q` must be 2-80 characters; `limit` is at most 20 and `cursor`
+        stops 100 results deep (there is no empty-query browse). Ingredients are named by
+        an opaque `substance_id`, which `POST /allergies/resolve` accepts. Costs 1
+        `drug_lookups` unit.
       parameters:
+      - $ref: ./components.yaml#/components/parameters/signedSignature
+      - $ref: ./components.yaml#/components/parameters/signedNonce
+      - $ref: ./components.yaml#/components/parameters/signedTimestamp
       - name: q
         in: query
         required: true
         schema:
           type: string
           minLength: 2
+          maxLength: 80
+      - name: kind
+        in: query
+        required: false
+        description: Comma-separated subset of family, ingredient, product.
+        schema:
+          type: string
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 10
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: locale
+        in: query
+        required: false
+        schema:
+          $ref: ./components.yaml#/components/schemas/Locale
       responses:
-        '403':
-          $ref: '#/components/responses/Problem'
-        '503':
-          $ref: '#/components/responses/Problem'
+        '200':
+          description: Allergy families, ingredients and products matching q
+          content:
+            application/json:
+              schema:
+                $ref: ./components.yaml#/components/schemas/AllergySubstanceList
         default:
           $ref: '#/components/responses/Problem'
   /ocr/prescriptions:

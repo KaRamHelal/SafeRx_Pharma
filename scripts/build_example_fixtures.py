@@ -1742,6 +1742,161 @@ def build() -> dict[str, dict[str, Any]]:
         "response": reviewed_result,
     }
 
+    # ── 2.1.0 (2026-10-25): allergy reference, stored checks, async batches ────────────
+    # Every check is stored and returns its check_id (read it back for 90 days).
+    examples["enterprise_safety_check"]["response"]["check_id"] = "chk_0f1e2d3c4b5a69788796a5b4c3d2e1f0"
+    examples["enterprise_erx_safety_check"]["response"]["check_id"] = "chk_a1b2c3d4e5f60718293a4b5c6d7e8f90"
+    allergy_envelope = {
+        **envelope(),
+        "display_obligations": DISPLAY_OBLIGATIONS,
+        "review": {**NOT_REQUIRED_REVIEW},
+        "evidence_refs": [
+            {
+                "evidence_id": "allergy_release_allergy_V1.2.27",
+                "domain": "allergy",
+                "source_snapshot_id": "safety-2026-08-01",
+                "evidence_grade": "primary_label",
+                "citation_label": {"en": "Allergy release", "ar": "إصدار الحساسية"},
+                "reason": {"en": "Allergy families, ingredients and products from the active allergy release.",
+                           "ar": "عائلات الحساسية والمواد الفعالة والمنتجات من إصدار الحساسية النشط."},
+                "justification": {"en": "Allergy families, ingredients and products from the active allergy release.",
+                                  "ar": "عائلات الحساسية والمواد الفعالة والمنتجات من إصدار الحساسية النشط."},
+            }
+        ],
+        "allergy_release_id": "allergy_V1.2.27",
+    }
+    for key in ("review_outcome", "reviewed_at"):
+        allergy_envelope["review"].pop(key, None)
+    penicillins = {"family_id": "BETA_LACTAM_PENICILLIN", "name": {"en": "Penicillins (Beta-Lactam)", "ar": "البنسلينات (بيتا لاكتام)"}}
+    side_chain = {"family_id": "BETA_LACTAM_AMINOBENZYL_SIDECHAIN",
+                  "name": {"en": "Beta-Lactams (Aminobenzyl Side Chain)", "ar": "بيتا لاكتام (سلسلة أمينوبنزيل الجانبية)"}}
+    cephalosporin_cross = {
+        "family_id": "BETA_LACTAM_CEPHALOSPORIN_1G",
+        "name": {"en": "Cephalosporins (1st Generation)", "ar": "السيفالوسبورينات (الجيل الأول)"},
+        "pair_id": "PEN_CEPH1G", "severity": 4, "severity_label": {"en": "Severe", "ar": "شديدة"},
+        "bidirectional": True,
+        "mechanism": {"en": "Shared beta-lactam ring and similar side chains.", "ar": "حلقة بيتا لاكتام مشتركة وسلاسل جانبية متشابهة."},
+        "clinical_note": None,
+    }
+
+    examples["enterprise_allergy_families"] = {
+        "request": {"query_params": {"locale": "en"}},
+        "response": {
+            **allergy_envelope,
+            "items": [
+                {
+                    **penicillins,
+                    "description": {"en": "Natural and semi-synthetic penicillins.", "ar": "البنسلينات الطبيعية وشبه الصناعية."},
+                    "clinical_significance": "high",
+                    "clinical_note": None,
+                    "aliases": {"en": ["penicillin", "penicillins", "penicillin antibiotics"], "ar": ["بنسلين"]},
+                    "member_ingredient_count": 18,
+                    "cross_reactive_families": [cephalosporin_cross],
+                    "patient_context_entry": {"input_text": "Penicillins (Beta-Lactam)", "resolved_family_id": "BETA_LACTAM_PENICILLIN"},
+                }
+            ],
+            "pagination": {"limit": 82, "cursor": None, "next_cursor": None, "has_more": False},
+        },
+    }
+
+    examples["enterprise_allergy_substances"] = {
+        "request": {"query_params": {"q": "amox", "kind": "ingredient,product", "limit": 2}},
+        "response": {
+            **allergy_envelope,
+            "query": "amox",
+            "items": [
+                {
+                    "substance_id": "ingredient:3f9c2b1a7d4e6f80",
+                    "kind": "ingredient",
+                    "name": {"en": "AMOXICILLIN", "ar": "أموكسيسيللين"},
+                    "families": [side_chain, penicillins],
+                    "sfrx_id": None,
+                    "generic_name": None,
+                    "dosage_form": None,
+                    "patient_context_entry": {"input_text": "AMOXICILLIN"},
+                },
+                {
+                    "substance_id": "product:SRX-101-000042",
+                    "kind": "product",
+                    "name": LOCALIZED_AMOXICILLIN,
+                    "families": [side_chain, penicillins],
+                    "sfrx_id": "SRX-101-000042",
+                    "generic_name": {"en": "AMOXICILLIN", "ar": "أموكسيسيللين"},
+                    "dosage_form": LOCALIZED_CAPSULE,
+                    "patient_context_entry": {"input_text": "Amoxicillin 500mg Capsule", "resolved_sfrx_id": "SRX-101-000042"},
+                },
+            ],
+            "pagination": {"limit": 2, "cursor": None, "next_cursor": "2", "has_more": True},
+        },
+    }
+
+    unresolved_review = {
+        "required": True, "status": "pending", "reason_codes": ["allergy_unresolved"],
+        "minimum_reviewer_role": "qualified_professional", "review_deadline_policy": "before_relying_on_output",
+    }
+    examples["enterprise_allergy_resolve"] = {
+        "request": {"body": {"locale": "en", "items": [
+            {"client_allergy_id": "a1", "input_text": "penicillin"},
+            {"client_allergy_id": "a2", "input_text": "amoxicillin"},
+            {"client_allergy_id": "a3", "input_text": "latex gloves"},
+        ]}},
+        "response": {
+            **allergy_envelope,
+            "review": unresolved_review,
+            "items": [
+                {"client_allergy_id": "a1", "input_text": "penicillin", "status": "normalized", "match_kind": "family",
+                 "families": [penicillins], "resolved_family_id": "BETA_LACTAM_PENICILLIN", "resolved_sfrx_id": None,
+                 "resolved_substance_id": None, "matched_name": "Penicillins (Beta-Lactam)", "candidate_count": 1,
+                 "cross_reactive_families": [cephalosporin_cross],
+                 "patient_context_entry": {"input_text": "penicillin", "resolved_family_id": "BETA_LACTAM_PENICILLIN"}},
+                {"client_allergy_id": "a2", "input_text": "amoxicillin", "status": "normalized", "match_kind": "ingredient",
+                 "families": [side_chain, penicillins], "resolved_family_id": None, "resolved_sfrx_id": None,
+                 "resolved_substance_id": "ingredient:3f9c2b1a7d4e6f80", "matched_name": "amoxicillin", "candidate_count": 1,
+                 "cross_reactive_families": [cephalosporin_cross], "patient_context_entry": {"input_text": "amoxicillin"}},
+                {"client_allergy_id": "a3", "input_text": "latex gloves", "status": "unresolved", "match_kind": None,
+                 "families": [], "resolved_family_id": None, "resolved_sfrx_id": None, "resolved_substance_id": None,
+                 "matched_name": None, "candidate_count": 0, "cross_reactive_families": [], "patient_context_entry": None},
+            ],
+            "limitations": [{"en": "Resolution matches the active allergy release vocabulary exactly. Use the substances search for partial names, then pass the returned identifier.",
+                             "ar": "تتم المطابقة حرفيًا مع مفردات إصدار الحساسية النشط. استخدم بحث المواد للأسماء الجزئية ثم مرّر المعرّف المُعاد."}],
+        },
+    }
+
+    stored_result = json.loads(json.dumps(examples["enterprise_safety_check"]["response"]))
+    stored_result["check_id"] = "chk_0f1e2d3c4b5a69788796a5b4c3d2e1f0"
+    examples["enterprise_safety_check_read"] = {
+        "request": {"path_params": {"check_id": "chk_0f1e2d3c4b5a69788796a5b4c3d2e1f0"}},
+        "response": {
+            "request_id": "req_example_0002",
+            "check_id": "chk_0f1e2d3c4b5a69788796a5b4c3d2e1f0",
+            "kind": "safety_check",
+            "status": "completed",
+            "created_at": "2026-10-25T12:00:00+00:00",
+            "completed_at": "2026-10-25T12:00:00+00:00",
+            "expires_at": "2027-01-23T12:00:00+00:00",
+            "inputs": examples["enterprise_safety_check"]["request"]["body"],
+            "result": stored_result,
+        },
+    }
+
+    examples["enterprise_safety_check_batch"] = {
+        "request": {"body": {"requested_domains": ["ddi"], "items": [
+            {"client_item_id": "rx-1", "medications": [{"input_text": "Warfarin"}, {"input_text": "Aspirin"}]},
+            {"client_item_id": "rx-2", "medications": [{"input_text": "Ibuprofen"}, {"input_text": "Warfarin"}]},
+        ]}, "headers": {"Idempotency-Key": "batch-2026-10-25-001"}},
+        "response": {
+            "request_id": "req_example_0003",
+            "batch_id": "bat_8a7b6c5d4e3f20112233445566778899",
+            "status": "accepted",
+            "item_count": 2,
+            "items": [
+                {"client_item_id": "rx-1", "check_id": "chk_11111111111111111111111111111111"},
+                {"client_item_id": "rx-2", "check_id": "chk_22222222222222222222222222222222"},
+            ],
+            "result_retrieval": "GET /api/enterprise/v1/safety/checks/{check_id}",
+        },
+    }
+
     return examples
 
 

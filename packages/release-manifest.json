@@ -1,20 +1,23 @@
 {
   "api_contract_version": "enterprise-v1",
   "artifact_sha256": {
-    "packages/csharp/README.md": "e0990ff65942dcb494603f96d8a7f18ac649d0ff19583f3c46258b90d09989b6",
-    "packages/csharp/SafeRx.csproj": "68033ae39adfc4a133fa356a6baeef6810d0eadbdd9e80698cf4c0d98e3a6e28",
-    "packages/csharp/SafeRxClient.cs": "c946a91bbd2051521e0a5318bbb6491ef3986d258441efc61e9d80d32f7a9b00",
+    "packages/csharp/README.md": "187dc4f914c2bd7282a301e38bb832cff4f204964eaff6cac5db8f2210e14953",
+    "packages/csharp/SafeRx.csproj": "e31534d5221466051bd34e8bba0081e307bb3631c5b579601c4d3c60631f43c7",
+    "packages/csharp/SafeRxClient.cs": "dc4d1f224532b634180f518ee6d2041c2714cfc3894691c1ecd7d66b5b835737",
     "packages/python/README.md": "b9b57c6a7ebd2be5728b7dd8fa6babff066bf098de67cf39fc763c4f8a0dc349",
-    "packages/python/pyproject.toml": "6ea880d078e28a2b2afa243878280c71523e558e2b635c62f1109bb1cf817205",
+    "packages/python/pyproject.toml": "ee1eff57a3f88ac3a34b51f9d00dbaa5c5e921323aa2cca8eeef9dfe46d223b1",
     "packages/python/src/saferx_pharma/__init__.py": "4953ad16ce5dd43405180adb88766ac93fdfadcb88537659168f3714fbc4c3d2",
-    "packages/python/src/saferx_pharma/client.py": "1fdcf7982b5cea8155bfe2fe09b76818eea84a42694071d488339254a38d44e3",
+    "packages/python/src/saferx_pharma/client.py": "d6c2ce65625098a7cb97b51e96197893ed45df045c4641ae0b8779feff7b6592",
     "packages/typescript/README.md": "9537b13b5fe69bd033cb1c9664dc14b319eb9a7f6e70655b00d584058b32a159",
-    "packages/typescript/package.json": "e983aba232a7c50c3723652d403c6c766e063500f8f57070cf775a7ec162e84b",
-    "packages/typescript/src/client.ts": "16f8d97c9f8974feafd474df4b0beae2df41a759c3c084ae2eec8e226154c4b0",
+    "packages/typescript/package.json": "fb8dda6cffec4bbed8f571136ee432ebf0dcec5ffa4d9b0346362a38d7f93f0e",
+    "packages/typescript/src/client.ts": "e828744101382a17d72f64c036084c2c54af5abde4425cec8a3e19855dee81e6",
     "packages/typescript/tsconfig.json": "1dfaa085edc28800c8dbccf0c8093b855158371f8ee63da1395ec3de5b575d78"
   },
   "generator": "scripts/generate_enterprise_sdks.py",
   "operation_ids": [
+    "enterprise_allergy_families",
+    "enterprise_allergy_resolve",
+    "enterprise_allergy_substances",
     "enterprise_capabilities",
     "enterprise_erx_safety_check",
     "enterprise_ocr_prescription_create",
@@ -30,14 +33,16 @@
     "enterprise_registry_search",
     "enterprise_safety_capabilities",
     "enterprise_safety_check",
+    "enterprise_safety_check_batch",
+    "enterprise_safety_check_read",
     "enterprise_status"
   ],
   "publishable": true,
-  "release_id": "enterprise-v1-2026.10.21",
+  "release_id": "enterprise-v1-2026.10.25",
   "release_status": "available",
-  "sdk_version": "2.0.5",
+  "sdk_version": "2.1.0",
   "source_sha256": {
-    "openapi/components.yaml": "b247488caa612b96dd155306aea0e1526ee193cd9f76310c64a41fcc5b1b8b50",
-    "openapi/enterprise-v1.yaml": "6b958f2382ae0a7fc27bce6504565fa05af46793ed9507d4b5f30874c6ce5d67"
+    "openapi/components.yaml": "b9f2b2f2a4e9a9783e9c2cca0f33e3ff5572a81cb04d308620f0ead4192d459e",
+    "openapi/enterprise-v1.yaml": "51b5d9eb4f76d579e1016d02aef54e5cca8035ffcb494794376ff659126f6548"
   }
 }

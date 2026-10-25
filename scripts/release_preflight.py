@@ -42,6 +42,12 @@ EXPECTED_AVAILABLE_OPERATION_IDS = {
     "enterprise_ocr_prescription_resolve",
     "enterprise_ocr_prescription_safety",
     "enterprise_ocr_prescription_review",
+    # 2.1.0 (2026-10-25): the five formerly deferred operations are live.
+    "enterprise_safety_check_read",
+    "enterprise_safety_check_batch",
+    "enterprise_allergy_resolve",
+    "enterprise_allergy_families",
+    "enterprise_allergy_substances",
 }
 # These operations exist in the maintained backend OpenAPI with no non-403 success
 # response yet (live-confirmed 2026-08-15: no backend implements them and no key on
@@ -49,13 +55,7 @@ EXPECTED_AVAILABLE_OPERATION_IDS = {
 # API surface and its migration state are honestly documented) but must never carry
 # an invented 200/202 and must never appear as available in the release manifest,
 # SDKs, or docs.
-EXPECTED_DEFERRED_OPERATION_IDS = {
-    "enterprise_safety_check_read",
-    "enterprise_safety_check_batch",
-    "enterprise_allergy_resolve",
-    "enterprise_allergy_families",
-    "enterprise_allergy_substances",
-}
+EXPECTED_DEFERRED_OPERATION_IDS: set[str] = set()
 EXPECTED_OPERATION_IDS = EXPECTED_AVAILABLE_OPERATION_IDS | EXPECTED_DEFERRED_OPERATION_IDS
 FORBIDDEN_PUBLIC_PATTERNS = (
     r"(?i)openbao",

@@ -1,0 +1,138 @@
+{
+  "request": {
+    "path_params": {
+      "check_id": "chk_0f1e2d3c4b5a69788796a5b4c3d2e1f0"
+    }
+  },
+  "response": {
+    "check_id": "chk_0f1e2d3c4b5a69788796a5b4c3d2e1f0",
+    "completed_at": "2026-10-25T12:00:00+00:00",
+    "created_at": "2026-10-25T12:00:00+00:00",
+    "expires_at": "2027-01-23T12:00:00+00:00",
+    "inputs": {
+      "idempotency_key": "example-safety-check-0001",
+      "locale": "en",
+      "medications": [
+        {
+          "client_medication_id": "rx-line-1",
+          "input_text": "amoxicillin 500mg",
+          "role": "target_medication"
+        },
+        {
+          "client_medication_id": "current-1",
+          "role": "current_medication",
+          "sfrx_id": "SRX-101-000042"
+        }
+      ],
+      "requested_domains": [
+        "ddi",
+        "allergy"
+      ]
+    },
+    "kind": "safety_check",
+    "request_id": "req_example_0002",
+    "result": {
+      "check_id": "chk_0f1e2d3c4b5a69788796a5b4c3d2e1f0",
+      "context_summary": {
+        "context_sources": [],
+        "contradiction_count": 0,
+        "missing_context_count": 0,
+        "profile_context_version": null,
+        "stale_context_count": 0,
+        "status": "baseline_only"
+      },
+      "correction_anchors": [],
+      "display_obligations": {
+        "may_not_describe_as_medical_advice": true,
+        "must_preserve_arabic_text": true,
+        "must_preserve_rtl_layout": true,
+        "must_show_educational_boundary": true,
+        "must_show_professional_review_language": false,
+        "must_show_source_snapshot": true
+      },
+      "domain_coverage": [
+        {
+          "code": "ddi_evaluated",
+          "domain": "ddi",
+          "status": "evaluated"
+        },
+        {
+          "code": "allergy_evaluated",
+          "domain": "allergy",
+          "status": "evaluated"
+        }
+      ],
+      "educational_context": {
+        "basis": "curated_pharmaceutical_reference_data",
+        "claim_catalog_version": "2026.08.01",
+        "classification": "pharmaceutical_education",
+        "generated_at": "2026-08-15T12:00:00+00:00",
+        "locale": "en",
+        "not_dispensing_authorization": true,
+        "not_medical_advice": true,
+        "policy_version": "2026.08.01",
+        "professional_review_required": false,
+        "source_snapshot_id": "edu-snapshot-2026-08-01",
+        "supported_locales": [
+          "ar-EG",
+          "ar",
+          "en"
+        ]
+      },
+      "limitations": [],
+      "locale": "en",
+      "request_id": "req_example_0001",
+      "resolved_medications": [
+        {
+          "display_name": {
+            "ar": "أموكسيسيلين 500 مجم كبسولة",
+            "en": "Amoxicillin 500 mg Oral Capsule"
+          },
+          "medication_ref": "rx-line-1",
+          "resolution_status": "resolved",
+          "review_reason_codes": [],
+          "role": "target_medication",
+          "sfrx_id": "SRX-101-000043",
+          "strength": "500 mg"
+        },
+        {
+          "display_name": {
+            "ar": "منتج تجريبي 500 مجم قرص",
+            "en": "Example Product 500 mg Oral Tablet"
+          },
+          "medication_ref": "current-1",
+          "resolution_status": "resolved",
+          "review_reason_codes": [],
+          "role": "current_medication",
+          "sfrx_id": "SRX-101-000042",
+          "strength": "500 mg"
+        }
+      ],
+      "result_id": "res_example_0002",
+      "review": {
+        "minimum_reviewer_role": "none",
+        "reason_codes": [],
+        "required": false,
+        "review_deadline_policy": "not_applicable",
+        "review_outcome": null,
+        "reviewed_at": null,
+        "status": "not_required"
+      },
+      "schema_version": "1.0.0",
+      "signals": [],
+      "source_provenance": {
+        "claim_catalog_version": "2026.08.01",
+        "policy_version": "2026.08.01",
+        "registry_snapshot_id": "registry-2026-08-01",
+        "safety_snapshot_id": "safety-2026-08-01"
+      },
+      "summary": {
+        "ar": "لم يتم العثور على تفاعلات للمجالات المطلوبة.",
+        "en": "No interactions found for the requested domains."
+      },
+      "surface": "enterprise_api",
+      "unavailable_domains": []
+    },
+    "status": "completed"
+  }
+}

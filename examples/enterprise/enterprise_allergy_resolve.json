@@ -1,0 +1,205 @@
+{
+  "request": {
+    "body": {
+      "items": [
+        {
+          "client_allergy_id": "a1",
+          "input_text": "penicillin"
+        },
+        {
+          "client_allergy_id": "a2",
+          "input_text": "amoxicillin"
+        },
+        {
+          "client_allergy_id": "a3",
+          "input_text": "latex gloves"
+        }
+      ],
+      "locale": "en"
+    }
+  },
+  "response": {
+    "allergy_release_id": "allergy_V1.2.27",
+    "display_obligations": {
+      "may_not_describe_as_medical_advice": true,
+      "must_preserve_arabic_text": true,
+      "must_preserve_rtl_layout": true,
+      "must_show_educational_boundary": true,
+      "must_show_professional_review_language": false,
+      "must_show_source_snapshot": true
+    },
+    "educational_context": {
+      "basis": "curated_pharmaceutical_reference_data",
+      "claim_catalog_version": "2026.08.01",
+      "classification": "pharmaceutical_education",
+      "generated_at": "2026-08-15T12:00:00+00:00",
+      "locale": "en",
+      "not_dispensing_authorization": true,
+      "not_medical_advice": true,
+      "policy_version": "2026.08.01",
+      "professional_review_required": false,
+      "source_snapshot_id": "edu-snapshot-2026-08-01",
+      "supported_locales": [
+        "ar-EG",
+        "ar",
+        "en"
+      ]
+    },
+    "evidence_refs": [
+      {
+        "citation_label": {
+          "ar": "إصدار الحساسية",
+          "en": "Allergy release"
+        },
+        "domain": "allergy",
+        "evidence_grade": "primary_label",
+        "evidence_id": "allergy_release_allergy_V1.2.27",
+        "justification": {
+          "ar": "عائلات الحساسية والمواد الفعالة والمنتجات من إصدار الحساسية النشط.",
+          "en": "Allergy families, ingredients and products from the active allergy release."
+        },
+        "reason": {
+          "ar": "عائلات الحساسية والمواد الفعالة والمنتجات من إصدار الحساسية النشط.",
+          "en": "Allergy families, ingredients and products from the active allergy release."
+        },
+        "source_snapshot_id": "safety-2026-08-01"
+      }
+    ],
+    "items": [
+      {
+        "candidate_count": 1,
+        "client_allergy_id": "a1",
+        "cross_reactive_families": [
+          {
+            "bidirectional": true,
+            "clinical_note": null,
+            "family_id": "BETA_LACTAM_CEPHALOSPORIN_1G",
+            "mechanism": {
+              "ar": "حلقة بيتا لاكتام مشتركة وسلاسل جانبية متشابهة.",
+              "en": "Shared beta-lactam ring and similar side chains."
+            },
+            "name": {
+              "ar": "السيفالوسبورينات (الجيل الأول)",
+              "en": "Cephalosporins (1st Generation)"
+            },
+            "pair_id": "PEN_CEPH1G",
+            "severity": 4,
+            "severity_label": {
+              "ar": "شديدة",
+              "en": "Severe"
+            }
+          }
+        ],
+        "families": [
+          {
+            "family_id": "BETA_LACTAM_PENICILLIN",
+            "name": {
+              "ar": "البنسلينات (بيتا لاكتام)",
+              "en": "Penicillins (Beta-Lactam)"
+            }
+          }
+        ],
+        "input_text": "penicillin",
+        "match_kind": "family",
+        "matched_name": "Penicillins (Beta-Lactam)",
+        "patient_context_entry": {
+          "input_text": "penicillin",
+          "resolved_family_id": "BETA_LACTAM_PENICILLIN"
+        },
+        "resolved_family_id": "BETA_LACTAM_PENICILLIN",
+        "resolved_sfrx_id": null,
+        "resolved_substance_id": null,
+        "status": "normalized"
+      },
+      {
+        "candidate_count": 1,
+        "client_allergy_id": "a2",
+        "cross_reactive_families": [
+          {
+            "bidirectional": true,
+            "clinical_note": null,
+            "family_id": "BETA_LACTAM_CEPHALOSPORIN_1G",
+            "mechanism": {
+              "ar": "حلقة بيتا لاكتام مشتركة وسلاسل جانبية متشابهة.",
+              "en": "Shared beta-lactam ring and similar side chains."
+            },
+            "name": {
+              "ar": "السيفالوسبورينات (الجيل الأول)",
+              "en": "Cephalosporins (1st Generation)"
+            },
+            "pair_id": "PEN_CEPH1G",
+            "severity": 4,
+            "severity_label": {
+              "ar": "شديدة",
+              "en": "Severe"
+            }
+          }
+        ],
+        "families": [
+          {
+            "family_id": "BETA_LACTAM_AMINOBENZYL_SIDECHAIN",
+            "name": {
+              "ar": "بيتا لاكتام (سلسلة أمينوبنزيل الجانبية)",
+              "en": "Beta-Lactams (Aminobenzyl Side Chain)"
+            }
+          },
+          {
+            "family_id": "BETA_LACTAM_PENICILLIN",
+            "name": {
+              "ar": "البنسلينات (بيتا لاكتام)",
+              "en": "Penicillins (Beta-Lactam)"
+            }
+          }
+        ],
+        "input_text": "amoxicillin",
+        "match_kind": "ingredient",
+        "matched_name": "amoxicillin",
+        "patient_context_entry": {
+          "input_text": "amoxicillin"
+        },
+        "resolved_family_id": null,
+        "resolved_sfrx_id": null,
+        "resolved_substance_id": "ingredient:3f9c2b1a7d4e6f80",
+        "status": "normalized"
+      },
+      {
+        "candidate_count": 0,
+        "client_allergy_id": "a3",
+        "cross_reactive_families": [],
+        "families": [],
+        "input_text": "latex gloves",
+        "match_kind": null,
+        "matched_name": null,
+        "patient_context_entry": null,
+        "resolved_family_id": null,
+        "resolved_sfrx_id": null,
+        "resolved_substance_id": null,
+        "status": "unresolved"
+      }
+    ],
+    "limitations": [
+      {
+        "ar": "تتم المطابقة حرفيًا مع مفردات إصدار الحساسية النشط. استخدم بحث المواد للأسماء الجزئية ثم مرّر المعرّف المُعاد.",
+        "en": "Resolution matches the active allergy release vocabulary exactly. Use the substances search for partial names, then pass the returned identifier."
+      }
+    ],
+    "locale": "en",
+    "request_id": "req_example_0001",
+    "review": {
+      "minimum_reviewer_role": "qualified_professional",
+      "reason_codes": [
+        "allergy_unresolved"
+      ],
+      "required": true,
+      "review_deadline_policy": "before_relying_on_output",
+      "status": "pending"
+    },
+    "schema_version": "1.0.0",
+    "source_provenance": {
+      "claim_catalog_version": "2026.08.01",
+      "policy_version": "2026.08.01",
+      "registry_snapshot_id": "registry-2026-08-01",
+      "safety_snapshot_id": "safety-2026-08-01"
+    }
+  }
+}

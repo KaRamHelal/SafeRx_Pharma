@@ -68,6 +68,8 @@ navigation:
             path: docs/pages/concepts/ocr-lifecycle.mdx
           - page: Allergy Reference
             path: docs/pages/concepts/allergy-reference.mdx
+          - page: Stored Checks and Batches
+            path: docs/pages/concepts/stored-checks-and-batches.mdx
       - api: Enterprise API
         api-name: enterprise
 

@@ -117,7 +117,7 @@ not perform the operation is `403`:
 | 401 | `API_KEY_TIMESTAMP_INVALID` | Timestamp unparseable, offset-less, or outside the 300-second window. |
 | 401 | `API_KEY_NONCE_REJECTED` | Nonce reused or malformed. Sign every attempt, including retries, with a fresh nonce. |
 | 403 | `API_KEY_NOT_ENTITLED` | The key's plan does not include this operation. |
-| 503 | `capability_unavailable` | The key is entitled, but this operation is currently disabled on the platform (the five deferred operations). Not retryable. |
+| 503 | `capability_unavailable` | The key is entitled, but this operation is temporarily disabled on the platform. No operation is disabled today. Not retryable. |
 | 403 | `API_KEY_EXPIRED` | The key has passed its expiry. |
 | 403 | `API_KEY_DENIED` | The key or its organization is suspended, revoked, or otherwise not authorized. |
 
@@ -126,5 +126,4 @@ not perform the operation is `403`:
 Every Enterprise route is checked in the same order: authentication (`401`,
 `API_KEY_*`), then entitlement (`403 API_KEY_NOT_ENTITLED`), then whether the
 operation is enabled (`503 capability_unavailable`), then the request itself.
-A caller without the bundle is never told whether a deferred operation is
-enabled. The machine-readable field on every problem document is `code`.
+A caller without the bundle is never told whether an operation is enabled. The machine-readable field on every problem document is `code`.

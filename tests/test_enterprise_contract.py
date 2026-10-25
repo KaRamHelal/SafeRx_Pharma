@@ -30,6 +30,12 @@ EXPECTED_OPERATIONS = {
     "enterprise_ocr_prescription_resolve",
     "enterprise_ocr_prescription_safety",
     "enterprise_ocr_prescription_review",
+    # 2.1.0 (2026-10-25): live and verified, no longer deferred.
+    "enterprise_safety_check_read",
+    "enterprise_safety_check_batch",
+    "enterprise_allergy_resolve",
+    "enterprise_allergy_families",
+    "enterprise_allergy_substances",
 }
 
 # Present in the OpenAPI (documented, honestly marked x-status: deferred) but must
@@ -37,13 +43,7 @@ EXPECTED_OPERATIONS = {
 # implements these operations and no key on any plan is entitled to call them; live
 # reverification (2026-08-15) confirmed 403 (policy-denied), not the previously
 # documented 501, for every one of them.
-DEFERRED_OPERATIONS = {
-    "enterprise_safety_check_read",
-    "enterprise_safety_check_batch",
-    "enterprise_allergy_resolve",
-    "enterprise_allergy_families",
-    "enterprise_allergy_substances",
-}
+DEFERRED_OPERATIONS: set[str] = set()
 
 
 def test_public_projection_matches_current_enterprise_operation_set() -> None:

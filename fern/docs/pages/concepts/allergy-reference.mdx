@@ -1,18 +1,59 @@
 ---
 title: Allergy reference
-subtitle: Not yet available
+subtitle: Families, substances and resolution over the active allergy release
 ---
 
-`enterprise_allergy_resolve`, `enterprise_allergy_families`, and
-`enterprise_allergy_substances` are documented in the
-[API reference](/api-reference) for contract completeness, but none of them
-have a live success response yet — no backend implements them and no API key
-is entitled to call them, so each currently returns `403` (policy-denied), not
-`501`. They will be documented here as usable operations once they have a
-real, evidence-backed success contract.
+Three operations read the active allergy release. They're included in every plan that
+includes safety checks.
 
-**Allergy state can still be considered today** via
-`patient_context.allergy_state` and `patient_context.allergies` on
-[`enterprise_safety_check`](/concepts/safety-results) — the dedicated
-allergy-reference lookup operations above are a separate, not-yet-available
-capability from allergy-aware safety checking.
+| Operation | What it does | Units |
+|---|---|---|
+| `GET /allergies/families` | Every allergy family: English and Arabic names, clinical significance, reviewed aliases and cross-reactive families, with severity 1-5 | 0 |
+| `GET /allergies/substances?q=amox` | Prefix search, in English or Arabic, over families, single-component ingredients and products that carry allergy data | 1 `drug_lookups` |
+| `POST /allergies/resolve` | Resolves up to 50 declared allergies to their families | 1 `safety_boards` |
+
+## From a declared allergy to a safety check
+
+1. Find the allergen. Search with `GET /allergies/substances?q=...`; use `kind=family`,
+   `ingredient` or `product` to narrow it. Or resolve what the patient told you directly
+   with `POST /allergies/resolve`, by `input_text`, `family_id`, `sfrx_id` or a
+   `substance_id` from search.
+2. Pass the result's `patient_context_entry` unchanged as one
+   `patient_context.allergies[]` entry of a safety check, with
+   `"allergy_state": "has_entries"`.
+
+```json
+{
+  "locale": "en",
+  "requested_domains": ["allergy"],
+  "medications": [{"input_text": "Augmentin"}],
+  "patient_context": {
+    "allergy_state": "has_entries",
+    "allergies": [{"input_text": "amoxicillin"}]
+  }
+}
+```
+
+The check resolves the entry to exactly the families the resolve call reported. The two
+calls use one index, so they can't disagree.
+
+## How matching works
+
+- **Resolution is exact** after normalization: case, Arabic letter variants and
+  diacritics, punctuation.
+  - A family name or one of its reviewed aliases ("penicillin", "statins", "PPI", "بنسلين")
+    wins first.
+  - Then an ingredient's own name, then a product's exact tradename.
+  - A tradename shared by products with different families comes back as `ambiguous`.
+  - Use the substances search for partial names, then pass the identifier it returns.
+- **Ingredients keep their own families.** A combination product's families are never
+  attributed to each of its components. For example, trimethoprim is not reported as a
+  sulfonamide because it is sold combined with sulfamethoxazole.
+- **No DrugBank identifiers are returned.** Ingredients are named by an opaque, stable
+  `substance_id` that resolve accepts.
+- **Search is bounded.** `q` must be 2-80 characters, `limit` is at most 20, and `cursor`
+  stops 100 results deep. There is no empty-query browse.
+
+Results are pharmaceutical reference data from the release, never patient data, and they
+carry the same educational context, provenance and display obligations as every safety
+response.

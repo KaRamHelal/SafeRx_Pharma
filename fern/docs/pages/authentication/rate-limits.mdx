@@ -11,14 +11,15 @@ names the class in `quota.metric`.
 
 | Class (`quota.metric`) | Operations | Units per call |
 |---|---|---|
-| `drug_lookups` | `enterprise_registry_search`, `enterprise_registry_product_detail`, `enterprise_registry_resolve`, `enterprise_registry_ingredients` | 1 |
+| `drug_lookups` | `enterprise_registry_search`, `enterprise_registry_product_detail`, `enterprise_registry_resolve`, `enterprise_registry_ingredients`, `enterprise_allergy_substances` | 1 |
 | `autocomplete` | `enterprise_registry_autocomplete` (separate, so typing never eats into your lookup budget) | 1 |
-| `safety_boards` | `enterprise_safety_check` and `enterprise_erx_safety_check` — eRx checks share the same pool as regular safety checks | 1 |
+| `safety_boards` | `enterprise_safety_check`, `enterprise_erx_safety_check` (sharing one pool) and `enterprise_allergy_resolve`; `enterprise_safety_check_batch` is 1 **per evaluated item** (nothing for a failed item); reading a stored check (`enterprise_safety_check_read`) is 0 | 1 / 0 |
 | `ocr_prescriptions` | `enterprise_ocr_prescription_create`; the read, events, resolve, review and safety calls that follow one upload draw 0 | 1 / 0 |
 | `mcp_calls` | Every hosted MCP tool call (see [MCP Server](/ai-integration/mcp-server)); `initialize`, `tools/list` and other protocol requests draw 0 | 1 / 0 |
 
 A call costs the units above whatever its size: a 25-result search or a ten-medication
-safety check is still 1. A request SafeRx refuses (a `4xx` such as a validation error)
+safety check is still 1 (a batch is the one exception: it costs what its items would cost
+one by one). `enterprise_allergy_families` and the metadata routes draw 0. A request SafeRx refuses (a `4xx` such as a validation error)
 draws nothing.
 
 The self-service **`enterprise_free`** plan's daily allowances:
@@ -57,6 +58,21 @@ The code is `quota.exceeded` for both ceilings. The short-term ceiling sets
 `window_seconds: 86400`. The problem also carries `retry_after` (seconds); a
 quota `429` may not carry a `Retry-After` header, so use `retry_after` or
 `quota.reset_at`.
+
+## Request size
+
+Every Enterprise request is size-checked before anything is reserved or charged.
+
+| Limit | Error |
+|---|---|
+| JSON request bodies up to 2 MiB | `413 request.body_too_large` |
+| `enterprise_safety_check_batch` `items`: 100 | `422 request.collection_too_large` |
+| `enterprise_safety_check` `medications`: 50 | `422 request.collection_too_large` |
+| `enterprise_allergy_resolve` `items`: 50 | `422 request.collection_too_large` |
+| `enterprise_registry_resolve` `items`: 50 | `422 request.collection_too_large` |
+
+The problem `detail` names the field and the maximum. OCR uploads (multipart) are not
+affected.
 
 ## Retry-After and safe retries
 

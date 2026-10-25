@@ -45,9 +45,12 @@ public sealed class SafeRxProblemDetailsException : Exception
 
 public sealed class SafeRxClient
 {
-    public const string SdkVersion = "2.0.5";
+    public const string SdkVersion = "2.1.0";
     public static readonly IReadOnlyDictionary<string, EnterpriseOperation> Operations = new Dictionary<string, EnterpriseOperation>
     {
+        ["enterprise_allergy_families"] = new EnterpriseOperation("enterprise_allergy_families", HttpMethod.Get, "/allergies/families", false),
+        ["enterprise_allergy_resolve"] = new EnterpriseOperation("enterprise_allergy_resolve", HttpMethod.Post, "/allergies/resolve", false),
+        ["enterprise_allergy_substances"] = new EnterpriseOperation("enterprise_allergy_substances", HttpMethod.Get, "/allergies/substances", false),
         ["enterprise_capabilities"] = new EnterpriseOperation("enterprise_capabilities", HttpMethod.Get, "/capabilities", false),
         ["enterprise_erx_safety_check"] = new EnterpriseOperation("enterprise_erx_safety_check", HttpMethod.Post, "/erx/safety-checks", true),
         ["enterprise_ocr_prescription_create"] = new EnterpriseOperation("enterprise_ocr_prescription_create", HttpMethod.Post, "/ocr/prescriptions", true),
@@ -63,6 +66,8 @@ public sealed class SafeRxClient
         ["enterprise_registry_search"] = new EnterpriseOperation("enterprise_registry_search", HttpMethod.Get, "/registry/search", false),
         ["enterprise_safety_capabilities"] = new EnterpriseOperation("enterprise_safety_capabilities", HttpMethod.Get, "/safety/capabilities", false),
         ["enterprise_safety_check"] = new EnterpriseOperation("enterprise_safety_check", HttpMethod.Post, "/safety/checks", true),
+        ["enterprise_safety_check_batch"] = new EnterpriseOperation("enterprise_safety_check_batch", HttpMethod.Post, "/safety/check-batches", true),
+        ["enterprise_safety_check_read"] = new EnterpriseOperation("enterprise_safety_check_read", HttpMethod.Get, "/safety/checks/{check_id}", false),
         ["enterprise_status"] = new EnterpriseOperation("enterprise_status", HttpMethod.Get, "/status", false),
     };
     private const int MaxAttempts = 3;

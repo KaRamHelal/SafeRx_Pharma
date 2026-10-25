@@ -72,7 +72,9 @@ one explicitly when you know it, since "no entries in `allergies`" alone is
 ambiguous between "not asked" and "asked, no allergies." When
 `allergy_state` is `has_entries`, populate `allergies[]` with free-text
 entries; `entry_type` tags each as `free_text`, `family`, or `product` to
-help matching.
+help matching. To turn what the patient said into entries that resolve reliably,
+use [`POST /allergies/resolve`](/concepts/allergy-reference) and pass each result's
+`patient_context_entry` unchanged.
 
 ## Diet, supplements, and fasting
 

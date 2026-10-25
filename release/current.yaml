@@ -1,20 +1,20 @@
-release_id: enterprise-v1-2026.10.21
-release_version: 2.0.5
+release_id: enterprise-v1-2026.10.25
+release_version: 2.1.0
 status: available
 publishable: true
 
 api_contract:
   source: openapi/enterprise-v1.yaml
   openapi_version: 3.1.1
-  operation_count: 16
-  deferred_operation_count: 5
+  operation_count: 21
+  deferred_operation_count: 0
   authentication: saferx-hmac-sha256-v1
   response_policy: closed_schema
 
 artifacts:
-  python: saferx-pharma==2.0.5
-  typescript: saferx-pharma-sdk@2.0.5
-  csharp: SafeRx==2.0.5
+  python: saferx-pharma==2.1.0
+  typescript: saferx-pharma-sdk@2.1.0
+  csharp: SafeRx==2.1.0
 
 hosted_mcp:
   status: preview
@@ -35,6 +35,13 @@ availability:
   key_required: true
 
 notes:
+  - >-
+    2.1.0 -- the five formerly deferred operations are live: allergy families, allergy
+    substance search (ingredients and products, English and Arabic) and allergy resolution
+    (output feeds patient_context.allergies); every safety and eRx check is stored and returns
+    check_id, readable for 90 days with GET /safety/checks/{check_id}; asynchronous safety
+    batches (up to 100 items, 1 safety_boards unit per evaluated item). Request size is
+    bounded centrally (request.body_too_large / request.collection_too_large).
   - >-
     2.0.5 -- enterprise_erx_safety_check has a real request contract: erx_payload is a
     structured prescription (prescription_ref, lines[], current_medications[],

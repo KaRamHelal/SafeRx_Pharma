@@ -1,0 +1,53 @@
+{
+  "request": {
+    "body": {
+      "items": [
+        {
+          "client_item_id": "rx-1",
+          "medications": [
+            {
+              "input_text": "Warfarin"
+            },
+            {
+              "input_text": "Aspirin"
+            }
+          ]
+        },
+        {
+          "client_item_id": "rx-2",
+          "medications": [
+            {
+              "input_text": "Ibuprofen"
+            },
+            {
+              "input_text": "Warfarin"
+            }
+          ]
+        }
+      ],
+      "requested_domains": [
+        "ddi"
+      ]
+    },
+    "headers": {
+      "Idempotency-Key": "batch-2026-10-25-001"
+    }
+  },
+  "response": {
+    "batch_id": "bat_8a7b6c5d4e3f20112233445566778899",
+    "item_count": 2,
+    "items": [
+      {
+        "check_id": "chk_11111111111111111111111111111111",
+        "client_item_id": "rx-1"
+      },
+      {
+        "check_id": "chk_22222222222222222222222222222222",
+        "client_item_id": "rx-2"
+      }
+    ],
+    "request_id": "req_example_0003",
+    "result_retrieval": "GET /api/enterprise/v1/safety/checks/{check_id}",
+    "status": "accepted"
+  }
+}

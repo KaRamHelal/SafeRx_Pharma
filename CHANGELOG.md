@@ -11,6 +11,43 @@ Releases tracking. For the complete published version history, see
 and [NuGet (SafeRx)](https://www.nuget.org/packages/SafeRx#versions-body-tab).
 Entries below are not a backfilled reconstruction of that history.
 
+## [2.1.0] - 2026-10-25
+
+### Added
+- **Allergy reference** (included in plans with safety checks):
+  - `GET /allergies/families` lists every allergy family with English and Arabic names,
+    clinical significance, reviewed aliases and cross-reactive families (0 units).
+  - `GET /allergies/substances?q=` is a prefix search, in English and Arabic, over families,
+    single-component ingredients and products that carry allergy data (1 `drug_lookups`
+    unit). Ingredients are named by an opaque `substance_id`.
+  - `POST /allergies/resolve` resolves up to 50 allergies by text, `family_id`, `sfrx_id` or
+    `substance_id` (1 `safety_boards` unit).
+  - Every result carries a `patient_context_entry` you can pass unchanged as one
+    `patient_context.allergies[]` entry of a safety check; it resolves to the same families
+    there.
+- **Stored checks**: every `POST /safety/checks` and `POST /erx/safety-checks` response
+  carries a `check_id`. `GET /safety/checks/{check_id}` returns the stored inputs and result
+  for 90 days, to any key of your organization (0 units). Other organizations get `404`.
+- **Asynchronous batches**: `POST /safety/check-batches` takes up to 100 items. It returns
+  `202` with one `check_id` per item; poll each with `GET /safety/checks/{check_id}`
+  (`pending`, then `completed` or `failed`). A batch costs 1 `safety_boards` unit per
+  evaluated item, and nothing for a failed item.
+- **Request size limits**: JSON bodies are capped at 2 MiB (`413 request.body_too_large`).
+  Collections are capped at 100 batch items and at 50 medications, allergy-resolve items or
+  registry-resolve items (`422 request.collection_too_large`). Oversized requests are
+  refused before anything is charged.
+
+### Fixed
+- An allergy given only as text in `patient_context.allergies` (for example
+  `{"input_text": "amoxicillin"}`) now produces allergy findings. Previously Enterprise
+  checks matched allergies only by explicit family or product identifiers.
+- Common class words now resolve to their allergy family: "penicillin", "statins",
+  "PPI", "بنسلين" and 79 more reviewed aliases (allergy release V1.2.27).
+
+### Removed
+- Nothing is deferred any more. The five operations formerly marked `x-status: deferred` are
+  available and included in the SDKs.
+
 ## [2.0.5] - 2026-10-21
 
 ### Added

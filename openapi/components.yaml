@@ -1572,6 +1572,10 @@ components:
       - display_obligations
       - correction_anchors
       properties:
+        check_id:
+          type: string
+          pattern: ^chk_[0-9a-f]{32}$
+          description: The stored check's id. Read it back with `GET /safety/checks/{check_id}` for 90 days, from any API key of your organization.
         erx:
           description: Present only on enterprise_erx_safety_check responses (2.0.5) -- the
             prescription as evaluated, line by line, in request order.
@@ -2075,47 +2079,584 @@ components:
           type: boolean
         dependency_status:
           $ref: '#/components/schemas/EnterpriseCapabilityState'
-    AllergyResolution:
-      description: Response contract for the deferred enterprise_allergy_resolve
-        operation. Placeholder shape only -- this operation currently returns
-        501 upstream and has no live-verified success response.
+    AllergyReferenceEnvelope:
       type: object
-      additionalProperties: false
-      required: [request_id, schema_version, locale, items]
+      description: Shared envelope of the three Enterprise allergy reference operations (2026-10-25). Every
+        value is release vocabulary from the active allergy release, never patient data.
+      required:
+      - request_id
+      - schema_version
+      - locale
+      - educational_context
+      - source_provenance
+      - display_obligations
+      - review
+      - evidence_refs
+      - allergy_release_id
+      - items
       properties:
-        request_id: {description: 'Echo of the request identifier for correlation.', type: string}
-        schema_version: {description: "Semantic version of this response's schema shape.", type: string}
-        locale: {$ref: '#/components/schemas/Locale'}
-        items:
-          description: Resolved allergy entries.
+        request_id:
+          type: string
+        schema_version:
+          type: string
+        locale:
+          type: string
+          enum:
+          - ar-EG
+          - ar
+          - en
+          - mixed
+        educational_context:
+          $ref: '#/components/schemas/EducationalContext'
+        source_provenance:
+          $ref: '#/components/schemas/SourceProvenance'
+        display_obligations:
+          $ref: '#/components/schemas/DisplayObligations'
+        review:
+          $ref: '#/components/schemas/ReviewState'
+        evidence_refs:
           type: array
-          items: {type: object, additionalProperties: false}
-        source_provenance: {$ref: '#/components/schemas/SourceProvenance'}
-        display_obligations: {$ref: '#/components/schemas/DisplayObligations'}
+          items:
+            $ref: '#/components/schemas/EvidenceReference'
+        allergy_release_id:
+          type: string
+          description: The allergy release every item was read from (for example V1.2.26).
+    AllergyFamilyRef:
+      type: object
+      additionalProperties: false
+      required:
+      - family_id
+      - name
+      properties:
+        family_id:
+          type: string
+        name:
+          $ref: '#/components/schemas/LocalizedString'
+    AllergyCrossReactiveFamily:
+      type: object
+      additionalProperties: false
+      required:
+      - family_id
+      - name
+      - severity
+      - severity_label
+      - bidirectional
+      properties:
+        family_id:
+          type: string
+        name:
+          $ref: '#/components/schemas/LocalizedString'
+        pair_id:
+          type:
+          - string
+          - 'null'
+        severity:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: 1 low, 2 moderate, 3 high, 4 severe, 5 contraindicated.
+        severity_label:
+          $ref: '#/components/schemas/LocalizedString'
+        bidirectional:
+          type: boolean
+        mechanism:
+          oneOf:
+          - $ref: '#/components/schemas/LocalizedString'
+          - type: 'null'
+        clinical_note:
+          oneOf:
+          - $ref: '#/components/schemas/LocalizedString'
+          - type: 'null'
+    AllergyPatientContextEntry:
+      type: object
+      additionalProperties: false
+      description: Ready to pass as one patient_context.allergies[] entry of a safety check; it resolves to
+        the same families there.
+      required:
+      - input_text
+      properties:
+        input_text:
+          type: string
+        resolved_family_id:
+          type: string
+        resolved_sfrx_id:
+          type: string
+    AllergyFamily:
+      type: object
+      additionalProperties: false
+      required:
+      - family_id
+      - name
+      - clinical_significance
+      - aliases
+      - member_ingredient_count
+      - cross_reactive_families
+      - patient_context_entry
+      properties:
+        family_id:
+          type: string
+        name:
+          $ref: '#/components/schemas/LocalizedString'
+        description:
+          oneOf:
+          - $ref: '#/components/schemas/LocalizedString'
+          - type: 'null'
+        clinical_significance:
+          type: string
+        clinical_note:
+          oneOf:
+          - $ref: '#/components/schemas/LocalizedString'
+          - type: 'null'
+        aliases:
+          type: object
+          additionalProperties: false
+          required:
+          - en
+          - ar
+          properties:
+            en:
+              type: array
+              items:
+                type: string
+            ar:
+              type: array
+              items:
+                type: string
+        member_ingredient_count:
+          type: integer
+          minimum: 0
+        cross_reactive_families:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllergyCrossReactiveFamily'
+        patient_context_entry:
+          $ref: '#/components/schemas/AllergyPatientContextEntry'
     AllergyFamilyList:
-      description: Response contract for the deferred enterprise_allergy_families
-        operation. Placeholder shape only -- this operation currently returns
-        501 upstream and has no live-verified success response.
+      allOf:
+      - $ref: '#/components/schemas/AllergyReferenceEnvelope'
+      - type: object
+        required:
+        - items
+        - pagination
+        properties:
+          items:
+            type: array
+            items:
+              $ref: '#/components/schemas/AllergyFamily'
+          pagination:
+            $ref: '#/components/schemas/Pagination'
+    AllergyResolutionItem:
       type: object
       additionalProperties: false
-      required: [items, pagination]
+      description: One allergy to resolve. Identifiers win over text; text matches exactly after normalisation.
       properties:
-        items: {description: 'Allergy families.', type: array, items: {type: object, additionalProperties: false}}
-        pagination: {$ref: '#/components/schemas/Pagination'}
-        locale: {description: 'Locale used for localized text in this response.', type: string}
-        source_provenance: {$ref: '#/components/schemas/SourceProvenance'}
+        client_allergy_id:
+          type: string
+          maxLength: 128
+        input_text:
+          type: string
+          minLength: 1
+          maxLength: 200
+        family_id:
+          type: string
+        sfrx_id:
+          type: string
+          pattern: ^SRX-[0-9]{3}-[0-9]{6}$
+        substance_id:
+          type: string
+          pattern: ^(family|ingredient|product):[A-Za-z0-9_-]{1,80}$
+          description: A substance_id returned by GET /allergies/substances.
+      anyOf:
+      - required:
+        - input_text
+      - required:
+        - family_id
+      - required:
+        - sfrx_id
+      - required:
+        - substance_id
+    AllergyResolutionRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        locale:
+          type: string
+          enum:
+          - ar-EG
+          - ar
+          - en
+          - mixed
+          default: en
+        items:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/AllergyResolutionItem'
+    AllergyResolutionResult:
+      type: object
+      additionalProperties: false
+      required:
+      - status
+      - families
+      - candidate_count
+      - cross_reactive_families
+      properties:
+        client_allergy_id:
+          type:
+          - string
+          - 'null'
+        input_text:
+          type:
+          - string
+          - 'null'
+        status:
+          type: string
+          enum:
+          - normalized
+          - ambiguous
+          - unresolved
+        match_kind:
+          type:
+          - string
+          - 'null'
+          enum:
+          - family
+          - ingredient
+          - product
+          - null
+        families:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllergyFamilyRef'
+        resolved_family_id:
+          type:
+          - string
+          - 'null'
+          description: Set only when exactly one family matched.
+        resolved_sfrx_id:
+          type:
+          - string
+          - 'null'
+        resolved_substance_id:
+          type:
+          - string
+          - 'null'
+          description: The ingredient substance_id when an ingredient matched.
+        matched_name:
+          type:
+          - string
+          - 'null'
+        candidate_count:
+          type: integer
+          minimum: 0
+        cross_reactive_families:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllergyCrossReactiveFamily'
+        patient_context_entry:
+          oneOf:
+          - $ref: '#/components/schemas/AllergyPatientContextEntry'
+          - type: 'null'
+    AllergyResolutionResponse:
+      allOf:
+      - $ref: '#/components/schemas/AllergyReferenceEnvelope'
+      - type: object
+        required:
+        - items
+        - limitations
+        properties:
+          items:
+            type: array
+            items:
+              $ref: '#/components/schemas/AllergyResolutionResult'
+          limitations:
+            type: array
+            items:
+              $ref: '#/components/schemas/LocalizedString'
+    AllergySubstance:
+      type: object
+      additionalProperties: false
+      required:
+      - substance_id
+      - kind
+      - name
+      - families
+      - patient_context_entry
+      properties:
+        substance_id:
+          type: string
+          description: Opaque kind-prefixed identifier (family:, ingredient:, product:); pass it to POST /allergies/resolve.
+        kind:
+          type: string
+          enum:
+          - family
+          - ingredient
+          - product
+        name:
+          $ref: '#/components/schemas/LocalizedString'
+        families:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllergyFamilyRef'
+        sfrx_id:
+          type:
+          - string
+          - 'null'
+        generic_name:
+          oneOf:
+          - $ref: '#/components/schemas/LocalizedString'
+          - type: 'null'
+        dosage_form:
+          oneOf:
+          - $ref: '#/components/schemas/LocalizedString'
+          - type: 'null'
+        patient_context_entry:
+          $ref: '#/components/schemas/AllergyPatientContextEntry'
     AllergySubstanceList:
-      description: Response contract for the deferred enterprise_allergy_substances
-        operation. Placeholder shape only -- this operation currently returns
-        501 upstream and has no live-verified success response.
+      allOf:
+      - $ref: '#/components/schemas/AllergyReferenceEnvelope'
+      - type: object
+        required:
+        - items
+        - pagination
+        - query
+        properties:
+          query:
+            type: string
+          items:
+            type: array
+            items:
+              $ref: '#/components/schemas/AllergySubstance'
+          pagination:
+            $ref: '#/components/schemas/Pagination'
+    SafetyCheckRecord:
       type: object
       additionalProperties: false
-      required: [items, pagination]
+      description: 'A stored Enterprise safety check (2026-10-25): what was submitted and what was returned.
+        Kept 90 days and readable by any key of the owning organization; every other caller gets 404 enterprise.safety.check_not_found.'
+      required:
+      - request_id
+      - check_id
+      - kind
+      - status
+      - created_at
+      - expires_at
+      - inputs
       properties:
-        items: {description: 'Allergy substances.', type: array, items: {type: object, additionalProperties: false}}
-        pagination: {$ref: '#/components/schemas/Pagination'}
-        locale: {description: 'Locale used for localized text in this response.', type: string}
-        source_provenance: {$ref: '#/components/schemas/SourceProvenance'}
+        request_id:
+          type: string
+        check_id:
+          type: string
+          pattern: ^chk_[0-9a-f]{32}$
+        kind:
+          type: string
+          enum:
+          - safety_check
+          - erx_safety_check
+          - batch_item
+        status:
+          type: string
+          enum:
+          - pending
+          - completed
+          - failed
+          description: pending only for a batch item not yet evaluated.
+        batch_id:
+          type: string
+        client_item_id:
+          type:
+          - string
+          - 'null'
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        inputs:
+          description: The request as submitted (a safety check, an eRx check, or one batch item evaluated as a safety check).
+          oneOf:
+          - $ref: '#/components/schemas/ClientSafetyCheckRequest'
+          - $ref: '#/components/schemas/ErxSafetyCheckRequest'
+        result:
+          oneOf:
+          - $ref: '#/components/schemas/SafetyCheckResponse'
+          - type: 'null'
+        problem:
+          description: For a failed batch item, the RFC 9457 problem it produced.
+          $ref: '#/components/schemas/ProblemDetails'
+
+    SafetyCheckBatchRequest:
+      type: object
+      additionalProperties: false
+      description: An asynchronous batch of Enterprise safety checks (2026-10-25). Each item is evaluated
+        exactly like POST /safety/checks (batch-level locale, requested_domains and patient_context apply
+        unless the item sets its own). Charged one safety_boards unit per evaluated item; at most 100 items
+        (request_size_limits).
+      required:
+      - requested_domains
+      - items
+      properties:
+        locale:
+          type: string
+          enum:
+          - ar-EG
+          - ar
+          - en
+          - mixed
+          default: en
+        requested_domains:
+          type: array
+          uniqueItems: true
+          minItems: 1
+          maxItems: 6
+          items:
+            type: string
+            enum:
+            - pllr
+            - ddi
+            - clinical_dose
+            - food_interactions
+            - meal_timing
+            - allergy
+        patient_context:
+          $ref: '#/components/schemas/PatientSafetyContext'
+        idempotency_key:
+          type:
+          - string
+          - 'null'
+        items:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - medications
+            properties:
+              client_item_id:
+                type:
+                - string
+                - 'null'
+                maxLength: 128
+              medications:
+                $ref: '#/components/schemas/ClientSafetyCheckRequest/properties/medications'
+              patient_context:
+                $ref: '#/components/schemas/PatientSafetyContext'
+              requested_domains:
+                type: array
+                uniqueItems: true
+                minItems: 1
+                maxItems: 6
+                items:
+                  type: string
+                  enum:
+                  - pllr
+                  - ddi
+                  - clinical_dose
+                  - food_interactions
+                  - meal_timing
+                  - allergy
+    SafetyCheckBatchReceipt:
+      type: object
+      additionalProperties: false
+      description: 'Returned with 202 when a batch is accepted. Every item already has its check_id; read
+        results with GET /safety/checks/{check_id} (status pending until evaluated, then completed or failed).
+        Units are settled when the batch finishes: one per evaluated item, nothing for a failed item.'
+      required:
+      - request_id
+      - batch_id
+      - status
+      - item_count
+      - items
+      - result_retrieval
+      properties:
+        request_id:
+          type: string
+        batch_id:
+          type: string
+          pattern: ^bat_[0-9a-f]{32}$
+        status:
+          type: string
+          enum:
+          - accepted
+        item_count:
+          type: integer
+          minimum: 1
+          maximum: 100
+        items:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - client_item_id
+            - check_id
+            properties:
+              client_item_id:
+                type:
+                - string
+                - 'null'
+              check_id:
+                type: string
+                pattern: ^chk_[0-9a-f]{32}$
+        result_retrieval:
+          type: string
+    EvidenceReference:
+      description: 'One evidence reference: its citation, evidence grade and the snapshot it was read from.'
+      type: object
+      additionalProperties: false
+      required:
+      - evidence_id
+      - domain
+      - source_snapshot_id
+      - evidence_grade
+      - citation_label
+      - reason
+      - justification
+      properties:
+        evidence_id:
+          description: Stable identifier for this evidence entry.
+          type: string
+          minLength: 1
+        domain:
+          description: Which safety domain this evidence supports.
+          type: string
+          minLength: 1
+        source_snapshot_id:
+          description: Reference-data snapshot this evidence was drawn from.
+          type: string
+          minLength: 1
+        evidence_grade:
+          description: Strength/kind of this evidence.
+          type: string
+          enum:
+          - curated_reference
+          - primary_label
+          - secondary_reference
+          - local_policy
+          - inferred_mapping
+        citation_label:
+          $ref: '#/components/schemas/LocalizedString'
+        reason:
+          $ref: '#/components/schemas/LocalizedString'
+        justification:
+          $ref: '#/components/schemas/LocalizedString'
+        limitations:
+          description: Caveats specific to this evidence entry.
+          type: array
+          items:
+            $ref: '#/components/schemas/LocalizedString'
+          default: []
     PrescriptionUploadRequest:
       type: object
       additionalProperties: false
