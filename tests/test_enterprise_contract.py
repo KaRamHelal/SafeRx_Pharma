@@ -470,7 +470,7 @@ def test_mcp_adapter_uses_only_signed_enterprise_operations() -> None:
     assert "drug_safety" not in source
 
 
-def test_hosted_mcp_release_manifest_matches_the_three_promoted_tools() -> None:
+def test_hosted_mcp_release_manifest_matches_the_promoted_tools() -> None:
     release = yaml.safe_load((ROOT / "release/current.yaml").read_text())
     hosted_mcp = release["hosted_mcp"]
     assert hosted_mcp["status"] == "preview"
@@ -479,6 +479,9 @@ def test_hosted_mcp_release_manifest_matches_the_three_promoted_tools() -> None:
         "resolve_medications",
         "check_medication_safety",
         "get_safety_capabilities",
+        "resolve_allergies",
+        "search_allergy_substances",
+        "get_safety_check",
     }
     assert hosted_mcp["resources"] == []
     assert hosted_mcp["prompts"] == []

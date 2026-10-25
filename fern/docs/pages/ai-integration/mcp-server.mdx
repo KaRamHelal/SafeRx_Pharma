@@ -4,7 +4,7 @@ subtitle: Hosted Streamable HTTP MCP for the Enterprise API
 ---
 
 The hosted SafeRx MCP is a preview-availability, gateway-routed Streamable HTTP
-facade over three Enterprise API operations. It is not a general-purpose
+facade over six Enterprise API operations. It is not a general-purpose
 registry browser and does not expose resources or prompts.
 
 ## Endpoint and transport
@@ -33,7 +33,7 @@ method, including `initialize` and `tools/list`, before the request reaches
 the MCP server. The self-service `enterprise_free` plan includes
 `mcp_standard`.
 
-## The three tools
+## The six tools
 
 <Note>
 SafeRx does not expose registry enumeration, raw interaction-pair dumps, or
@@ -97,11 +97,77 @@ clinical claim.
 - Output: `SafetyCapabilities`
 - Input: none
 
+### `resolve_allergies`
+
+Resolves patient-reported allergies (text, `family_id`, `sfrx_id` or a
+`substance_id` from `search_allergy_substances`) to allergy families and their
+cross-reactive families. Each result carries a `patient_context_entry` you can
+pass unchanged as one `patient_context.allergies[]` entry to
+`check_medication_safety`.
+
+- Backend operation: `POST /allergies/resolve` (same contract as
+  `enterprise_allergy_resolve`)
+- Output: `AllergyResolutionResponse`
+- Up to 50 items
+
+```json title="Input"
+{
+  "locale": "en",
+  "items": [
+    { "input_text": "penicillin" }
+  ]
+}
+```
+
+### `search_allergy_substances`
+
+Bounded prefix search, in English and Arabic, over allergy families, allergen
+ingredients and products that carry allergy data. A query of at least two
+characters is required; it cannot list or export the vocabulary.
+
+- Backend operation: `GET /allergies/substances` (same contract as
+  `enterprise_allergy_substances`)
+- Output: `AllergySubstanceList`
+- `kinds` narrows the result to any of `family`, `ingredient`, `product`
+
+```json title="Input"
+{
+  "q": "amox",
+  "kinds": ["ingredient"],
+  "limit": 5
+}
+```
+
+### `get_safety_check`
+
+Reads a stored safety check by the `check_id` that `check_medication_safety`
+(or a REST check or batch) returned. Checks are kept for 90 days and are
+readable by any key of the same organization; any other caller, an unknown id
+and an expired check all get the Enterprise API's `404
+enterprise.safety.check_not_found`, which the tool relays as an error result.
+
+- Backend operation: `GET /safety/checks/{check_id}` (same contract as
+  `enterprise_safety_check_read`)
+- Output: `SafetyCheckRecord`
+
+```json title="Input"
+{
+  "check_id": "chk_0f1e2d3c4b5a69788796a5b4c3d2e1f0"
+}
+```
+
+A typical agent flow is: `resolve_allergies` for what the patient reports, then
+`check_medication_safety` with those entries in `patient_context.allergies`, then
+`get_safety_check` to re-read the stored result later.
+
 ## Structured output
 
 Every tool call returns MCP `structuredContent` as the authoritative payload,
 matching the same public schema (`MedicationResolutionList`,
-`SafetyCheckResponse`, `SafetyCapabilities`) as the equivalent REST operation.
+`SafetyCheckResponse`, `SafetyCapabilities`, `AllergyResolutionResponse`,
+`AllergySubstanceList`, `SafetyCheckRecord`) as the equivalent REST operation.
+Each tool also needs the REST operation's own entitlement: the allergy and
+stored-check tools need the safety bundle, exactly as their REST operations do.
 The accompanying MCP `text` content is a short human-readable status only
 (for example `"check_medication_safety completed through the SafeRx
 Enterprise API."`) — do not parse it for data; read `structuredContent`.

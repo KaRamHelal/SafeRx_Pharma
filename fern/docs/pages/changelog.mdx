@@ -15,6 +15,24 @@ Releases tracking. For the complete published version history, see
 and [NuGet (SafeRx)](https://www.nuget.org/packages/SafeRx#versions-body-tab).
 Entries below are not a backfilled reconstruction of that history.
 
+## [2.1.1] - 2026-10-26
+
+### Added
+- **Hosted MCP: three new tools** over the 2.1.0 operations, for six in total:
+  - `resolve_allergies` (`POST /allergies/resolve`) resolves reported allergies to
+    families. Each result's `patient_context_entry` goes straight into
+    `check_medication_safety`'s `patient_context.allergies`.
+  - `search_allergy_substances` (`GET /allergies/substances`) is a bounded English and
+    Arabic prefix search over families, ingredients and products.
+  - `get_safety_check` (`GET /safety/checks/{check_id}`) re-reads a stored check for
+    90 days within your organization.
+  - Each tool needs its REST operation's entitlement, and each call is 1 `mcp_calls`
+    unit.
+
+### Changed
+- The REST API, schemas and SDK clients are unchanged; only the version moves (release
+  immutability).
+
 ## [2.1.0] - 2026-10-25
 
 ### Added

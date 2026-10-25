@@ -1,5 +1,5 @@
-release_id: enterprise-v1-2026.10.25
-release_version: 2.1.0
+release_id: enterprise-v1-2026.10.26
+release_version: 2.1.1
 status: available
 publishable: true
 
@@ -12,16 +12,17 @@ api_contract:
   response_policy: closed_schema
 
 artifacts:
-  python: saferx-pharma==2.1.0
-  typescript: saferx-pharma-sdk@2.1.0
-  csharp: SafeRx==2.1.0
+  python: saferx-pharma==2.1.1
+  typescript: saferx-pharma-sdk@2.1.1
+  csharp: SafeRx==2.1.1
 
 hosted_mcp:
   status: preview
   endpoint: https://saferx.online/api/enterprise-mcp/v1/mcp
   protocol_version: '2025-06-18'
   transport: streamable_http
-  tools: [resolve_medications, check_medication_safety, get_safety_capabilities]
+  tools: [resolve_medications, check_medication_safety, get_safety_capabilities, resolve_allergies,
+    search_allergy_substances, get_safety_check]
   resources: []
   prompts: []
   promoted_at: '2026-08-15'
@@ -35,6 +36,12 @@ availability:
   key_required: true
 
 notes:
+  - >-
+    2.1.1 -- the hosted MCP adds three tools over the 2.1.0 operations: resolve_allergies
+    (POST /allergies/resolve), search_allergy_substances (GET /allergies/substances) and
+    get_safety_check (GET /safety/checks/{check_id}). An agent can now resolve a reported
+    allergy, pass the result to check_medication_safety, and re-read the stored check. The
+    REST API and SDK surfaces are unchanged.
   - >-
     2.1.0 -- the five formerly deferred operations are live: allergy families, allergy
     substance search (ingredients and products, English and Arabic) and allergy resolution
@@ -82,7 +89,7 @@ notes:
     (LocalizedString empty strings, provenance/pharmacology/warnings fields, the 401/403
     denial-code table). See CHANGELOG.md [2.0.3].
   - >-
-    Hosted MCP is preview, with exactly the three tools listed above and no resources or
+    Hosted MCP is preview, with exactly the six tools listed above and no resources or
     prompts. The whole endpoint requires the mcp_standard entitlement, which
     enterprise_free includes.
   - >-
