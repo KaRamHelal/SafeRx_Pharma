@@ -1359,6 +1359,17 @@ components:
                 description: Display-composed name and strength, when distinct
                   from tradename.
                 $ref: '#/components/schemas/LocalizedString'
+              primary_name:
+                description: The registry's brand name, without strength or pack.
+                oneOf:
+                - $ref: '#/components/schemas/LocalizedString'
+                - type: 'null'
+              package:
+                description: The registry pack description, e.g. "30 TABLETS". Never
+                  part of a product's display name.
+                oneOf:
+                - $ref: '#/components/schemas/LocalizedString'
+                - type: 'null'
               match_reason:
                 description: Human-readable reason this product matched the
                   query.
@@ -1461,6 +1472,17 @@ components:
                 description: Display-composed name and strength, when distinct
                   from tradename.
                 $ref: '#/components/schemas/LocalizedString'
+              primary_name:
+                description: The registry's brand name, without strength or pack.
+                oneOf:
+                - $ref: '#/components/schemas/LocalizedString'
+                - type: 'null'
+              package:
+                description: The registry pack description, e.g. "30 TABLETS". Never
+                  part of a product's display name.
+                oneOf:
+                - $ref: '#/components/schemas/LocalizedString'
+                - type: 'null'
               match_reason:
                 $ref: '#/components/schemas/LocalizedString'
               match:

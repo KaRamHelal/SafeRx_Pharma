@@ -1,5 +1,5 @@
-release_id: enterprise-v1-2026.10.26.2
-release_version: 3.0.0
+release_id: enterprise-v1-2026.10.26.3
+release_version: 3.0.1
 status: available
 publishable: true
 
@@ -12,9 +12,9 @@ api_contract:
   response_policy: closed_schema
 
 artifacts:
-  python: saferx-pharma==3.0.0
-  typescript: saferx-pharma-sdk@3.0.0
-  csharp: SafeRx==3.0.0
+  python: saferx-pharma==3.0.1
+  typescript: saferx-pharma-sdk@3.0.1
+  csharp: SafeRx==3.0.1
 
 hosted_mcp:
   status: preview

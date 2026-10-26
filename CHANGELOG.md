@@ -11,6 +11,36 @@ Releases tracking. For the complete published version history, see
 and [NuGet (SafeRx)](https://www.nuget.org/packages/SafeRx#versions-body-tab).
 Entries below are not a backfilled reconstruction of that history.
 
+## [3.0.1] - 2026-10-26
+
+### Added
+- **Plans are published.** Free, Starter, Growth, Scale and Custom, with prices, daily
+  allowances and per-key request rates
+  ([Limits and retries](/authentication/rate-limits#plans)).
+  - Every plan grants every capability; tiers differ only in volume and rate.
+  - A plan can run for a fixed term (an annual term or a complimentary upgrade) and then
+    revert on its end date. Your keys follow the plan in force without being re-issued.
+
+- Registry suggest/search items gain optional `primary_name` (the brand) and `package`
+  (the pack description).
+
+### Changed
+- **Product names follow one rule:** `{name and strength} - {dosage form} - {manufacturer}`,
+  e.g. `KLACID 250 - Oral Tablet - KAHIRA`, or `WARFARIN 2 - Oral Tablet - Sanofi`, or in Arabic
+  `وارفارين 2 - أقراص - سانوفى`.
+  - Names no longer repeat the generic (`WARFARIN 2 WARFARIN Oral Tablet` before) and never show
+    the raw `A|B` separator.
+  - The ingredients are in the separate `generic` field (`A + B` for a combination).
+
+### Fixed
+- The Python and C# clients send a named `User-Agent` (`saferx-pharma-python/<version>`,
+  `saferx-pharma-csharp/<version>`). .NET's `HttpClient` sends none by default, and the
+  SafeRx edge refused requests without one before they reached the API.
+- Docs: you issue, rotate and revoke your own keys in the Partner Portal. Earlier text said
+  SafeRx handled them on request.
+
+No request or response schema changed.
+
 ## [3.0.0] - 2026-10-26
 
 ### Changed (breaking)

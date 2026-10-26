@@ -7,15 +7,18 @@ Your Enterprise key is both your account identifier and your HMAC signing
 secret — see [Authentication](/authentication/overview) for the exact
 signing contract. There is no separate signing key to manage.
 
-Keys for the existing `enterprise_free` plan are self-service (see
-[Developer access](/authentication/developer-portal)); larger plans are
-admin-assigned. Either way, the key is shown exactly once at issuance and
-cannot be retrieved again — only rotated.
+You issue keys yourself in the Partner Portal (see
+[Developer access](/authentication/developer-portal)) on any plan. A key is
+shown exactly once at issuance and cannot be retrieved again — only rotated.
+
+A key carries your organization's current plan. When the plan changes, or a
+fixed-term plan reaches its end date, every key you already hold follows it
+on the next request; there is nothing to re-issue. A key can be limited to
+fewer capabilities than your plan grants, never more.
 
 Store the key in your organization's secret manager and inject it at
-runtime. Rotation and revocation are currently handled by SafeRx on request
-(quote your organization slug and the key prefix, never the key itself);
-the Partner portal key console is not yet self-service. Do not place it in
+runtime. Rotate or revoke it in the Partner Portal; the old key is refused
+from that moment. Do not place it in
 a browser bundle, Postman collection, repository, issue, or support
 message — see [Server-side-only use](/security/overview) for why a
 browser-embedded key is a real exposure, not a theoretical one.

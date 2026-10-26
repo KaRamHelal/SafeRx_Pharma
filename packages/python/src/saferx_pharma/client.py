@@ -27,7 +27,7 @@ RETRY_BACKOFF_BASE_SECONDS = 0.1
 RETRY_BACKOFF_MAX_SECONDS = 2.0
 CLIENT_KIND = "python_sdk"
 SDK_LANGUAGE = "python"
-SDK_VERSION = "3.0.0"
+SDK_VERSION = "3.0.1"
 
 
 @dataclass(frozen=True)
@@ -200,6 +200,8 @@ class SafeRxClient:
                 "X-SafeRx-Client-Version": SDK_VERSION,
                 "X-SafeRx-SDK-Language": SDK_LANGUAGE,
                 "X-SafeRx-SDK-Version": SDK_VERSION,
+                # A named client identity instead of urllib's generic default.
+                "User-Agent": f"saferx-pharma-python/{SDK_VERSION}",
             }
             if content_type is not None:
                 headers["Content-Type"] = content_type
