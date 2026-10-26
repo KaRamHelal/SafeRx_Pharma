@@ -3,4 +3,4 @@ title: Structured output
 subtitle: Keep the Enterprise response contract intact
 ---
 
-Do not flatten a safety response into a boolean. Preserve the bounded object shape, especially `signals`, `domain_coverage`, `unavailable_domains`, `limitations`, `review`, and `display_obligations`. Unknown fields should be rejected by the client model so contract drift is visible during integration testing.
+Do not flatten a safety response into a boolean. Preserve the bounded object shape, especially `outcome`, `domains`, `findings`, `medications`, `review`, and `disclaimer`. Unknown fields should be rejected by the client model so contract drift is visible during integration testing.

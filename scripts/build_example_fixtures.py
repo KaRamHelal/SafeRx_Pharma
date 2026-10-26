@@ -1513,88 +1513,103 @@ def build() -> dict[str, dict[str, Any]]:
     examples["enterprise_capabilities"] = {"request": {}, "response": CAPABILITIES_RESPONSE}
     examples["enterprise_status"] = {"request": {}, "response": STATUS_RESPONSE}
 
-    safety_check_response = {
-        **envelope(result_id="res_example_0002", surface="enterprise_api"),
-        "review": NOT_REQUIRED_REVIEW,
-        "summary": {"en": "No interactions found for the requested domains.", "ar": "لم يتم العثور على تفاعلات للمجالات المطلوبة."},
-        "context_summary": {
-            "status": "baseline_only",
-            "context_sources": [],
-            "profile_context_version": None,
-            "missing_context_count": 0,
-            "stale_context_count": 0,
-            "contradiction_count": 0,
-        },
-        "signals": [],
-        "domain_coverage": [
-            {"domain": "ddi", "status": "evaluated", "code": "ddi_evaluated"},
-            {"domain": "allergy", "status": "evaluated", "code": "allergy_evaluated"},
-        ],
-        "unavailable_domains": [],
-        "limitations": [],
-        "display_obligations": DISPLAY_OBLIGATIONS,
-        "correction_anchors": [],
-    }
+    # 3.0.0 (2026-10-26): the v2 result (schema_version 2), shaped on a real backend capture,
+    # ids replaced. Warfarin + aspirin is MAJOR in DDI V8.3.24.
+    def v2_result(check_id: str, medications: list[dict[str, Any]]) -> dict[str, Any]:
+        return {
+            "schema_version": 2,
+            "check_id": check_id,
+            "request_id": "req_example_0002",
+            "created_at": "2026-10-26T12:00:00+00:00",
+            "outcome": {"highest_severity": "high", "action": "urgent_review", "finding_count": 1,
+                        "alert_count": 1, "blocked": False},
+            "release": {"safety_snapshot_id": "safety-2026-10-26", "registry_snapshot_id": "registry-2026-10-26"},
+            "medications": medications,
+            "domains": [{
+                "domain": "ddi", "name": {"en": "Drug interactions", "ar": "التداخلات الدوائية"},
+                "status": "evaluated", "finding_count": 1, "reason": None, "missing_context": [],
+                "release_id": "ddi_V8.3.24",
+            }],
+            "findings": [{
+                "finding_id": "ddi_SRX-101-000043_SRX-101-000042",
+                "domain": "ddi",
+                "kind": "alert",
+                "severity": "high",
+                "action": "urgent_review",
+                "title": {"en": "Acetylsalicylic acid may increase the anticoagulant activities of Warfarin.",
+                          "ar": "قد يزيد حمض أسيتيل الساليسيليك من التأثيرات المضادة للتخثر للوارفارين."},
+                "explanation": None,
+                "recommendation": {"en": "Monitor INR/PT. Watch for signs of bleeding (bruising, blood in urine/stool).",
+                                   "ar": "راقب معدل INR. انتبه لعلامات النزيف (كدمات، دم في البول/البراز)."},
+                "medication_refs": [medications[0]["ref"], medications[1]["ref"]],
+                "subjects": [],
+                "evidence": {
+                    "grade": "curated_reference",
+                    "source": {"en": "DDI release", "ar": "إصدار تداخلات الأدوية"},
+                    "source_rating": {"value": 3, "label": {"en": "Major", "ar": "كبير"}},
+                },
+                "confidence": 0.8,
+                "based_on_context": [],
+                "review_required": True,
+            }],
+            "review": {
+                "required": True,
+                "reasons": [{"code": "severe_or_uncertain_signal", "message": {
+                    "en": "A finding of moderate or higher severity, or with uncertain evidence, needs professional review.",
+                    "ar": "نتيجة بشدة متوسطة أو أعلى، أو بدليل غير مؤكد، تحتاج مراجعة مهنية."}}],
+                "minimum_reviewer_role": "qualified_professional",
+            },
+            "patient_context": {"status": "none", "applied_fields": []},
+            "disclaimer": {
+                "en": "Educational pharmaceutical information for qualified professionals. It is not medical advice or a dispensing authorization; review before relying on it.",
+                "ar": "معلومات دوائية تعليمية للمختصين المؤهلين. ليست نصيحة طبية ولا تفويضًا بصرف الدواء؛ راجعها قبل الاعتماد عليها.",
+            },
+        }
+
+    def v2_medication(ref: str, role: str, given: str, sfrx_id: str, name_en: str, name_ar: str,
+                      generic: str, strength: str, selection: str) -> dict[str, Any]:
+        return {
+            "ref": ref, "role": role, "input": given, "status": "resolved", "selection": selection,
+            "product": {"sfrx_id": sfrx_id, "name": {"en": name_en, "ar": name_ar}, "generic": generic,
+                        "strength": strength, "form": {"en": "Oral Tablet", "ar": "أقراص"}},
+        }
 
     examples["enterprise_safety_check"] = {
         "request": {
             "body": {
                 "locale": "en",
                 "medications": [
-                    {"client_medication_id": "rx-line-1", "input_text": "amoxicillin 500mg", "role": "target_medication"},
+                    {"client_medication_id": "rx-line-1", "input_text": "Warfarin 5 mg tablet", "role": "target_medication"},
                     {"client_medication_id": "current-1", "sfrx_id": "SRX-101-000042", "role": "current_medication"},
                 ],
-                "requested_domains": ["ddi", "allergy"],
+                "requested_domains": ["ddi"],
                 "idempotency_key": "example-safety-check-0001",
             },
             "headers": {"Idempotency-Key": "example-safety-check-0001"},
         },
-        "response": {
-            **safety_check_response,
-            # Which product each request medication was evaluated as (2.0.4). A bare
-            # name would carry default_variant_selected here and in review.reason_codes.
-            "resolved_medications": [
-                {
-                    "medication_ref": "rx-line-1",
-                    "role": "target_medication",
-                    "sfrx_id": "SRX-101-000043",
-                    "display_name": {"en": "Amoxicillin 500 mg Oral Capsule", "ar": "أموكسيسيلين 500 مجم كبسولة"},
-                    "strength": "500 mg",
-                    "resolution_status": "resolved",
-                    "review_reason_codes": [],
-                },
-                {
-                    "medication_ref": "current-1",
-                    "role": "current_medication",
-                    "sfrx_id": "SRX-101-000042",
-                    "display_name": {"en": "Example Product 500 mg Oral Tablet", "ar": "منتج تجريبي 500 مجم قرص"},
-                    "strength": "500 mg",
-                    "resolution_status": "resolved",
-                    "review_reason_codes": [],
-                },
-            ],
-        },
+        "response": v2_result("chk_0f1e2d3c4b5a69788796a5b4c3d2e1f0", [
+            v2_medication("rx-line-1", "new", "Warfarin 5 mg tablet", "SRX-101-000043", "MAREVAN 5 MG 102 TABS.",
+                          "ماريفان 5 مجم 102 قرص", "WARFARIN", "5 MG", "exact"),
+            v2_medication("current-1", "current", "SRX-101-000042", "SRX-101-000042", "ASPIRIN PROTECT 100 MG 30 TABS.",
+                          "أسبيرين بروتكت 100 مجم 30 قرص", "ACETYLSALICYLIC ACID", "100 MG", "by_id"),
+        ]),
     }
 
-    # eRx (2.0.5): one prescription -- lines plus the patient's current medications -- mapped
-    # onto the safety check. The response is the safety result above with every medication
-    # named by the caller's line_ref / medication_ref, plus the erx echo.
-    erx_refs = ["1", "home-1"]
-    erx_response = copy.deepcopy(safety_check_response)
-    for ref, item in zip(erx_refs, erx_response.get("resolved_medications", [])):
-        item["medication_ref"] = ref
-    first_line = (erx_response.get("resolved_medications") or [{}])[0]
+    # eRx (2.0.5; v2 result in 3.0.0): lines plus current medications mapped onto the safety
+    # check; each medication is named by the caller's line_ref / medication_ref, plus the echo.
+    erx_response = v2_result("chk_a1b2c3d4e5f60718293a4b5c6d7e8f90", [
+        v2_medication("1", "new", "Warfarin", "SRX-101-000043", "MAREVAN 5 MG 102 TABS.", "ماريفان 5 مجم 102 قرص",
+                      "WARFARIN", "5 MG", "exact"),
+        v2_medication("home-1", "current", "Aspirin", "SRX-101-000042", "ASPIRIN PROTECT 100 MG 30 TABS.",
+                      "أسبيرين بروتكت 100 مجم 30 قرص", "ACETYLSALICYLIC ACID", "100 MG", "default_variant"),
+    ])
+    erx_response["review"]["reasons"].append({"code": "default_variant_selected", "message": {
+        "en": "A medicine named in several variants was evaluated as its default product; confirm the product.",
+        "ar": "تم تقييم دواء له عدة أشكال على أنه المنتج الافتراضي؛ تأكد من المنتج."}})
     erx_response["erx"] = {
         "prescription_ref": "RX-7781",
-        "lines": [
-            {
-                "line_ref": "1",
-                "sfrx_id": first_line.get("sfrx_id"),
-                "resolution_status": first_line.get("resolution_status", "resolved"),
-                "frequency_text": "once daily",
-                "duration_text": "30 days",
-            }
-        ],
+        "lines": [{"line_ref": "1", "medication_ref": "1", "sfrx_id": "SRX-101-000043", "status": "resolved",
+                   "frequency_text": "once daily", "duration_text": "30 days"}],
     }
     examples["enterprise_erx_safety_check"] = {
         "request": {
@@ -1744,8 +1759,6 @@ def build() -> dict[str, dict[str, Any]]:
 
     # ── 2.1.0 (2026-10-25): allergy reference, stored checks, async batches ────────────
     # Every check is stored and returns its check_id (read it back for 90 days).
-    examples["enterprise_safety_check"]["response"]["check_id"] = "chk_0f1e2d3c4b5a69788796a5b4c3d2e1f0"
-    examples["enterprise_erx_safety_check"]["response"]["check_id"] = "chk_a1b2c3d4e5f60718293a4b5c6d7e8f90"
     allergy_envelope = {
         **envelope(),
         "display_obligations": DISPLAY_OBLIGATIONS,

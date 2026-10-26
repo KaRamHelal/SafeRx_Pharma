@@ -55,7 +55,7 @@ result = client.enterprise_safety_check(
 
 ## 3. Read the bounded result
 
-A safety response contains `request_id`, `result_id`, `schema_version`, `surface`, `locale`, `summary`, `context_summary`, `signals`, `domain_coverage`, `unavailable_domains`, `limitations`, `review`, `source_provenance`, `display_obligations`, and `correction_anchors`. Never reduce this to a bare `safe: true/false` claim — read `signals` alongside `domain_coverage`/`unavailable_domains` and preserve `review`. See [Safety results](/concepts/safety-results) for the full breakdown.
+A safety result (`schema_version: 2`) contains `check_id`, `request_id`, `created_at`, `outcome`, `release`, `medications`, `domains`, `findings`, `review`, `patient_context` and `disclaimer`. Never reduce this to a bare `safe: true/false` claim — read `findings` alongside `domains` (a domain that was not evaluated is unknown, not clear; `outcome.blocked` says so) and preserve `review`. See [Safety results](/concepts/safety-results) for the full breakdown.
 
 ## 4. Explore the registry
 

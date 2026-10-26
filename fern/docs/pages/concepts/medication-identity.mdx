@@ -47,35 +47,37 @@ the check: an oral tablet or capsule first, then other systemic forms, then a
 product with a stated strength, then the registry's preferred listing, with a
 deterministic tie-break. The result always says so:
 
-- the entry's `review_reason_codes` (in `resolved_medications[]`) and the
-  response `review.reason_codes` contain `default_variant_selected`, or
-  `equivalent_product_selected` when the candidates were the same strength and
-  form in different listings;
-- `limitations[]` names the selected product and tells the caller to pass its
-  `sfrx_id`, or `dose_text` / `route` / `dosage_form`, to pin the product;
+- the entry in `medications[]` has `selection: default_variant`, or
+  `equivalent_product` when the candidates were the same strength and form in
+  different listings, and `product` names what was evaluated;
+- `review.reasons[]` contains `default_variant_selected`, asking the caller to
+  confirm the product (pass its `sfrx_id`, or `dose_text` / `route` /
+  `dosage_form`, to pin it);
 - `review.required` is `true`.
 
 This is conservative for ingredient-level domains (interactions, allergy,
 pregnancy and lactation). For anything dose-sensitive, pin the product.
 
 When the text names **different medicines** (two single-ingredient generics
-match equally well), nothing is selected: `ambiguous_candidates` is reported
-and, on a safety check, the `422 target_resolution_required` detail lists the
-candidates with strength, form and route so the caller can choose.
+match equally well), nothing is selected: the medication is `status: ambiguous`
+with up to five `candidates[]`. If no new medication resolves, the safety check
+is `422 target_resolution_required` and its body carries the same structured
+`medications[]` so the caller can choose.
 
-## What was evaluated: `resolved_medications[]`
+## What was evaluated: `medications[]`
 
-Every successful safety check returns `resolved_medications[]`, one entry per
-request medication in request order: `medication_ref` (your
-`client_medication_id`, or `request_medication_<index>`), `role`, the evaluated
-`sfrx_id`, `display_name`, `strength`, `resolution_status`
-(`resolved` / `ambiguous` / `unresolved`) and `review_reason_codes`. Show it to
-the user: it is the only way to know which product an interaction was
-computed against.
+Every successful safety check returns `medications[]`, one entry per request
+medication in request order: `ref` (your `client_medication_id`, or `m1`, `m2`,
+…), `role` (`new` / `current`), `input`, `status` (`resolved` / `ambiguous` /
+`unresolved`), and for a resolved one `selection` and
+`product{sfrx_id, name, generic, strength, form}`. Show it to the user: it is the
+only way to know which product an interaction was computed against, and
+`findings[].medication_refs` point back to these refs.
 
 An entry whose text the registry cannot search (one character, or longer than
-80 characters) is `unresolved` with `query_rejected`; the other medications are
-still evaluated. A check needs at least one `target_medication` to resolve.
+80 characters) is `unresolved` with a bilingual `reason`; the other medications
+are still evaluated. A check needs at least one new (`target_medication`)
+medication to resolve.
 
 ## Resolution ambiguity on `enterprise_registry_resolve`
 

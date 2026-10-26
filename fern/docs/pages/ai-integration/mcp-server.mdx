@@ -68,7 +68,7 @@ the REST [`enterprise_safety_check`](/api-reference) operation.
 
 - Backend operation: `POST /safety/checks` (same contract as
   `enterprise_safety_check`)
-- Output: `SafetyCheckResponse`
+- Output: `EnterpriseSafetyCheckResult`
 - Requires `idempotency_key`
 
 ```json title="Input"
@@ -83,9 +83,9 @@ the REST [`enterprise_safety_check`](/api-reference) operation.
 ```
 
 Treat the response the same way you would a REST safety-check response: surface
-`review`, `limitations`, `domain_coverage`, and `display_obligations` to the
-end user, and never reduce it to a bare `safe: true/false` claim. See
-[Safety results](/safety/results) for the full response shape.
+`outcome`, `domains`, `findings`, `review` and the `disclaimer` to the end user,
+and never reduce it to a bare `safe: true/false` claim. See
+[Safety results](/concepts/safety-results) for the full result shape.
 
 ### `get_safety_capabilities`
 
@@ -164,7 +164,7 @@ A typical agent flow is: `resolve_allergies` for what the patient reports, then
 
 Every tool call returns MCP `structuredContent` as the authoritative payload,
 matching the same public schema (`MedicationResolutionList`,
-`SafetyCheckResponse`, `SafetyCapabilities`, `AllergyResolutionResponse`,
+`EnterpriseSafetyCheckResult`, `SafetyCapabilities`, `AllergyResolutionResponse`,
 `AllergySubstanceList`, `SafetyCheckRecord`) as the equivalent REST operation.
 Each tool also needs the REST operation's own entitlement: the allergy and
 stored-check tools need the safety bundle, exactly as their REST operations do.

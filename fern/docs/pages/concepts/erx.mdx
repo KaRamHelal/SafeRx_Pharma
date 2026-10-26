@@ -91,6 +91,7 @@ A [safety result](/concepts/safety-results) plus an `erx` object:
 }
 ```
 
-`resolved_medications[]` names every evaluated product, lines and current
-medications alike, by your `line_ref` or `medication_ref`. The same "never reduce
+`medications[]` names every evaluated product, lines and current
+medications alike, by your `line_ref` or `medication_ref` (as `ref`), and `erx.lines[]`
+joins each line to its `medication_ref`, `sfrx_id` and `status`. The same "never reduce
 to safe:true/false" rule applies.

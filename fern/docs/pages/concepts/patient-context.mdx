@@ -90,10 +90,10 @@ creatine) with a confidence level (`confirmed_current`, `frequent`,
 
 ## Reading it back
 
-The response's `context_summary` tells you whether any of this was actually
-used: `status: request_context_applied` means at least one `patient_context`
-field was supplied and used; `baseline_only` means none was, so only
-medication-level evaluation ran. `missing_context_count`,
-`stale_context_count`, and `contradiction_count` flag gaps and problems —
-see [Safety results](/concepts/safety-results) for the full response shape.
-`context_summary` never echoes your raw `patient_context` values back.
+The result's `patient_context` tells you whether any of this was used:
+`status: applied` with `applied_fields` naming the fields that were sent and used,
+or `none`, so only medication-level evaluation ran. Each finding's
+`based_on_context` names the fields that shaped it, and a domain that needed more
+context is `not_enough_context` with `missing_context` naming the fields — see
+[Safety results](/concepts/safety-results). The result never echoes your raw
+`patient_context` values back.

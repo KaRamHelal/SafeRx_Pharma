@@ -11,6 +11,32 @@ Releases tracking. For the complete published version history, see
 and [NuGet (SafeRx)](https://www.nuget.org/packages/SafeRx#versions-body-tab).
 Entries below are not a backfilled reconstruction of that history.
 
+## [3.0.0] - 2026-10-26
+
+### Changed (breaking)
+- **The safety-check result is redesigned** (`EnterpriseSafetyCheckResult`, `schema_version: 2`)
+  for `POST /safety/checks`, `POST /erx/safety-checks`, and the `result` of
+  `GET /safety/checks/{check_id}` and of batch items. Every field is built from a stated
+  source. Each text is exactly `{en, ar}`, and a value the sources do not state is `null`.
+
+  | Before (2.x) | Now (3.0.0) |
+  |---|---|
+  | `signals[]` | `findings[]`, with `kind`, `severity`, `action`, `title`, `explanation`, `recommendation`, `medication_refs`, `subjects`, `evidence`, `confidence`, `based_on_context` and `review_required` |
+  | `domain_coverage[]` and `unavailable_domains[]` | `domains[]`: each requested domain once, `status` (adds `reference_only`), `reason`, `missing_context` and `release_id` |
+  | `resolved_medications[]` | `medications[]`: `ref`, `role` (`new`/`current`), `status`, `selection`, `product` and `candidates` |
+  | `context_summary` | `patient_context` (`status`, `applied_fields`) |
+  | `risk_display` | `findings[].evidence.source_rating`, the database's own rating |
+  | `summary`, `limitations`, `correction_anchors`, `educational_context`, `source_provenance`, `display_obligations`, `result_id`, `surface`, `locale` | replaced by `outcome`, `review.reasons`, `release` and `disclaimer`; `check_id` identifies the result |
+  | `confidence` always a number | the source's own confidence, or `null` |
+
+- **Severity bands follow each database's own labels.** Food and allergy findings were one band
+  too severe.
+- **DDI release V8.3.24** rates anticoagulant + aspirin and anticoagulant + NSAID as Major
+  (previously Contraindicated).
+- **The 422 `enterprise.safety.target_resolution_required` body carries `medications[]`**, so
+  candidates are structured instead of embedded in the text.
+- **A check stored in the 2.x format returns `410 enterprise.safety.stored_check_format_retired`.**
+
 ## [2.1.1] - 2026-10-26
 
 ### Added

@@ -6,7 +6,7 @@
       "medications": [
         {
           "client_medication_id": "rx-line-1",
-          "input_text": "amoxicillin 500mg",
+          "input_text": "Warfarin 5 mg tablet",
           "role": "target_medication"
         },
         {
@@ -16,8 +16,7 @@
         }
       ],
       "requested_domains": [
-        "ddi",
-        "allergy"
+        "ddi"
       ]
     },
     "headers": {
@@ -26,104 +25,136 @@
   },
   "response": {
     "check_id": "chk_0f1e2d3c4b5a69788796a5b4c3d2e1f0",
-    "context_summary": {
-      "context_sources": [],
-      "contradiction_count": 0,
-      "missing_context_count": 0,
-      "profile_context_version": null,
-      "stale_context_count": 0,
-      "status": "baseline_only"
+    "created_at": "2026-10-26T12:00:00+00:00",
+    "disclaimer": {
+      "ar": "معلومات دوائية تعليمية للمختصين المؤهلين. ليست نصيحة طبية ولا تفويضًا بصرف الدواء؛ راجعها قبل الاعتماد عليها.",
+      "en": "Educational pharmaceutical information for qualified professionals. It is not medical advice or a dispensing authorization; review before relying on it."
     },
-    "correction_anchors": [],
-    "display_obligations": {
-      "may_not_describe_as_medical_advice": true,
-      "must_preserve_arabic_text": true,
-      "must_preserve_rtl_layout": true,
-      "must_show_educational_boundary": true,
-      "must_show_professional_review_language": false,
-      "must_show_source_snapshot": true
-    },
-    "domain_coverage": [
+    "domains": [
       {
-        "code": "ddi_evaluated",
         "domain": "ddi",
-        "status": "evaluated"
-      },
-      {
-        "code": "allergy_evaluated",
-        "domain": "allergy",
+        "finding_count": 1,
+        "missing_context": [],
+        "name": {
+          "ar": "التداخلات الدوائية",
+          "en": "Drug interactions"
+        },
+        "reason": null,
+        "release_id": "ddi_V8.3.24",
         "status": "evaluated"
       }
     ],
-    "educational_context": {
-      "basis": "curated_pharmaceutical_reference_data",
-      "claim_catalog_version": "2026.08.01",
-      "classification": "pharmaceutical_education",
-      "generated_at": "2026-08-15T12:00:00+00:00",
-      "locale": "en",
-      "not_dispensing_authorization": true,
-      "not_medical_advice": true,
-      "policy_version": "2026.08.01",
-      "professional_review_required": false,
-      "source_snapshot_id": "edu-snapshot-2026-08-01",
-      "supported_locales": [
-        "ar-EG",
-        "ar",
-        "en"
-      ]
+    "findings": [
+      {
+        "action": "urgent_review",
+        "based_on_context": [],
+        "confidence": 0.8,
+        "domain": "ddi",
+        "evidence": {
+          "grade": "curated_reference",
+          "source": {
+            "ar": "إصدار تداخلات الأدوية",
+            "en": "DDI release"
+          },
+          "source_rating": {
+            "label": {
+              "ar": "كبير",
+              "en": "Major"
+            },
+            "value": 3
+          }
+        },
+        "explanation": null,
+        "finding_id": "ddi_SRX-101-000043_SRX-101-000042",
+        "kind": "alert",
+        "medication_refs": [
+          "rx-line-1",
+          "current-1"
+        ],
+        "recommendation": {
+          "ar": "راقب معدل INR. انتبه لعلامات النزيف (كدمات، دم في البول/البراز).",
+          "en": "Monitor INR/PT. Watch for signs of bleeding (bruising, blood in urine/stool)."
+        },
+        "review_required": true,
+        "severity": "high",
+        "subjects": [],
+        "title": {
+          "ar": "قد يزيد حمض أسيتيل الساليسيليك من التأثيرات المضادة للتخثر للوارفارين.",
+          "en": "Acetylsalicylic acid may increase the anticoagulant activities of Warfarin."
+        }
+      }
+    ],
+    "medications": [
+      {
+        "input": "Warfarin 5 mg tablet",
+        "product": {
+          "form": {
+            "ar": "أقراص",
+            "en": "Oral Tablet"
+          },
+          "generic": "WARFARIN",
+          "name": {
+            "ar": "ماريفان 5 مجم 102 قرص",
+            "en": "MAREVAN 5 MG 102 TABS."
+          },
+          "sfrx_id": "SRX-101-000043",
+          "strength": "5 MG"
+        },
+        "ref": "rx-line-1",
+        "role": "new",
+        "selection": "exact",
+        "status": "resolved"
+      },
+      {
+        "input": "SRX-101-000042",
+        "product": {
+          "form": {
+            "ar": "أقراص",
+            "en": "Oral Tablet"
+          },
+          "generic": "ACETYLSALICYLIC ACID",
+          "name": {
+            "ar": "أسبيرين بروتكت 100 مجم 30 قرص",
+            "en": "ASPIRIN PROTECT 100 MG 30 TABS."
+          },
+          "sfrx_id": "SRX-101-000042",
+          "strength": "100 MG"
+        },
+        "ref": "current-1",
+        "role": "current",
+        "selection": "by_id",
+        "status": "resolved"
+      }
+    ],
+    "outcome": {
+      "action": "urgent_review",
+      "alert_count": 1,
+      "blocked": false,
+      "finding_count": 1,
+      "highest_severity": "high"
     },
-    "limitations": [],
-    "locale": "en",
-    "request_id": "req_example_0001",
-    "resolved_medications": [
-      {
-        "display_name": {
-          "ar": "أموكسيسيلين 500 مجم كبسولة",
-          "en": "Amoxicillin 500 mg Oral Capsule"
-        },
-        "medication_ref": "rx-line-1",
-        "resolution_status": "resolved",
-        "review_reason_codes": [],
-        "role": "target_medication",
-        "sfrx_id": "SRX-101-000043",
-        "strength": "500 mg"
-      },
-      {
-        "display_name": {
-          "ar": "منتج تجريبي 500 مجم قرص",
-          "en": "Example Product 500 mg Oral Tablet"
-        },
-        "medication_ref": "current-1",
-        "resolution_status": "resolved",
-        "review_reason_codes": [],
-        "role": "current_medication",
-        "sfrx_id": "SRX-101-000042",
-        "strength": "500 mg"
-      }
-    ],
-    "result_id": "res_example_0002",
+    "patient_context": {
+      "applied_fields": [],
+      "status": "none"
+    },
+    "release": {
+      "registry_snapshot_id": "registry-2026-10-26",
+      "safety_snapshot_id": "safety-2026-10-26"
+    },
+    "request_id": "req_example_0002",
     "review": {
-      "minimum_reviewer_role": "none",
-      "reason_codes": [],
-      "required": false,
-      "review_deadline_policy": "not_applicable",
-      "review_outcome": null,
-      "reviewed_at": null,
-      "status": "not_required"
+      "minimum_reviewer_role": "qualified_professional",
+      "reasons": [
+        {
+          "code": "severe_or_uncertain_signal",
+          "message": {
+            "ar": "نتيجة بشدة متوسطة أو أعلى، أو بدليل غير مؤكد، تحتاج مراجعة مهنية.",
+            "en": "A finding of moderate or higher severity, or with uncertain evidence, needs professional review."
+          }
+        }
+      ],
+      "required": true
     },
-    "schema_version": "1.0.0",
-    "signals": [],
-    "source_provenance": {
-      "claim_catalog_version": "2026.08.01",
-      "policy_version": "2026.08.01",
-      "registry_snapshot_id": "registry-2026-08-01",
-      "safety_snapshot_id": "safety-2026-08-01"
-    },
-    "summary": {
-      "ar": "لم يتم العثور على تفاعلات للمجالات المطلوبة.",
-      "en": "No interactions found for the requested domains."
-    },
-    "surface": "enterprise_api",
-    "unavailable_domains": []
+    "schema_version": 2
   }
 }

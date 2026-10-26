@@ -109,7 +109,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: ./components.yaml#/components/schemas/SafetyCheckResponse
+                $ref: ./components.yaml#/components/schemas/EnterpriseSafetyCheckResult
         default:
           $ref: '#/components/responses/Problem'
       requestBody:
@@ -380,7 +380,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: ./components.yaml#/components/schemas/SafetyCheckResponse
+                $ref: ./components.yaml#/components/schemas/EnterpriseSafetyCheckResult
         default:
           $ref: '#/components/responses/Problem'
   /allergies/resolve:

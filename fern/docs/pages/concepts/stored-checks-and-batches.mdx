@@ -9,12 +9,15 @@ Every successful `POST /safety/checks` and `POST /erx/safety-checks` response ca
 `check_id`. For **90 days**, `GET /safety/checks/{check_id}` returns:
 
 - `inputs`: the request as you submitted it;
-- `result`: the exact response you received;
+- `result`: the exact `EnterpriseSafetyCheckResult` you received;
 - `status`, `created_at` and `expires_at`.
 
 Reading costs 0 units. Any API key of your organization can read the check, so key rotation
 doesn't lose access. An unknown or expired `check_id`, or one belonging to another
 organization, returns `404 enterprise.safety.check_not_found`.
+
+A check stored before 3.0.0 (2026-10-26), in the retired result format, returns
+`410 enterprise.safety.stored_check_format_retired`; run the check again.
 
 A check is stored before it's returned. If storage is briefly unavailable, the request
 fails with `503 enterprise.safety.check_store_unavailable` at zero usage and is safe to

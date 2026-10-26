@@ -1,5 +1,5 @@
-release_id: enterprise-v1-2026.10.26
-release_version: 2.1.1
+release_id: enterprise-v1-2026.10.26.2
+release_version: 3.0.0
 status: available
 publishable: true
 
@@ -12,9 +12,9 @@ api_contract:
   response_policy: closed_schema
 
 artifacts:
-  python: saferx-pharma==2.1.1
-  typescript: saferx-pharma-sdk@2.1.1
-  csharp: SafeRx==2.1.1
+  python: saferx-pharma==3.0.0
+  typescript: saferx-pharma-sdk@3.0.0
+  csharp: SafeRx==3.0.0
 
 hosted_mcp:
   status: preview
@@ -36,6 +36,15 @@ availability:
   key_required: true
 
 notes:
+  - >-
+    3.0.0 -- BREAKING: the safety-check result is redesigned (schema_version 2,
+    EnterpriseSafetyCheckResult) for POST /safety/checks, POST /erx/safety-checks and the
+    result of GET /safety/checks/{check_id}: outcome, medications (with selection and
+    candidates), domains (each requested domain once, reference_only for general dose
+    reference), findings (kind, severity, action, evidence with the source's own rating,
+    confidence only when the source states one), review.reasons, patient_context and a
+    disclaimer. Severity bands now follow each database's own labels. A check stored in the
+    previous format returns 410 enterprise.safety.stored_check_format_retired.
   - >-
     2.1.1 -- the hosted MCP adds three tools over the 2.1.0 operations: resolve_allergies
     (POST /allergies/resolve), search_allergy_substances (GET /allergies/substances) and

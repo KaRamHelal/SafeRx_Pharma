@@ -1,119 +1,109 @@
 ---
 title: Safety results
-subtitle: Reading a safety-check response correctly
+subtitle: Reading a safety-check result correctly (schema_version 2)
 ---
 
 <Warning>
-Never reduce a safety-check response to a bare `safe: true`/`false` claim.
-There is no such field, and collapsing the response to one is the single
-most common way to misrepresent what the API actually told you. Read
-`signals`, `domain_coverage`, `unavailable_domains`, and `review` together.
+Never reduce a safety-check result to a bare `safe: true`/`false` claim. There is no such
+field. Read `outcome`, `domains`, `findings` and `review` together.
 </Warning>
+
+`POST /safety/checks` and `POST /erx/safety-checks` return an `EnterpriseSafetyCheckResult`.
+`GET /safety/checks/{check_id}` returns the same object inside `result`. Every text field is
+exactly `{en, ar}`. A value the sources do not state is `null`, never a default.
 
 ## The six domains
 
-Every safety evaluation is scoped to one or more of six domains, requested
-via `requested_domains` on the check:
+You choose the domains with `requested_domains`:
 
 | Domain | Covers |
 |---|---|
 | `ddi` | Drug-drug interactions |
 | `pllr` | Pregnancy and lactation |
-| `clinical_dose` | Dose appropriateness for patient context |
-| `food_interactions` | Food/supplement interactions |
-| `meal_timing` | Meal-timing-sensitive dosing |
-| `allergy` | Allergy cross-reactivity |
+| `clinical_dose` | Dose for the patient context |
+| `food_interactions` | Food and supplement interactions |
+| `meal_timing` | Meal-timing instructions |
+| `allergy` | Allergy matches and cross-reactivity |
 
-A domain you don't request is never evaluated and never appears in either
-`domain_coverage` or `unavailable_domains` — it's simply absent.
+## outcome
 
-## domain_coverage vs. unavailable_domains
+The one-line summary.
 
-For each domain you *did* request, it lands in exactly one of these two
-arrays:
-
-- **`domain_coverage`** — domains that were actually evaluated
-  (`status: evaluated`). This is the set you can treat as "checked."
-- **`unavailable_domains`** — domains that were requested but could not be
-  evaluated, with a `status` explaining why: `not_applicable`, `unknown`,
-  `unmapped`, `not_enough_context`, `unavailable`, or `failed`.
-
-**Treat every domain in `unavailable_domains` as unknown, not as clear.** A
-domain landing here because of `not_enough_context` (e.g. you requested
-`clinical_dose` but sent no patient context) is not the same as "evaluated,
-no issues found" — no evaluation happened at all.
-
-## Signals
-
-`signals[]` holds every safety signal actually raised, across all evaluated
-domains. **An empty `signals` array does not mean "safe"** — it means no
-signal was raised across whatever was actually evaluated per
-`domain_coverage`. Combine it with `domain_coverage`/`unavailable_domains`
-to know what "empty" is actually telling you.
-
-Each signal carries:
-
-- **`severity`** — `informational` / `low` / `moderate` / `high` / `critical`.
-- **`action_bucket`** — `urgent_review` / `clarify_first` / `counsel` /
-  `monitor` / `reference`. **Use this, not severity alone, to decide UI
-  treatment.** A `moderate` severity signal in `urgent_review` warrants
-  stronger presentation than a `high` severity one in `reference`.
-- **`title` / `reason` / `justification`** — bilingual, human-readable
-  explanation of what was flagged and why.
-- **`evidence_refs[]`** — the citations backing this signal. Each entry has
-  its own `citation_label`, `reason`, `justification`, and `evidence_grade`
-  (`curated_reference` / `primary_label` / `secondary_reference` /
-  `local_policy` / `inferred_mapping`). These are meaningful records to
-  surface, not opaque IDs — use them to explain *why* a signal exists.
-- **`confidence`** — confidence in this specific signal, 0–1.
-- **`equivalent_options[]`** — suggested alternatives, when available.
-
-## Review
-
-`review` (result-level) and each signal's `review_required` (signal-level)
-are independent. A result can require review overall even if no individual
-signal does, and vice versa. `review.minimum_reviewer_role` and
-`review.review_deadline_policy` tell you who must review and by when
-relative to relying on the output — `before_relying_on_output` is the
-strictest: don't act on the result until reviewed.
-
-## context_summary
-
-Tells you whether `patient_context` was actually applied — see
-[Patient context](/concepts/patient-context) for the full field-by-field
-breakdown.
-
-## display_obligations
-
-Every response carries fixed display requirements
-(`must_show_educational_boundary`, `must_show_source_snapshot`,
-`must_preserve_arabic_text`, `may_not_describe_as_medical_advice`, all
-always `true`). If you build a UI on top of this API, these aren't optional
-— they describe what you're contractually required to show alongside the
-result.
-
-## limitations
-
-Caveats about the result's scope or confidence that should be surfaced
-alongside signals, at both the result level (`SafetyCheckResponse.limitations`)
-and the signal level (`SafetySignal.limitations`). When a medication was
-evaluated as a default systemic variant, the result-level limitation names the
-product that was chosen and how to pin a different one.
-
-## resolved_medications
-
-Which registry product each request medication was evaluated as, in request
-order (`medication_ref`, `role`, `sfrx_id`, `display_name`, `strength`,
-`resolution_status`, `review_reason_codes`). Read it with `review.reason_codes`:
-
-| Reason code | Meaning |
+| Field | Meaning |
 |---|---|
-| `default_variant_selected` | The text named one medicine in several variants; a default systemic variant was evaluated. Review required. |
-| `equivalent_product_selected` | Several listings share the same strength and form (packs, manufacturers); one was evaluated. Review required. |
-| `registry_field_conflict` | The text contradicts the registry record of the supplied `sfrx_id`; the `sfrx_id` was used. |
-| `ambiguous_candidates` | The text matches different medicines; nothing was selected for that entry. |
-| `unmapped_medication` | No registry candidate was found for that entry. |
-| `sfrx_id_unknown` | The supplied `sfrx_id` is not an active registry product. |
-| `query_rejected` | The text could not be searched (shorter than 2 or longer than 80 characters). |
+| `highest_severity` | The most severe **alert** (`informational`, `low`, `moderate`, `high` or `critical`), or `null` when there is none |
+| `action` | That alert's action (see `findings`), or `null` |
+| `finding_count`, `alert_count` | All findings, and those of `kind: alert` |
+| `blocked` | `true` when any requested domain was not evaluated. Treat the result as incomplete, never as clear |
 
-See [Medication identity](/concepts/medication-identity) for how a product is chosen.
+## medications
+
+There is one entry per request medication, in request order.
+
+| Field | Meaning |
+|---|---|
+| `ref` | Your `client_medication_id`, or `m1`, `m2`, … |
+| `role` | `new` (a target medication) or `current` |
+| `status` | `resolved`, `ambiguous` or `unresolved` |
+| `selection` | `resolved` only. One of `exact`, `by_id` (you sent an `sfrx_id`), `default_variant` (a bare name with several variants: confirm the product) or `equivalent_product` (one of several identical listings) |
+| `product` | `resolved` only: `{sfrx_id, name, generic, strength, form}` |
+| `candidates` | `ambiguous` only: up to five products to choose from. Send the chosen `sfrx_id` |
+| `reason` | Bilingual. Present when the medication is not resolved |
+
+If no `new` medication resolves, the check is `422 enterprise.safety.target_resolution_required`.
+The problem body carries the same `medications` array, with candidates.
+
+## domains
+
+Each requested domain appears exactly once.
+
+| `status` | Meaning |
+|---|---|
+| `evaluated` | Checked. Findings, if any, are in `findings` |
+| `reference_only` | Only general reference applies, for example dose maximums with no patient-specific dose rule. This is **not** "dose checked" |
+| `not_applicable` | The check does not apply, for example lactation for a patient who is not lactating |
+| `not_enough_context`, `unmapped`, `unavailable`, `failed` | **Not evaluated.** Treat as unknown, not clear. `reason` explains why, and `missing_context` names the fields to send for `not_enough_context` |
+
+Each domain also carries `name`, `finding_count` and the database `release_id` it used.
+
+## findings
+
+| Field | Meaning |
+|---|---|
+| `finding_id` | Stable id. Quote it with `check_id` when you report a problem |
+| `domain`, `kind` | `kind` is `alert`, or `reference` (educational reference, not a warning about this patient) |
+| `severity` | `informational`, `low`, `moderate`, `high` or `critical`, mapped from the database's own rating |
+| `action` | `urgent_review`, `clarify_first`, `counsel`, `monitor` or `reference`. **Use this, not severity alone, to decide UI treatment** |
+| `title` | What was found |
+| `explanation` | Why it matters, or `null` |
+| `recommendation` | What to do, or `null` |
+| `medication_refs` | The `medications[].ref` values involved |
+| `subjects` | What the finding is about beyond medicines, for example the declared allergen (`type: allergen`) or the pregnancy population |
+| `evidence` | `{grade, source, source_rating}`. `grade` is `primary_label`, `curated_reference`, `secondary_reference`, `local_policy` or `unrated`. `source_rating` is the database's own rating, for example `{value: 3, label: "Major"}` |
+| `confidence` | The source's own confidence (0–1), or `null` when the source states none. It is never invented |
+| `based_on_context` | The patient-context fields that shaped this finding |
+| `review_required` | This finding needs professional review |
+
+## review
+
+| Field | Meaning |
+|---|---|
+| `required` | Do not rely on the result until it has been reviewed |
+| `reasons` | `[{code, message}]`, for example `severe_or_uncertain_signal`, `domain_not_evaluated` or `default_variant_selected` |
+| `minimum_reviewer_role` | `qualified_professional`, or `null` |
+
+## patient_context and the rest
+
+- `patient_context` is `{status: applied|none, applied_fields}`. It names the fields that
+  were used, never their values. See [Patient context](/concepts/patient-context).
+- `release` gives the safety and registry snapshot ids used.
+- `disclaimer` is the bilingual educational boundary. Show it with every result.
+- `erx` (eRx checks only) lists each prescription line with its `medication_ref`,
+  `sfrx_id` and `status`.
+
+## Stored checks
+
+Every result carries a `check_id`, readable for 90 days with `GET /safety/checks/{check_id}`
+(see [Stored checks and batches](/concepts/stored-checks-and-batches)). A check stored before
+3.0.0, in the retired format, returns `410 enterprise.safety.stored_check_format_retired`. Run
+the check again to get a current result.

@@ -188,7 +188,7 @@ components:
         against the lines. Each is identified like a safety-check medication: input_text,
         sfrx_id, or both, with dose_text, route and dosage_form selecting the registry
         product. frequency_text and duration_text are echoed in the response's erx object
-        and are not evaluated. The response is a SafetyCheckResponse with an erx echo.
+        and are not evaluated. The response is an EnterpriseSafetyCheckResult with an erx echo.
       type: object
       additionalProperties: false
       required:
@@ -1551,251 +1551,6 @@ components:
           description: Registry data snapshot currently in use.
           type: string
           minLength: 1
-    SafetyCheckResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - request_id
-      - result_id
-      - schema_version
-      - surface
-      - locale
-      - educational_context
-      - source_provenance
-      - review
-      - summary
-      - context_summary
-      - signals
-      - domain_coverage
-      - unavailable_domains
-      - limitations
-      - display_obligations
-      - correction_anchors
-      properties:
-        check_id:
-          type: string
-          pattern: ^chk_[0-9a-f]{32}$
-          description: The stored check's id. Read it back with `GET /safety/checks/{check_id}` for 90 days, from any API key of your organization.
-        erx:
-          description: Present only on enterprise_erx_safety_check responses (2.0.5) -- the
-            prescription as evaluated, line by line, in request order.
-          type: object
-          additionalProperties: false
-          required:
-          - prescription_ref
-          - lines
-          properties:
-            prescription_ref:
-              type: string
-            lines:
-              type: array
-              items:
-                type: object
-                additionalProperties: false
-                required:
-                - line_ref
-                - sfrx_id
-                - resolution_status
-                - frequency_text
-                - duration_text
-                properties:
-                  line_ref:
-                    type: string
-                  sfrx_id:
-                    type: ['string', 'null']
-                  resolution_status:
-                    type: string
-                    enum:
-                    - resolved
-                    - ambiguous
-                    - unresolved
-                  frequency_text:
-                    type: ['string', 'null']
-                  duration_text:
-                    type: ['string', 'null']
-        resolved_medications:
-          description: Which registry product each request medication was
-            evaluated as, in request order. resolution_status is resolved,
-            ambiguous or unresolved. review_reason_codes explains a resolved
-            item that still needs review (default_variant_selected when a bare
-            name was evaluated as its default systemic variant,
-            equivalent_product_selected when several listings share the same
-            strength and form) or why nothing resolved (ambiguous_candidates,
-            unmapped_medication, sfrx_id_unknown, query_rejected).
-          type: array
-          items:
-            type: object
-            additionalProperties: false
-            required:
-            - medication_ref
-            - role
-            - sfrx_id
-            - resolution_status
-            - review_reason_codes
-            properties:
-              medication_ref:
-                description: The request's client_medication_id, or
-                  request_medication_<index> when none was given.
-                type: string
-              role:
-                type: string
-                enum:
-                - target_medication
-                - current_medication
-              sfrx_id:
-                type:
-                - string
-                - 'null'
-              display_name:
-                oneOf:
-                - $ref: '#/components/schemas/LocalizedString'
-                - type: 'null'
-              strength:
-                type:
-                - string
-                - 'null'
-              resolution_status:
-                type: string
-                enum:
-                - resolved
-                - ambiguous
-                - unresolved
-              review_reason_codes:
-                type: array
-                items:
-                  type: string
-        request_id:
-          description: Echo of the request identifier for correlation.
-          type: string
-        result_id:
-          description: Stable identifier for this specific safety check result.
-          type: string
-        schema_version:
-          description: Semantic version of this response's schema shape.
-          type: string
-        surface:
-          description: Which SafeRx surface produced this result. Always
-            enterprise_api for calls made through this API.
-          type: string
-          enum:
-          - browser
-          - enterprise_api
-          - partner_api
-        locale:
-          description: Locale used for localized text in this response.
-          type: string
-          enum:
-          - ar-EG
-          - ar
-          - en
-          - mixed
-        educational_context:
-          $ref: '#/components/schemas/EducationalContext'
-        source_provenance:
-          $ref: '#/components/schemas/SourceProvenance'
-        review:
-          $ref: '#/components/schemas/ReviewState'
-        summary:
-          description: Short human-readable summary of this result. Never reduce
-            this response to a bare safe/unsafe claim -- read signals,
-            domain_coverage, and review together.
-          $ref: '#/components/schemas/LocalizedString'
-        context_summary:
-          description: Privacy-safe indication of whether request-supplied patient_context
-            was applied to this check. Enterprise has no saved profile, so this never
-            reports a saved-profile source; it never echoes raw patient_context values.
-          type: object
-          additionalProperties: false
-          required:
-          - status
-          - missing_context_count
-          - stale_context_count
-          - contradiction_count
-          - context_sources
-          - profile_context_version
-          properties:
-            status:
-              description: request_context_applied means at least one
-                patient_context field was supplied and used; baseline_only means
-                no patient_context was supplied, so only medication-level
-                evaluation was performed.
-              type: string
-              enum:
-              - request_context_applied
-              - baseline_only
-            context_sources:
-              description: Where the applied patient context came from. On the
-                Enterprise surface this is `["request"]` or empty, since there is
-                no saved profile. (Declared 2.0.4; production always returned it.)
-              type: array
-              uniqueItems: true
-              items:
-                type: string
-                enum:
-                - request
-                - saved_profile
-            profile_context_version:
-              description: Version of the context-composition rules applied.
-                Always `null` on the Enterprise surface, which has no saved
-                profile. (Declared 2.0.4; production always returned it.)
-              type:
-              - string
-              - 'null'
-            missing_context_count:
-              description: Count of patient-context fields relevant to the
-                requested domains that were not supplied.
-              type: integer
-              minimum: 0
-            stale_context_count:
-              description: Count of supplied patient-context fields whose
-                reference date makes them too old to be trusted as current
-                (e.g. an old age_reference_date).
-              type: integer
-              minimum: 0
-            contradiction_count:
-              description: Count of supplied patient-context fields that
-                conflict with each other (e.g. sex and pregnancy_status).
-              type: integer
-              minimum: 0
-        signals:
-          description: Safety signals raised across all requested domains. Empty
-            does not mean "safe" -- check domain_coverage and unavailable_domains
-            for what was actually evaluated.
-          type: array
-          items:
-            $ref: '#/components/schemas/SafetySignal'
-        domain_coverage:
-          description: Per-domain evaluation status for every domain that was
-            requested and could be evaluated.
-          type: array
-          items:
-            $ref: '#/components/schemas/SafetyBoardDomainState'
-          default: []
-        unavailable_domains:
-          description: Per-domain status for requested domains that could not be
-            evaluated (e.g. insufficient context, domain not currently
-            supported). Treat these as unknown, not as clear.
-          type: array
-          items:
-            $ref: '#/components/schemas/SafetyBoardDomainState'
-          default: []
-        limitations:
-          description: Caveats about this result's scope or confidence that
-            should be surfaced alongside signals.
-          type: array
-          items:
-            $ref: '#/components/schemas/LocalizedString'
-          default: []
-        display_obligations:
-          $ref: '#/components/schemas/DisplayObligations'
-        correction_anchors:
-          description: Opaque anchors for reporting a correction against this
-            result. Present for future correction-workflow use; treat entries as
-            opaque.
-          type: array
-          items:
-            $ref: '#/components/schemas/CorrectionAnchor'
-          default: []
     EnterpriseCapabilities:
       type: object
       additionalProperties: false
@@ -2488,7 +2243,7 @@ components:
           - $ref: '#/components/schemas/ErxSafetyCheckRequest'
         result:
           oneOf:
-          - $ref: '#/components/schemas/SafetyCheckResponse'
+          - $ref: '#/components/schemas/EnterpriseSafetyCheckResult'
           - type: 'null'
         problem:
           description: For a failed batch item, the RFC 9457 problem it produced.
@@ -3277,291 +3032,6 @@ components:
           - string
           - 'null'
           format: date-time
-    SafetyBoardDomainState:
-      type: object
-      additionalProperties: false
-      required:
-      - domain
-      - status
-      - code
-      properties:
-        domain:
-          description: Which of the six safety domains this state describes.
-          type: string
-          enum:
-          - ddi
-          - pllr
-          - food_interactions
-          - meal_timing
-          - allergy
-          - clinical_dose
-        status:
-          description: evaluated means the domain was actually assessed for this
-            request; every other value means it was not, for the reason given --
-            treat non-evaluated domains as unknown, not as clear.
-          type: string
-          enum:
-          - evaluated
-          - not_applicable
-          - unknown
-          - unmapped
-          - not_enough_context
-          - unavailable
-          - failed
-        code:
-          description: Machine-readable reason code for this domain's status.
-          type: string
-        display_label:
-          $ref: '#/components/schemas/LocalizedString'
-        status_label:
-          $ref: '#/components/schemas/LocalizedString'
-        correction_anchors:
-          description: Opaque anchors for reporting a correction against this
-            domain's evaluation. Treat entries as opaque. (Declared 2.0.4.)
-          type: array
-          items:
-            $ref: '#/components/schemas/CorrectionAnchor'
-          default: []
-    SafetySignal:
-      type: object
-      additionalProperties: false
-      required:
-      - signal_id
-      - domain
-      - severity
-      - action_bucket
-      - title
-      - reason
-      - justification
-      - evidence_refs
-      - confidence
-      - review_required
-      - source_provenance
-      properties:
-        signal_id:
-          description: Stable identifier for this signal.
-          type: string
-        domain:
-          description: Which of the six safety domains raised this signal.
-          type: string
-          enum:
-          - ddi
-          - pllr
-          - food_interactions
-          - meal_timing
-          - allergy
-          - clinical_dose
-        severity:
-          description: Canonical severity of this signal.
-          type: string
-          enum:
-          - informational
-          - low
-          - moderate
-          - high
-          - critical
-        action_bucket:
-          description: Recommended action category. Use this, not severity alone,
-            to decide how to surface the signal -- e.g. urgent_review demands
-            stronger UI treatment than reference even within the same severity.
-          type: string
-          enum:
-          - urgent_review
-          - clarify_first
-          - counsel
-          - monitor
-          - reference
-        title:
-          $ref: '#/components/schemas/LocalizedString'
-        reason:
-          $ref: '#/components/schemas/LocalizedString'
-        justification:
-          $ref: '#/components/schemas/LocalizedString'
-        equivalent_options:
-          description: Suggested equivalent alternatives, when available. Not
-            present for every signal.
-          type: array
-          items:
-            type: object
-            additionalProperties: false
-            required:
-            - display_name
-            - equivalence_reason
-            properties:
-              display_name:
-                $ref: '#/components/schemas/LocalizedString'
-              equivalence_reason:
-                $ref: '#/components/schemas/LocalizedString'
-          default: []
-        evidence_refs:
-          description: Evidence backing this signal. Each entry carries its own
-            citation and evidence grade; use these to explain why a signal was
-            raised, not just that it was.
-          type: array
-          minItems: 1
-          items:
-            type: object
-            additionalProperties: false
-            required: [evidence_id, domain, source_snapshot_id, evidence_grade, citation_label, reason, justification]
-            properties:
-              evidence_id:
-                description: Stable identifier for this evidence entry.
-                type: string
-                minLength: 1
-              domain:
-                description: Which safety domain this evidence supports.
-                type: string
-                minLength: 1
-              source_snapshot_id:
-                description: Reference-data snapshot this evidence was drawn
-                  from.
-                type: string
-                minLength: 1
-              evidence_grade:
-                description: Strength/kind of this evidence.
-                type: string
-                enum:
-                - curated_reference
-                - primary_label
-                - secondary_reference
-                - local_policy
-                - inferred_mapping
-              citation_label:
-                $ref: '#/components/schemas/LocalizedString'
-              reason:
-                $ref: '#/components/schemas/LocalizedString'
-              justification:
-                $ref: '#/components/schemas/LocalizedString'
-              limitations:
-                description: Caveats specific to this evidence entry.
-                type: array
-                items:
-                  $ref: '#/components/schemas/LocalizedString'
-                default: []
-        confidence:
-          description: Confidence in this specific signal, 0-1.
-          type: number
-          minimum: 0
-          maximum: 1
-        review_required:
-          description: Whether this specific signal requires professional review,
-            independent of the result-level review requirement.
-          type: boolean
-        source_provenance:
-          $ref: '#/components/schemas/SourceProvenance'
-        limitations:
-          description: Caveats specific to this signal.
-          type: array
-          items:
-            $ref: '#/components/schemas/LocalizedString'
-          default: []
-        risk_display:
-          description: Canonical educational risk-band display derived from the
-            source severity. It never replaces the source's own reason or
-            justification text. (Declared 2.0.4; production returns it on every
-            signal.)
-          type: object
-          additionalProperties: false
-          required:
-          - canonical_severity
-          - display_label
-          - display_summary
-          - source_scale
-          - raw_source_value
-          - mapping_version
-          - source_text_policy
-          properties:
-            canonical_severity:
-              type: string
-              enum:
-              - informational
-              - low
-              - moderate
-              - high
-              - critical
-            display_label:
-              $ref: '#/components/schemas/LocalizedString'
-            display_summary:
-              $ref: '#/components/schemas/LocalizedString'
-            source_scale:
-              type: string
-            raw_source_value:
-              type:
-              - integer
-              - number
-              - string
-              - 'null'
-            raw_source_label:
-              description: The source's own label for the value; null when the source carries none.
-              oneOf:
-              - $ref: '#/components/schemas/LocalizedString'
-              - type: 'null'
-            mapping_version:
-              type: string
-            source_text_policy:
-              type: string
-        title_origin:
-          description: Where the signal title came from -- always the safety
-            database release, never generated text. (Declared 2.0.4.)
-          type: object
-          additionalProperties: false
-          required:
-          - source_owner
-          - source_release_id
-          - source_field
-          - mapping_policy_id
-          properties:
-            source_owner:
-              type: string
-              enum:
-              - safety_database_release
-            source_release_id:
-              type: string
-            source_field:
-              type: string
-            mapping_policy_id:
-              type: string
-        patient_context_attribution:
-          description: Whether, and how, the supplied patient_context shaped this
-            finding. (Declared 2.0.4.)
-          type: object
-          additionalProperties: false
-          required:
-          - attribution
-          - inputs_used
-          - baseline_severity
-          properties:
-            attribution:
-              type: string
-              enum:
-              - none
-              - refined_by_context
-              - severity_raised_by_context
-            matched_allergens:
-              description: Allergen labels from patient_context that produced
-                this allergy finding.
-              type: array
-              items:
-                type: string
-              default: []
-            inputs_used:
-              type: array
-              items:
-                type: string
-              default: []
-            baseline_severity:
-              description: The severity this finding would have had without
-                patient_context; set only for severity_raised_by_context.
-              type:
-              - string
-              - 'null'
-        correction_anchors:
-          description: Opaque anchors for reporting a correction against this
-            signal. Treat entries as opaque. (Declared 2.0.4.)
-          type: array
-          items:
-            $ref: '#/components/schemas/CorrectionAnchor'
-          default: []
     MedicationResolution:
       type: object
       additionalProperties: false
@@ -3717,3 +3187,505 @@ components:
             $ref: '#/components/schemas/LocalizedString'
         display_obligations:
           $ref: '#/components/schemas/DisplayObligations'
+    EnterpriseSafetyCheckResult:
+      description: 'Public Enterprise safety-check result, schema_version 2 (2026-10-26). Built field by field by packages/common/safety_public_v2.py;
+        every text is exactly {en, ar}; a value the sources do not state is null. Decision: docs/decisions/2026-10-26--enterprise-safety-response-v2-in-place.md.'
+      type: object
+      additionalProperties: false
+      required:
+      - schema_version
+      - check_id
+      - request_id
+      - created_at
+      - outcome
+      - release
+      - medications
+      - domains
+      - findings
+      - review
+      - patient_context
+      - disclaimer
+      properties:
+        schema_version:
+          const: 2
+        check_id:
+          type: string
+          pattern: ^chk_[0-9a-f]{32}$
+        request_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        outcome:
+          type: object
+          additionalProperties: false
+          required:
+          - highest_severity
+          - action
+          - finding_count
+          - alert_count
+          - blocked
+          properties:
+            highest_severity:
+              oneOf:
+              - type: string
+                enum:
+                - informational
+                - low
+                - moderate
+                - high
+                - critical
+              - type: 'null'
+            action:
+              oneOf:
+              - type: string
+                enum:
+                - urgent_review
+                - clarify_first
+                - counsel
+                - monitor
+                - reference
+              - type: 'null'
+            finding_count:
+              type: integer
+              minimum: 0
+            alert_count:
+              type: integer
+              minimum: 0
+            blocked:
+              type: boolean
+        release:
+          type: object
+          additionalProperties: false
+          required:
+          - safety_snapshot_id
+          - registry_snapshot_id
+          properties:
+            safety_snapshot_id:
+              type:
+              - string
+              - 'null'
+            registry_snapshot_id:
+              type:
+              - string
+              - 'null'
+        medications:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnterpriseSafetyMedicationResult'
+        domains:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnterpriseSafetyDomainResult'
+        findings:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnterpriseSafetyFinding'
+        review:
+          type: object
+          additionalProperties: false
+          required:
+          - required
+          - reasons
+          - minimum_reviewer_role
+          properties:
+            required:
+              type: boolean
+            reasons:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                required:
+                - code
+                - message
+                properties:
+                  code:
+                    type: string
+                  message:
+                    oneOf:
+                    - $ref: '#/components/schemas/EnterpriseSafetyText'
+                    - type: 'null'
+            minimum_reviewer_role:
+              type:
+              - string
+              - 'null'
+        patient_context:
+          type: object
+          additionalProperties: false
+          required:
+          - status
+          - applied_fields
+          properties:
+            status:
+              type: string
+              enum:
+              - applied
+              - none
+            applied_fields:
+              type: array
+              items:
+                type: string
+        disclaimer:
+          $ref: '#/components/schemas/EnterpriseSafetyText'
+        erx:
+          type: object
+          additionalProperties: false
+          required:
+          - prescription_ref
+          - lines
+          properties:
+            prescription_ref:
+              type:
+              - string
+              - 'null'
+            lines:
+              type: array
+              items:
+                $ref: '#/components/schemas/EnterpriseSafetyErxLine'
+    EnterpriseSafetyText:
+      type: object
+      additionalProperties: false
+      required:
+      - en
+      - ar
+      properties:
+        en:
+          type: string
+          minLength: 1
+        ar:
+          type: string
+          minLength: 1
+    EnterpriseSafetyProduct:
+      type: object
+      additionalProperties: false
+      required:
+      - sfrx_id
+      - name
+      - generic
+      - strength
+      - form
+      properties:
+        sfrx_id:
+          type: string
+          pattern: ^SRX-[0-9]{3}-[0-9]{6}$
+        name:
+          oneOf:
+          - $ref: '#/components/schemas/EnterpriseSafetyText'
+          - type: 'null'
+        generic:
+          type:
+          - string
+          - 'null'
+        strength:
+          type:
+          - string
+          - 'null'
+        form:
+          oneOf:
+          - $ref: '#/components/schemas/EnterpriseSafetyText'
+          - type: 'null'
+    EnterpriseSafetyCandidate:
+      type: object
+      additionalProperties: false
+      required:
+      - sfrx_id
+      - name
+      - strength
+      - form
+      properties:
+        sfrx_id:
+          type: string
+        name:
+          oneOf:
+          - $ref: '#/components/schemas/EnterpriseSafetyText'
+          - type: 'null'
+        strength:
+          type:
+          - string
+          - 'null'
+        form:
+          oneOf:
+          - $ref: '#/components/schemas/EnterpriseSafetyText'
+          - type: 'null'
+    EnterpriseSafetyMedicationResult:
+      type: object
+      additionalProperties: false
+      required:
+      - ref
+      - role
+      - input
+      - status
+      properties:
+        ref:
+          type: string
+        role:
+          type: string
+          enum:
+          - new
+          - current
+        input:
+          type: string
+        status:
+          type: string
+          enum:
+          - resolved
+          - ambiguous
+          - unresolved
+        selection:
+          type: string
+          enum:
+          - exact
+          - by_id
+          - default_variant
+          - equivalent_product
+        product:
+          $ref: '#/components/schemas/EnterpriseSafetyProduct'
+        candidates:
+          type: array
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/EnterpriseSafetyCandidate'
+        reason:
+          oneOf:
+          - $ref: '#/components/schemas/EnterpriseSafetyText'
+          - type: 'null'
+      allOf:
+      - if:
+          properties:
+            status:
+              const: resolved
+        then:
+          required:
+          - selection
+          - product
+        else:
+          required:
+          - reason
+    EnterpriseSafetyDomainResult:
+      type: object
+      additionalProperties: false
+      required:
+      - domain
+      - name
+      - status
+      - finding_count
+      - reason
+      - missing_context
+      - release_id
+      properties:
+        domain:
+          type: string
+          enum:
+          - ddi
+          - pllr
+          - clinical_dose
+          - food_interactions
+          - meal_timing
+          - allergy
+        name:
+          oneOf:
+          - $ref: '#/components/schemas/EnterpriseSafetyText'
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - evaluated
+          - reference_only
+          - not_applicable
+          - not_enough_context
+          - unmapped
+          - unavailable
+          - failed
+        finding_count:
+          type: integer
+          minimum: 0
+        reason:
+          oneOf:
+          - $ref: '#/components/schemas/EnterpriseSafetyText'
+          - type: 'null'
+        missing_context:
+          type: array
+          items:
+            type: string
+        release_id:
+          type:
+          - string
+          - 'null'
+    EnterpriseSafetySubject:
+      type: object
+      additionalProperties: false
+      required:
+      - type
+      - code
+      - name
+      properties:
+        type:
+          type: string
+          enum:
+          - allergen
+          - food
+          - meal
+          - population
+        code:
+          type:
+          - string
+          - 'null'
+        name:
+          oneOf:
+          - $ref: '#/components/schemas/EnterpriseSafetyText'
+          - type: 'null'
+    EnterpriseSafetyEvidence:
+      type: object
+      additionalProperties: false
+      required:
+      - grade
+      - source
+      - source_rating
+      properties:
+        grade:
+          type: string
+          enum:
+          - primary_label
+          - curated_reference
+          - secondary_reference
+          - local_policy
+          - unrated
+        source:
+          oneOf:
+          - $ref: '#/components/schemas/EnterpriseSafetyText'
+          - type: 'null'
+        source_rating:
+          oneOf:
+          - type: object
+            additionalProperties: false
+            required:
+            - value
+            - label
+            properties:
+              value:
+                type:
+                - integer
+                - number
+                - string
+                - 'null'
+              label:
+                $ref: '#/components/schemas/EnterpriseSafetyText'
+          - type: 'null'
+    EnterpriseSafetyFinding:
+      type: object
+      additionalProperties: false
+      required:
+      - finding_id
+      - domain
+      - kind
+      - severity
+      - action
+      - title
+      - explanation
+      - recommendation
+      - medication_refs
+      - subjects
+      - evidence
+      - confidence
+      - based_on_context
+      - review_required
+      properties:
+        finding_id:
+          type: string
+          minLength: 1
+        domain:
+          type: string
+          enum:
+          - ddi
+          - pllr
+          - clinical_dose
+          - food_interactions
+          - meal_timing
+          - allergy
+        kind:
+          type: string
+          enum:
+          - alert
+          - reference
+        severity:
+          type: string
+          enum:
+          - informational
+          - low
+          - moderate
+          - high
+          - critical
+        action:
+          type: string
+          enum:
+          - urgent_review
+          - clarify_first
+          - counsel
+          - monitor
+          - reference
+        title:
+          $ref: '#/components/schemas/EnterpriseSafetyText'
+        explanation:
+          oneOf:
+          - $ref: '#/components/schemas/EnterpriseSafetyText'
+          - type: 'null'
+        recommendation:
+          oneOf:
+          - $ref: '#/components/schemas/EnterpriseSafetyText'
+          - type: 'null'
+        medication_refs:
+          type: array
+          items:
+            type: string
+        subjects:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnterpriseSafetySubject'
+        evidence:
+          $ref: '#/components/schemas/EnterpriseSafetyEvidence'
+        confidence:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+          maximum: 1
+        based_on_context:
+          type: array
+          items:
+            type: string
+        review_required:
+          type: boolean
+    EnterpriseSafetyErxLine:
+      type: object
+      additionalProperties: false
+      required:
+      - line_ref
+      - medication_ref
+      - sfrx_id
+      - status
+      - frequency_text
+      - duration_text
+      properties:
+        line_ref:
+          type: string
+        medication_ref:
+          type: string
+        sfrx_id:
+          type:
+          - string
+          - 'null'
+        status:
+          type: string
+          enum:
+          - resolved
+          - ambiguous
+          - unresolved
+        frequency_text:
+          type:
+          - string
+          - 'null'
+        duration_text:
+          type:
+          - string
+          - 'null'

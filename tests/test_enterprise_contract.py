@@ -82,11 +82,11 @@ def test_public_response_schemas_are_closed() -> None:
     serialized = (ROOT / "openapi/components.yaml").read_text()
     assert "additionalProperties: true" not in serialized
     assert components["components"]["securitySchemes"]["enterpriseApiKey"]["name"] == "X-SafeRx-API-Key"
-    public_surface_values = components["components"]["schemas"]["SafetyCheckResponse"]["properties"]["surface"]["enum"]
-    assert set(public_surface_values) == {"browser", "enterprise_api", "partner_api"}
+    result = components["components"]["schemas"]["EnterpriseSafetyCheckResult"]
+    assert result["additionalProperties"] is False
+    assert result["properties"]["schema_version"] == {"const": 2}
     assert "enterprise_mcp" not in serialized
     assert "admin_console" not in serialized
-    assert "private" not in public_surface_values
 
 
 def test_signature_binds_the_full_enterprise_path() -> None:
@@ -120,11 +120,10 @@ def test_safety_check_request_is_request_scoped_patient_context() -> None:
     assert set(medication_item["properties"]["role"]["enum"]) == {"target_medication", "current_medication"}
     patient_context = schemas["PatientSafetyContext"]
     assert patient_context["additionalProperties"] is False
-    response = schemas["SafetyCheckResponse"]["properties"]["context_summary"]
-    assert set(response["properties"]["status"]["enum"]) == {"request_context_applied", "baseline_only"}
-    # A saved-profile-sourced state would only be reachable if Enterprise merged a
-    # saved profile, which it never does.
-    assert "saved_profile_applied" not in response["properties"]["status"]["enum"]
+    response = schemas["EnterpriseSafetyCheckResult"]["properties"]["patient_context"]
+    # Enterprise has no saved profile: the result says only whether request context applied.
+    assert set(response["properties"]["status"]["enum"]) == {"applied", "none"}
+    assert set(response["properties"]) == {"status", "applied_fields"}
 
 
 def test_sdk_clients_carry_no_private_route_metadata() -> None:
@@ -290,10 +289,11 @@ def test_safety_check_medication_entry_matches_the_real_backend_contract() -> No
         "client_medication_id", "input_text", "sfrx_id", "dose_text", "route", "dosage_form", "role",
     }
     assert "frequency_text" not in medication_item["properties"]
-    echo = schemas["SafetyCheckResponse"]["properties"]["resolved_medications"]["items"]
+    echo = schemas["EnterpriseSafetyMedicationResult"]
     assert echo["additionalProperties"] is False
-    assert set(echo["required"]) == {"medication_ref", "role", "sfrx_id", "resolution_status", "review_reason_codes"}
-    assert set(echo["properties"]["resolution_status"]["enum"]) == {"resolved", "ambiguous", "unresolved"}
+    assert set(echo["required"]) == {"ref", "role", "input", "status"}
+    assert set(echo["properties"]["status"]["enum"]) == {"resolved", "ambiguous", "unresolved"}
+    assert set(echo["properties"]["selection"]["enum"]) == {"exact", "by_id", "default_variant", "equivalent_product"}
 
 
 def test_safety_capabilities_matches_the_real_backend_contract() -> None:
@@ -371,11 +371,9 @@ def test_prescription_transitions_and_evidence_refs_are_not_always_empty() -> No
     schemas = components["components"]["schemas"]
     transition_item = schemas["PrescriptionResult"]["properties"]["transitions"]["items"]
     assert set(transition_item["required"]) == {"event_type", "payload", "occurred_at"}
-    evidence_item = schemas["SafetySignal"]["properties"]["evidence_refs"]["items"]
-    assert set(evidence_item["required"]) == {
-        "evidence_id", "domain", "source_snapshot_id", "evidence_grade",
-        "citation_label", "reason", "justification",
-    }
+    # 3.0.0: a finding's evidence is {grade, source, source_rating} (EnterpriseSafetyEvidence).
+    evidence = schemas["EnterpriseSafetyEvidence"]
+    assert set(evidence["required"]) == {"grade", "source", "source_rating"}
 
 
 def test_example_fixtures_are_current_and_valid() -> None:
