@@ -99,7 +99,10 @@
               "ar": "أقراص",
               "en": "Oral Tablet"
             },
-            "generic": "WARFARIN",
+            "generic": {
+              "ar": "وارفارين",
+              "en": "WARFARIN"
+            },
             "name": {
               "ar": "ماريفان 5 مجم 102 قرص",
               "en": "MAREVAN 5 MG 102 TABS."
@@ -119,7 +122,10 @@
               "ar": "أقراص",
               "en": "Oral Tablet"
             },
-            "generic": "ACETYLSALICYLIC ACID",
+            "generic": {
+              "ar": "حمض أسيتيل الساليسيليك",
+              "en": "ACETYLSALICYLIC ACID"
+            },
             "name": {
               "ar": "أسبيرين بروتكت 100 مجم 30 قرص",
               "en": "ASPIRIN PROTECT 100 MG 30 TABS."

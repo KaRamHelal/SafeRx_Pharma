@@ -1566,11 +1566,17 @@ def build() -> dict[str, dict[str, Any]]:
             },
         }
 
+    # As production returns them (live 2026-10-26): the generic is bilingual.
+    V2_GENERICS = {
+        "WARFARIN": {"en": "WARFARIN", "ar": "وارفارين"},
+        "ACETYLSALICYLIC ACID": {"en": "ACETYLSALICYLIC ACID", "ar": "حمض أسيتيل الساليسيليك"},
+    }
+
     def v2_medication(ref: str, role: str, given: str, sfrx_id: str, name_en: str, name_ar: str,
                       generic: str, strength: str, selection: str) -> dict[str, Any]:
         return {
             "ref": ref, "role": role, "input": given, "status": "resolved", "selection": selection,
-            "product": {"sfrx_id": sfrx_id, "name": {"en": name_en, "ar": name_ar}, "generic": generic,
+            "product": {"sfrx_id": sfrx_id, "name": {"en": name_en, "ar": name_ar}, "generic": V2_GENERICS[generic],
                         "strength": strength, "form": {"en": "Oral Tablet", "ar": "أقراص"}},
         }
 

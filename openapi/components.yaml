@@ -3374,9 +3374,9 @@ components:
           - $ref: '#/components/schemas/EnterpriseSafetyText'
           - type: 'null'
         generic:
-          type:
-          - string
-          - 'null'
+          oneOf:
+          - $ref: '#/components/schemas/EnterpriseSafetyText'
+          - type: 'null'
         strength:
           type:
           - string
