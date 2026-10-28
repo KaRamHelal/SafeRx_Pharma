@@ -24,6 +24,29 @@
             "sfrx_id": "SRX-101-000077"
           }
         ],
+        "certainty": {
+          "match": {
+            "basis": "equivalent_product",
+            "evidence": {
+              "form": "matched",
+              "name": "exact",
+              "release": "absent",
+              "route": "inferred",
+              "salt": "absent",
+              "strength": "matched",
+              "strength_unit_inferred": null
+            }
+          },
+          "reading": {
+            "fields": {
+              "dose": 1.0,
+              "name": 1.0,
+              "unit": 1.0
+            },
+            "reads": 2,
+            "value": 1.0
+          }
+        },
         "correction_anchor_id": null,
         "informational_reason_codes": [
           "equivalent_product_selected"
@@ -31,6 +54,7 @@
         "line_id": "line_0001",
         "ocr_candidates": [
           {
+            "agreeing_reads": 2,
             "confidence": 1.0,
             "locale": "en",
             "rank": 1,
@@ -88,17 +112,34 @@
             "sfrx_id": "SRX-101-000298"
           }
         ],
+        "certainty": {
+          "match": {
+            "basis": "offered_only",
+            "evidence": null
+          },
+          "reading": {
+            "fields": {
+              "dose": 1.0,
+              "name": 0.73,
+              "unit": 1.0
+            },
+            "reads": 2,
+            "value": 0.73
+          }
+        },
         "correction_anchor_id": null,
         "informational_reason_codes": [],
         "line_id": "line_0002",
         "ocr_candidates": [
           {
+            "agreeing_reads": 1,
             "confidence": 0.73,
             "locale": "en",
             "rank": 1,
             "recognized_text": "Hydroxyzine 25 mg"
           },
           {
+            "agreeing_reads": 1,
             "confidence": 0.73,
             "locale": "en",
             "rank": 2,

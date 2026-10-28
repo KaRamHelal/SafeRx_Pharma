@@ -365,9 +365,15 @@ def test_prescription_result_matches_the_real_backend_contract() -> None:
     candidate_item = schema["properties"]["candidate_medications"]["items"]
     assert set(candidate_item["required"]) == {
         "line_id", "position", "raw_span", "ocr_candidates", "alternatives",
-        "review_required", "review_state",
+        "review_required", "review_state", "certainty",
     }
     assert candidate_item["properties"]["ocr_candidates"]["items"]["properties"]
+    # 3.3.0: the line's certainty is two parts never blended -- reading, and the
+    # medication-resolution match -- and each reading says how many reads produced it.
+    certainty = components["components"]["schemas"]["OcrLineCertainty"]
+    assert certainty["required"] == ["reading", "match"]
+    assert {"$ref": "#/components/schemas/MedicationMatch"} in certainty["properties"]["match"]["oneOf"]
+    assert "agreeing_reads" in candidate_item["properties"]["ocr_candidates"]["items"]["properties"]
     # 3.1.0: every line publishes why it needs review and how its product was chosen.
     for field in ("review_reason_codes", "informational_reason_codes"):
         assert candidate_item["properties"][field] == {

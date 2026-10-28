@@ -2686,7 +2686,7 @@ components:
           items:
             type: object
             additionalProperties: false
-            required: [line_id, position, raw_span, ocr_candidates, alternatives, review_required, review_state]
+            required: [line_id, position, raw_span, ocr_candidates, alternatives, review_required, review_state, certainty]
             properties:
               line_id:
                 description: Identifier for this recognized line.
@@ -2733,9 +2733,9 @@ components:
                         field; a field only one read saw, or a line read once, is
                         uncorroborated (0.5); a differing dose or unit is 0. Below 0.9
                         the line always needs review. It is not the registry match
-                        (`final_score`); the line's own certainty is the lower of the
-                        two. (Changed meaning in 3.1.0; before, this carried the match
-                        score.)
+                        (`final_score`). The per-field breakdown, and how the product
+                        was chosen, is the line's `certainty` (3.3.0). (Changed meaning
+                        in 3.1.0; before, this carried the match score.)
                       type: [number, 'null']
                       minimum: 0
                       maximum: 1
@@ -2767,10 +2767,19 @@ components:
                       type: [string, 'null']
                     confidence:
                       description: The line's reading certainty, 0-1 (see
-                        `winner.confidence`).
+                        `winner.confidence`); the same for every reading of the line.
+                        Use `agreeing_reads` to tell readings apart.
                       type: [number, 'null']
                       minimum: 0
                       maximum: 1
+                    agreeing_reads:
+                      description: >-
+                        How many of the line's reads produced this reading (name, dose
+                        and unit equal after normalisation), 3.3.0. With two reads, 2
+                        means both agreed on it; 1 means it is one read's version
+                        against the other's. Null for lines stored before 3.3.0.
+                      type: [integer, 'null']
+                      minimum: 0
               alternatives:
                 description: Alternative medication matches for this line, ranked.
                 type: array
@@ -2850,7 +2859,58 @@ components:
                 description: Opaque anchor for reporting a correction against
                   this line.
                 type: [string, 'null']
+              certainty:
+                $ref: '#/components/schemas/OcrLineCertainty'
         display_obligations: {$ref: '#/components/schemas/DisplayObligations'}
+    OcrLineCertainty:
+      description: >-
+        How sure SafeRx is of an OCR line (3.3.0), answered as two separate questions and
+        never blended into one number. `reading`: was the line READ as written.
+        `match`: how the product was chosen from what was read -- the same
+        `MedicationMatch` medication resolution returns, whose precision per basis is
+        measured and published. A line resolves without review only when the reading is
+        certain AND the basis needs no review; your integration may apply a stricter
+        policy, e.g. accept only `reading.value == 1` with `match.basis == exact_product`.
+        Either part is null for lines stored before it existed.
+      type: object
+      additionalProperties: false
+      required: [reading, match]
+      properties:
+        reading:
+          oneOf:
+          - $ref: '#/components/schemas/OcrReadingCertainty'
+          - type: 'null'
+        match:
+          oneOf:
+          - $ref: '#/components/schemas/MedicationMatch'
+          - type: 'null'
+    OcrReadingCertainty:
+      description: >-
+        Was the line READ as written? The agreement of the line's reads per field; the
+        weakest field governs `value`. Per field: 1 when the reads agree (or both left it
+        empty), 0.5 when only one read saw it, 1 - edit distance / length for a differing
+        name, 0 for a differing dose or unit. A line read once is 0.5 throughout. Below
+        0.9 the line always needs review (`ocr_reading_uncertain`). The two reads are two
+        preprocessings of the image read by the same model family: agreement
+        corroborates a reading, it is not independent proof, and these thresholds are
+        not yet measured against reviewed field data.
+      type: object
+      additionalProperties: false
+      required: [value, fields, reads]
+      properties:
+        value: {type: number, minimum: 0, maximum: 1}
+        fields:
+          type: object
+          additionalProperties: false
+          required: [name, dose, unit]
+          properties:
+            name: {type: number, minimum: 0, maximum: 1}
+            dose: {type: number, minimum: 0, maximum: 1}
+            unit: {type: number, minimum: 0, maximum: 1}
+        reads:
+          description: Number of reads compared (1 or 2).
+          type: integer
+          minimum: 0
     PrescriptionReviewRequest:
       description: >-
         Reviewer decisions for a prescription awaiting review (3.1.0). An empty body (or

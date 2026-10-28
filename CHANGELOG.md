@@ -11,6 +11,38 @@ Releases tracking. For the complete published version history, see
 and [NuGet (SafeRx)](https://www.nuget.org/packages/SafeRx#versions-body-tab).
 Entries below are not a backfilled reconstruction of that history.
 
+## [3.3.0] - 2026-10-28
+
+Additive: no field was removed, no meaning changed, and no request that worked before is
+refused.
+
+### Added
+- **`certainty` on every OCR line** (`OcrLineCertainty`). It states the line's certainty as
+  two parts that are never blended:
+  - `reading` (`OcrReadingCertainty`): `value`, the per-field `fields` (`name`, `dose`,
+    `unit`) and the number of `reads`. It answers whether the line was read as written, and
+    is the breakdown behind `winner.confidence`.
+  - `match`: the same `MedicationMatch` that medication resolution returns (`basis` and
+    per-axis `evidence`). It answers how the product was chosen.
+  - Either part is `null` for lines stored before 3.3.0.
+- **`agreeing_reads` on each `ocr_candidates[]` reading**: how many reads produced it.
+  `confidence` there is line-level and repeated; `agreeing_reads` tells readings apart.
+
+### Changed
+- **Measured precision re-run on Registry V183.** Since V182 the registry records
+  combination strengths per ingredient. On 2,367 lines from 398 medicines:
+  - 0 wrong selections out of 1,562 selections;
+  - misspellings offered 99.7 % of the time;
+  - lines that name one product selected 96.3 % of the time.
+- **A written amount that matches a product only as a combination total is no longer held
+  by a product the line could not mean.** An example of such a product is the AUGMENTIN
+  1200 vial (1000/200). It cannot hold "Augmentin 1 g tablet" or "Augmentin 1000".
+
+### Documented
+- The two OCR reads are two preprocessings of one image, read by the same model family, so
+  their agreement is corroboration, not independent proof.
+- The 0.9 reading threshold is not yet measured against reviewed prescriptions.
+
 ## [3.2.0] - 2026-10-28
 
 Additive: no field was removed, no meaning changed, and no request that worked before is

@@ -103,22 +103,22 @@ and its raw text.
 | Field | Meaning |
 |---|---|
 | `raw_span` | The text of the line as read |
-| `ocr_candidates[]` | Every distinct reading of the line, primary read first (`rank` 1), each with its script in `locale` (`en`, `ar`, `mixed`) and the line's reading certainty in `confidence` |
+| `ocr_candidates[]` | Every distinct reading of the line, primary read first (`rank` 1), each with its script in `locale` (`en`, `ar`, `mixed`), the line's reading certainty in `confidence`, and in `agreeing_reads` how many reads produced it (3.3.0) |
 | `winner` | The selected product (`null` when nothing was selected) |
 | `alternatives[]` | Other products, each with a `selection_reason` (below) |
 | `review_required` | This line needs a person |
 | `review_state` | `resolved`, `pending`, `unresolved`, `reviewed` or `not_a_medicine` |
 | `review_reason_codes` | Why the line needs a person. Empty when it does not |
 | `informational_reason_codes` | How the product was chosen when that needs no review |
+| `certainty` | The line's certainty as two parts: `reading` and `match` (3.3.0, below) |
 
 ### Two certainties: reading and match
 
 Each line has two separate numbers. Do not mix them up.
 
 - **`winner.confidence` is reading certainty**: how sure SafeRx is that the line
-  was *read* as written. Each line is read twice, independently, and the two
-  reads are compared field by field (name, dose, unit); the weakest field
-  governs.
+  was *read* as written. Each line is read twice and the two reads are compared
+  field by field (name, dose, unit); the weakest field governs.
 
   | The two reads... | Reading certainty |
   |---|---|
@@ -133,8 +133,49 @@ Each line has two separate numbers. Do not mix them up.
   what was read. It is an ordering score, not calibrated, and says nothing
   about whether the line was read correctly.
 
-The line's own certainty is the lower of the two. Use `review_required` to
-decide whether a person must look, not either number on its own.
+Use `review_required` to decide whether a person must look, not either number on
+its own.
+
+### `certainty`: both parts in full (3.3.0)
+
+Each line carries `certainty`, with two parts that SafeRx never blends into one number.
+
+```json
+"certainty": {
+  "reading": {"value": 1.0, "fields": {"name": 1.0, "dose": 1.0, "unit": 1.0}, "reads": 2},
+  "match": {
+    "basis": "exact_product",
+    "evidence": {"name": "exact", "strength": "matched", "form": "inferred",
+                 "route": "inferred", "salt": "absent", "release": "absent"}
+  }
+}
+```
+
+- **`reading`: was the line read as written?** It is the per-field breakdown behind
+  `winner.confidence`, and `reads` is the number of reads compared (1 or 2).
+- **`match`: how was the product chosen?** It is the same `MedicationMatch` that
+  [medication resolution](/concepts/medication-identity) returns. The precision of each
+  `basis` is measured and published there.
+- **`agreeing_reads` on each reading** tells two readings apart. With two reads, 2 means
+  both reads agreed on it, and 1 means it is one read's version against the other's.
+
+A line resolves without review only when the reading is certain **and** its `basis`
+needs no review. Your integration may apply a stricter rule. For example, it might
+auto-accept only `reading.value == 1` with `match.basis == "exact_product"` and send
+everything else to a pharmacist.
+
+<Warning>
+**What these numbers are not.**
+
+- **The two reads are not independent proof.** Both are two preprocessings of one image,
+  read by the same model family. Their agreement corroborates a reading; it does not prove
+  it.
+- **The 0.9 threshold is not yet measured.** It has not been checked against
+  reviewer-confirmed prescriptions. SafeRx measures it from reviewer decisions as they
+  accumulate, and will publish the result when the sample is large enough.
+- **Stored lines may show `null`.** Lines stored before 3.3.0 report `null` for a part they
+  do not have.
+</Warning>
 
 <Note>
 Before 3.1.0, `winner.confidence` carried the match score. It is now reading

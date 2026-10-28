@@ -124,16 +124,16 @@ For a selection, `evidence` says how the product relates to what you wrote, axis
 
 SafeRx measures the resolver on a golden set. Every line in it is written from a known
 registry product, so its correct answer is a fact of the registry. On 2,367 lines from 398
-medicines (Registry V181):
+medicines (Registry V183):
 
 | `basis` | Selections | Wrong |
 |---|---|---|
-| `exact_product` | 1,167 | 0 |
-| `equivalent_product` | 249 | 0 |
-| `exact_medicine_default_variant` | 148 | 0 |
+| `exact_product` | 1,168 | 0 |
+| `equivalent_product` | 248 | 0 |
+| `exact_medicine_default_variant` | 146 | 0 |
 
 - Misspellings one edit from a brand were offered 99.7 % of the time and never selected.
-- Lines that name one product were selected 96.5 % of the time.
+- Lines that name one product were selected 96.3 % of the time.
 - The set measures the matching rules, not real handwriting or OCR. Rely on
   `review.required`, not on these figures, for a decision about a patient.
 

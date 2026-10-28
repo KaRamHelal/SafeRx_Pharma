@@ -1,5 +1,5 @@
-release_id: enterprise-v1-2026.10.28.2
-release_version: 3.2.0
+release_id: enterprise-v1-2026.10.28.3
+release_version: 3.3.0
 status: available
 publishable: true
 
@@ -12,9 +12,9 @@ api_contract:
   response_policy: closed_schema
 
 artifacts:
-  python: saferx-pharma==3.2.0
-  typescript: saferx-pharma-sdk@3.2.0
-  csharp: SafeRx==3.2.0
+  python: saferx-pharma==3.3.0
+  typescript: saferx-pharma-sdk@3.3.0
+  csharp: SafeRx==3.3.0
 
 hosted_mcp:
   status: preview
@@ -36,6 +36,11 @@ availability:
   key_required: true
 
 notes:
+  - >-
+    3.3.0 -- additive. Every OCR line carries certainty (OcrLineCertainty): reading
+    (value, per-field name/dose/unit, reads) and match (MedicationMatch: basis and
+    evidence), never blended; each OCR reading carries agreeing_reads. Measured
+    resolution precision re-run on Registry V183 (1,562 selections, 0 wrong).
   - >-
     3.2.0 -- additive. Every MedicationResolution carries match (MedicationMatch): basis
     (by_id, exact_product, exact_medicine_default_variant, equivalent_product,

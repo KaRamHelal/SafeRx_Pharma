@@ -1759,7 +1759,7 @@ def build() -> dict[str, dict[str, Any]]:
                     "review_state": "resolved",
                 },
                 "ocr_candidates": [
-                    {"rank": 1, "recognized_text": "Amoxicillin 500 mg", "locale": "en", "confidence": 1.0}
+                    {"rank": 1, "recognized_text": "Amoxicillin 500 mg", "locale": "en", "confidence": 1.0, "agreeing_reads": 2}
                 ],
                 "alternatives": [
                     {
@@ -1776,6 +1776,16 @@ def build() -> dict[str, dict[str, Any]]:
                 "review_reason_codes": [],
                 "informational_reason_codes": ["equivalent_product_selected"],
                 "correction_anchor_id": None,
+                # 3.3.0: both reads agreed on every field; one of several brands of a certain
+                # clinical identity was chosen.
+                "certainty": {
+                    "reading": {"value": 1.0, "fields": {"name": 1.0, "dose": 1.0, "unit": 1.0}, "reads": 2},
+                    "match": {
+                        "basis": "equivalent_product",
+                        "evidence": {"name": "exact", "strength": "matched", "strength_unit_inferred": None,
+                                     "form": "matched", "route": "inferred", "salt": "absent", "release": "absent"},
+                    },
+                },
             },
             {
                 "line_id": "line_0002",
@@ -1783,8 +1793,8 @@ def build() -> dict[str, dict[str, Any]]:
                 "raw_span": "Hydroxyzine 25mg tab",
                 "winner": None,
                 "ocr_candidates": [
-                    {"rank": 1, "recognized_text": "Hydroxyzine 25 mg", "locale": "en", "confidence": 0.73},
-                    {"rank": 2, "recognized_text": "Hydralazine 25 mg", "locale": "en", "confidence": 0.73},
+                    {"rank": 1, "recognized_text": "Hydroxyzine 25 mg", "locale": "en", "confidence": 0.73, "agreeing_reads": 1},
+                    {"rank": 2, "recognized_text": "Hydralazine 25 mg", "locale": "en", "confidence": 0.73, "agreeing_reads": 1},
                 ],
                 "alternatives": [
                     {
@@ -1809,6 +1819,11 @@ def build() -> dict[str, dict[str, Any]]:
                 "review_reason_codes": ["lookalike_risk", "ocr_reading_uncertain"],
                 "informational_reason_codes": [],
                 "correction_anchor_id": None,
+                # 3.3.0: the reads disagree on the name only; nothing was selected.
+                "certainty": {
+                    "reading": {"value": 0.73, "fields": {"name": 0.73, "dose": 1.0, "unit": 1.0}, "reads": 2},
+                    "match": {"basis": "offered_only", "evidence": None},
+                },
             },
         ],
         "display_obligations": DISPLAY_OBLIGATIONS,
