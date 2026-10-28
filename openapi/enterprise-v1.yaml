@@ -44,7 +44,12 @@ paths:
       description: Bounded resolution of one or more free-text medication descriptions
         into ranked registry candidates. Use this before a safety check when you only
         have a raw medication name, dose, or prescription line, not a known `sfrx_id`.
-        It cannot search, enumerate, or export the registry.
+        It cannot search, enumerate, or export the registry. A product that contradicts
+        anything written (strength, dosage form, route, salt, release type) is never
+        selected, and a misspelled name is offered, never selected; `review.reason_codes`
+        on each item says what was decided and why. At most 50 medications per request
+        (`422 request.collection_too_large`); a malformed `sfrx_id` is
+        `422 request.sfrx_id_invalid`.
       responses:
         '200':
           description: Medication resolution results
@@ -563,11 +568,13 @@ paths:
   /ocr/prescriptions/{prescription_id}/medications/resolve:
     post:
       operationId: enterprise_ocr_prescription_resolve
-      summary: Resolve OCR-extracted medication candidates
-      description: Advances an OCR prescription workflow by resolving the
-        text/candidates extracted from the uploaded image into registry
-        medications. Call after the workflow reaches a state ready for
-        resolution (see `enterprise_ocr_prescription_read`/events).
+      summary: Read the medication resolution of an OCR prescription
+      description: Returns the prescription with each recognized line's registry
+        resolution (`candidate_medications[]`). Resolution runs automatically
+        inside the workflow once OCR has read the image; this call reports it and
+        does not run it again. Every line is resolved under the same rules as
+        `enterprise_registry_resolve`, with each independent reading of the line
+        as evidence.
       x-entitlement-required: ocr_prescription
       requestBody:
         required: true
@@ -588,10 +595,12 @@ paths:
   /ocr/prescriptions/{prescription_id}/safety-checks:
     post:
       operationId: enterprise_ocr_prescription_safety
-      summary: Run a safety check on a resolved OCR prescription
-      description: Runs the six-domain safety evaluation over the medications
-        resolved for this prescription workflow. Call after
-        `enterprise_ocr_prescription_resolve` has produced resolved medications.
+      summary: Read the safety-check state of an OCR prescription
+      description: Returns the prescription workflow state for its safety step.
+        The safety check runs automatically inside the workflow -- right after
+        resolution when no line needs a person, or when the review completes
+        (`enterprise_ocr_prescription_review`). This call reports the state and
+        does not start a new check.
       x-entitlement-required: ocr_prescription
       requestBody:
         required: true
@@ -612,19 +621,38 @@ paths:
   /ocr/prescriptions/{prescription_id}/review:
     post:
       operationId: enterprise_ocr_prescription_review
-      summary: Submit a professional review decision for an OCR prescription
-      description: Records the professional review outcome for a prescription
-        workflow, closing out the review requirement carried on its safety result.
-        This is the terminal step of the OCR lifecycle for cases that require
-        review before the result may be relied upon.
+      summary: Apply reviewer decisions to an OCR prescription awaiting review
+      description: |
+        Apply reviewer decisions to a prescription in `awaiting_review` (or
+        `safety_incomplete`): choose one of a line's candidates
+        (`select_candidate`), enter any registry product (`enter_sfrx_id`), or mark a
+        line not a medicine (`not_a_medicine`). When no line still needs a person, or
+        `complete` is true, the review completes: the safety check runs over the
+        resolved and reviewed lines and the prescription becomes `completed`
+        (`reason_code` `review_incomplete` when lines were left unresolved). Decisions
+        that leave lines undecided are saved and the prescription stays
+        `awaiting_review`. An empty body returns the current state.
+
+        Errors (`code` in the problem body):
+        - `409 prescription_review_not_open`: the prescription is not awaiting review.
+        - `409 prescription_review_conflict`: another request changed it; read it and retry.
+        - `422 invalid_request`: the body does not match `PrescriptionReviewRequest`.
+        - `422 review.line_unknown`: no such `line_id` on this prescription.
+        - `422 review.line_duplicated`: more than one decision for a line.
+        - `422 request.sfrx_id_invalid`: `sfrx_id` missing or not `^SRX-[0-9]{3}-[0-9]{6}$`.
+        - `422 review.candidate_not_offered`: `select_candidate` names a product the line
+          did not offer; use `enter_sfrx_id`.
+        - `422 review.sfrx_id_unknown`: `enter_sfrx_id` names no active registry product.
+        - `503 dependency_unavailable` (with `Retry-After`): the product could not be
+          verified, or the safety check could not run (the decisions are saved). Post again.
+        - `404 NOT_FOUND`: no such prescription for this organization.
       x-entitlement-required: ocr_prescription
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
-              type: object
-              additionalProperties: false
+              $ref: ./components.yaml#/components/schemas/PrescriptionReviewRequest
       responses:
         '200':
           description: OCR prescription review result

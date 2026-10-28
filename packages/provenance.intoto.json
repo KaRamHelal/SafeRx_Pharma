@@ -6,13 +6,13 @@
     "materials": [
       {
         "digest": {
-          "sha256": "3281866bb4f32dfc8e37f3bc243714d446e6de0fcd20d2155d5ded9a14363c2e"
+          "sha256": "203e850060c4b5ff9bb880fe15d7ad3c503f26660676f6f40484727c71b96f1d"
         },
         "uri": "openapi/components.yaml"
       },
       {
         "digest": {
-          "sha256": "8149d8635af0bdf9ba0777315fb8fcf8b2d15eb8ce53962f8fa0d2ee103ff5b3"
+          "sha256": "26fb20e6b28e939342afbc9017f486183e38448ab67caa76eceab90ba747955f"
         },
         "uri": "openapi/enterprise-v1.yaml"
       }
@@ -22,19 +22,19 @@
   "subject": [
     {
       "digest": {
-        "sha256": "1d0a80f341c86f9c14b85d9dc03f60f667469b876a8f1434c1778eb3dd66b889"
+        "sha256": "0b49aee5261dac2fc2d366bfb63309c22dd8a4c96ba0cebd80d04c10ddcef402"
       },
       "name": "packages/csharp/README.md"
     },
     {
       "digest": {
-        "sha256": "3fd33100733142e5285aa1b25fb3a958a8db883f608c7c01f71d1bc98ce491d8"
+        "sha256": "f0984e70b4eb9ba19d9ff738fd06323ef135d6d995470c872ad2c2e045a5ce63"
       },
       "name": "packages/csharp/SafeRx.csproj"
     },
     {
       "digest": {
-        "sha256": "5948262c82e73f876975d853dedfaa787fbdec55c572047bd2b523376e9bf54d"
+        "sha256": "88d40c9a106b94bbb0a1b2bd48b2aaf715cfa23569eeb8b63b21e1f661eb2086"
       },
       "name": "packages/csharp/SafeRxClient.cs"
     },
@@ -46,7 +46,7 @@
     },
     {
       "digest": {
-        "sha256": "6a8f33bd449eac92aa04a2b93412e206e9abc420f89b1ef274f98195aad0bea5"
+        "sha256": "01c5eed9abe098e8f3b92ea0a00dfd0ee6feb3dc44d6f5a266a94601384d9c2a"
       },
       "name": "packages/python/pyproject.toml"
     },
@@ -58,7 +58,7 @@
     },
     {
       "digest": {
-        "sha256": "8fb5299b9707ed3009e2a8aa2c3eaefc657b2cf994d97043a9ff9ddbc1f0a8f7"
+        "sha256": "36a0c0e7cda539b59e2a9c2021e2adc7921ce3f9e6a867cd599b2f88bf130ed0"
       },
       "name": "packages/python/src/saferx_pharma/client.py"
     },
@@ -70,13 +70,13 @@
     },
     {
       "digest": {
-        "sha256": "6c13dff9a5a69ae2bd9677fa5dbafe97a8b10576292379bea0a0222428022c2a"
+        "sha256": "2004269c500ec41573508ecc55f8d3393e72ff719aa46f5f75c9ded22ed09396"
       },
       "name": "packages/typescript/package.json"
     },
     {
       "digest": {
-        "sha256": "9c3381c5aa714b44d0b904cfd09c20e69e9828fee498ad292e2da0328ea59637"
+        "sha256": "cd6fc608429df595427e149d85f8bdb144c1685d99e555a83ca9473fb347c861"
       },
       "name": "packages/typescript/src/client.ts"
     },

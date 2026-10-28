@@ -1,0 +1,84 @@
+---
+title: Prescription review
+subtitle: Completing a prescription that waits for a person
+---
+
+A prescription whose `status` is `awaiting_review` has at least one line that
+SafeRx would not decide on its own: the reads disagreed, the line touches a
+look-alike pair, no product has what was read, or nothing legible was read
+(see [OCR prescription lifecycle](/concepts/ocr-lifecycle)). Those lines have
+`review_required: true` and say why in `review_reason_codes`. Lines read with
+certainty are already resolved and need nothing from you.
+
+`POST /ocr/prescriptions/{prescription_id}/review`
+(`enterprise_ocr_prescription_review`) takes the reviewer's decisions and
+completes the prescription.
+
+## Decisions
+
+```json
+{
+  "decisions": [
+    {"line_id": "line_0002", "action": "select_candidate", "sfrx_id": "SRX-101-000311"},
+    {"line_id": "line_0003", "action": "enter_sfrx_id", "sfrx_id": "SRX-204-001876"},
+    {"line_id": "line_0004", "action": "not_a_medicine"}
+  ],
+  "complete": false
+}
+```
+
+| `action` | Meaning | `sfrx_id` |
+|---|---|---|
+| `select_candidate` | The product is the line's `winner` or one of its `alternatives` | required, one the line offered |
+| `enter_sfrx_id` | Any active registry product, for example one found with `enterprise_registry_resolve` or `enterprise_registry_search` | required, verified against the registry |
+| `not_a_medicine` | The line is not a medicine (a note, a signature, a header); it is excluded from the safety check | ignored |
+
+At most one decision per line and 50 decisions per request. You can send
+decisions in several requests: each request saves its decisions.
+
+## Completion
+
+The review **completes** when no line still needs a person, or when you send
+`"complete": true`:
+
+1. the safety check runs over the resolved and reviewed lines;
+2. the prescription becomes `completed` (`awaiting_review` → `safety_running` →
+   `completed`);
+3. each decided line shows `review_state: reviewed` (or `not_a_medicine`) and
+   the chosen product as its `winner`. `winner.confidence` keeps the measured
+   reading certainty — the person chose the product; the reading did not become
+   more certain.
+
+If you complete with lines still undecided, those lines stay
+`review_required: true`, the safety check covers only the other lines, and the
+result carries `reason_code: review_incomplete` with the prescription's review
+still required. **That is never a clean result**: an unchecked line may
+interact with the others.
+
+If decisions leave lines undecided and `complete` is not set, the decisions are
+saved and the prescription stays `awaiting_review`.
+
+An empty body (or no body) only returns the current state, as before 3.1.0.
+
+## Errors
+
+| Status | `code` | Meaning |
+|---|---|---|
+| 409 | `prescription_review_not_open` | The prescription is not awaiting review (it is still being read, or already completed) |
+| 409 | `prescription_review_conflict` | Another request changed the prescription at the same time. Read it and retry |
+| 422 | `invalid_request` | The body does not match `PrescriptionReviewRequest` |
+| 422 | `review.line_unknown` | No such `line_id` on this prescription |
+| 422 | `review.line_duplicated` | More than one decision for one line |
+| 422 | `request.sfrx_id_invalid` | `sfrx_id` is missing or not `SRX-NNN-NNNNNN` |
+| 422 | `review.candidate_not_offered` | `select_candidate` named a product the line did not offer; use `enter_sfrx_id` |
+| 422 | `review.sfrx_id_unknown` | `enter_sfrx_id` named no active registry product |
+| 503 | `dependency_unavailable` | The product could not be verified, or the safety check could not run. Your decisions are saved; post again after `Retry-After` |
+| 404 | `NOT_FOUND` | No such prescription for your organization |
+
+A `422` applies none of the request's decisions: every decision is checked
+before any is saved. After a `409 prescription_review_conflict` or a `503`, read
+the prescription to see what was saved before posting again.
+
+When the safety check after a review cannot run, the prescription moves to
+`safety_incomplete`. Post the review again (an empty decisions list with
+`"complete": true` is enough) to retry the check.

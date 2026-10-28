@@ -1377,12 +1377,28 @@ def build() -> dict[str, dict[str, Any]]:
                                 {"en": "Generic name matched", "ar": "تطابق الاسم العلمي"},
                                 {"en": "Strength matched", "ar": "تطابق التركيز"},
                             ],
-                            "equivalent_candidates": [],
+                            # 3.1.0: the same product in other pack sizes is one medicine,
+                            # published beside the selection as objects with a reason.
+                            "equivalent_candidates": [
+                                {
+                                    "sfrx_id": "SRX-101-000043",
+                                    "registry_concept_id": None,
+                                    "display_name": {
+                                        "en": "Amoxicillin 500mg Capsule (pack of 24)",
+                                        "ar": "أموكسيسيلين 500 مجم كبسولة (عبوة 24)",
+                                    },
+                                    "equivalence_reason": {
+                                        "en": "The same product in another pack size",
+                                        "ar": "المنتج نفسه بحجم عبوة آخر",
+                                    },
+                                }
+                            ],
                             "review": NOT_REQUIRED_REVIEW,
                             "source_provenance": SOURCE_PROVENANCE,
                         },
                     ],
-                    "selected_candidate_id": "SRX-101-000042",
+                    # selected_candidate_id is the candidate_id of the selected candidate.
+                    "selected_candidate_id": "cand_example_0001",
                     "review": NOT_REQUIRED_REVIEW,
                     "limitations": [],
                     "display_obligations": DISPLAY_OBLIGATIONS,
@@ -1664,29 +1680,52 @@ def build() -> dict[str, dict[str, Any]]:
         },
     }
 
+    # ── 3.1.0 (2026-10-28): a prescription read awaiting review, then completed by review ──
+    # Line 1 is read with certainty (both reads agree): selected, no review; one of several
+    # brands of the same clinical identity was chosen (informational only). Line 2's two reads
+    # disagree on the name and touch a known look-alike pair: nothing selected, a person
+    # chooses. winner.confidence is reading certainty; final_score is the registry match.
+    pending_review = {
+        "required": True,
+        "status": "pending",
+        "reason_codes": ["ocr_candidate_review_required"],
+        "minimum_reviewer_role": "trained_operator",
+        "review_deadline_policy": "before_relying_on_output",
+        "reviewed_at": None,
+    }
+    hydroxyzine = {"en": "Hydroxyzine 25mg Tablet", "ar": "هيدروكسيزين 25 مجم أقراص"}
+    hydralazine = {"en": "Hydralazine 25mg Tablet", "ar": "هيدرالازين 25 مجم أقراص"}
     prescription_result = {
         "request_id": "req_example_0001",
         "prescription_id": "rx_example_0001",
         "workflow_id": "wf_example_0001",
-        "status": "processing",
+        "status": "awaiting_review",
         "pipeline_profile": "auto",
         "reason_code": None,
-        "created_at": "2026-08-15T12:00:00+00:00",
-        "updated_at": "2026-08-15T12:00:05+00:00",
+        "created_at": "2026-10-28T12:00:00+00:00",
+        "updated_at": "2026-10-28T12:00:09+00:00",
         "transitions": [
             {
-                "event_type": "ocr_completed",
-                "from_state": "accepted",
-                "to_state": "processing",
+                "event_type": "ocr.pipeline.completed",
+                "from_state": "ocr_running",
+                "to_state": "resolving_medications",
                 "reason_code": None,
                 "payload": {},
-                "occurred_at": "2026-08-15T12:00:05+00:00",
-            }
+                "occurred_at": "2026-10-28T12:00:08+00:00",
+            },
+            {
+                "event_type": "prescription.medications.resolved",
+                "from_state": "resolving_medications",
+                "to_state": "awaiting_review",
+                "reason_code": None,
+                "payload": {},
+                "occurred_at": "2026-10-28T12:00:09+00:00",
+            },
         ],
         "locale": "en",
         "educational_context": EDUCATIONAL_CONTEXT,
         "source_provenance": SOURCE_PROVENANCE,
-        "review": NOT_REQUIRED_REVIEW,
+        "review": pending_review,
         "document_context": {
             "document_type": "prescription",
             "is_prescription": True,
@@ -1698,15 +1737,66 @@ def build() -> dict[str, dict[str, Any]]:
                 "line_id": "line_0001",
                 "position": 0,
                 "raw_span": "Amoxicillin 500mg cap",
+                "winner": {
+                    "sfrx_id": "SRX-101-000042",
+                    "display_name": LOCALIZED_AMOXICILLIN,
+                    "generic": {"en": "Amoxicillin", "ar": "أموكسيسيلين"},
+                    "final_score": 0.97,
+                    "confidence": 1.0,
+                    "review_state": "resolved",
+                },
+                "ocr_candidates": [
+                    {"rank": 1, "recognized_text": "Amoxicillin 500 mg", "locale": "en", "confidence": 1.0}
+                ],
+                "alternatives": [
+                    {
+                        "rank": 1,
+                        "sfrx_id": "SRX-101-000077",
+                        "display_name": {"en": "Amoxil 500mg Capsule", "ar": "اموكسيل 500 مجم كبسولة"},
+                        "generic": {"en": "Amoxicillin", "ar": "أموكسيسيلين"},
+                        "final_score": 0.95,
+                        "selection_reason": "same_generic_name",
+                    }
+                ],
+                "review_required": False,
+                "review_state": "resolved",
+                "review_reason_codes": [],
+                "informational_reason_codes": ["equivalent_product_selected"],
+                "correction_anchor_id": None,
+            },
+            {
+                "line_id": "line_0002",
+                "position": 1,
+                "raw_span": "Hydroxyzine 25mg tab",
                 "winner": None,
                 "ocr_candidates": [
-                    {"rank": 1, "recognized_text": "Amoxicillin 500mg cap", "locale": "en", "confidence": 0.95}
+                    {"rank": 1, "recognized_text": "Hydroxyzine 25 mg", "locale": "en", "confidence": 0.73},
+                    {"rank": 2, "recognized_text": "Hydralazine 25 mg", "locale": "en", "confidence": 0.73},
                 ],
-                "alternatives": [],
-                "review_required": False,
-                "review_state": "not_required",
+                "alternatives": [
+                    {
+                        "rank": 1,
+                        "sfrx_id": "SRX-101-000311",
+                        "display_name": hydroxyzine,
+                        "generic": {"en": "Hydroxyzine", "ar": "هيدروكسيزين"},
+                        "final_score": 0.92,
+                        "selection_reason": "ocr_alternative_match",
+                    },
+                    {
+                        "rank": 2,
+                        "sfrx_id": "SRX-101-000298",
+                        "display_name": hydralazine,
+                        "generic": {"en": "Hydralazine", "ar": "هيدرالازين"},
+                        "final_score": 0.88,
+                        "selection_reason": "ocr_alternative_match",
+                    },
+                ],
+                "review_required": True,
+                "review_state": "pending",
+                "review_reason_codes": ["lookalike_risk", "ocr_reading_uncertain"],
+                "informational_reason_codes": [],
                 "correction_anchor_id": None,
-            }
+            },
         ],
         "display_obligations": DISPLAY_OBLIGATIONS,
     }
@@ -1716,49 +1806,78 @@ def build() -> dict[str, dict[str, Any]]:
         "response": prescription_result,
     }
 
-    resolved_result = json.loads(json.dumps(prescription_result))
-    resolved_result["status"] = "resolved"
-    resolved_result["candidate_medications"][0]["winner"] = {
-        "sfrx_id": "SRX-101-000042",
-        "display_name": LOCALIZED_AMOXICILLIN,
-        "generic": {"en": "Amoxicillin", "ar": "أموكسيسيلين"},
-        "final_score": 0.97,
-        "confidence": 0.95,
-        "review_state": "not_required",
-    }
-
+    # Resolution and the safety check run inside the workflow; these two operations report
+    # the same durable state.
     examples["enterprise_ocr_prescription_resolve"] = {
         "request": {"path_params": {"prescription_id": "rx_example_0001"}, "body": {}},
-        "response": resolved_result,
+        "response": json.loads(json.dumps(prescription_result)),
     }
-
-    safety_checked_result = json.loads(json.dumps(resolved_result))
-    safety_checked_result["status"] = "safety_checked"
-
     examples["enterprise_ocr_prescription_safety"] = {
         "request": {"path_params": {"prescription_id": "rx_example_0001"}, "body": {}},
-        "response": safety_checked_result,
+        "response": json.loads(json.dumps(prescription_result)),
     }
 
-    reviewed_result = json.loads(json.dumps(safety_checked_result))
-    reviewed_result["status"] = "reviewed"
+    # The reviewer chooses hydroxyzine for line 2; no line still needs a person, so the review
+    # completes: the safety check runs over both lines and the prescription is completed.
+    reviewed_result = json.loads(json.dumps(prescription_result))
+    reviewed_result["status"] = "completed"
+    reviewed_result["updated_at"] = "2026-10-28T12:05:02+00:00"
     reviewed_result["review"] = {
-        "required": True,
-        "status": "reviewed_acknowledged",
-        "reason_codes": ["ocr_review_policy"],
-        "minimum_reviewer_role": "qualified_professional",
-        "review_deadline_policy": "before_relying_on_output",
-        "review_outcome": "acknowledged_for_professional_review",
-        "reviewed_at": "2026-08-15T12:05:00+00:00",
+        "required": False,
+        "status": "not_required",
+        "reason_codes": [],
+        "minimum_reviewer_role": "none",
+        "review_deadline_policy": "not_applicable",
+        "reviewed_at": None,
     }
+    reviewed_result["transitions"] += [
+        {
+            "event_type": "prescription.review.decisions_applied",
+            "from_state": "awaiting_review",
+            "to_state": "awaiting_review",
+            "reason_code": None,
+            "payload": {},
+            "occurred_at": "2026-10-28T12:05:00+00:00",
+        },
+        {
+            "event_type": "prescription.review.completed",
+            "from_state": "awaiting_review",
+            "to_state": "safety_running",
+            "reason_code": None,
+            "payload": {},
+            "occurred_at": "2026-10-28T12:05:00+00:00",
+        },
+        {
+            "event_type": "prescription.completed",
+            "from_state": "safety_running",
+            "to_state": "completed",
+            "reason_code": None,
+            "payload": {},
+            "occurred_at": "2026-10-28T12:05:02+00:00",
+        },
+    ]
+    line_two = reviewed_result["candidate_medications"][1]
+    line_two["winner"] = {
+        "sfrx_id": "SRX-101-000311",
+        "display_name": hydroxyzine,
+        "generic": {"en": "Hydroxyzine", "ar": "هيدروكسيزين"},
+        "final_score": 0.92,
+        # A person chose the product; the reading certainty is still what was measured.
+        "confidence": 0.73,
+        "review_state": "reviewed",
+    }
+    line_two["review_required"] = False
+    line_two["review_state"] = "reviewed"
+    line_two["review_reason_codes"] = []
 
     examples["enterprise_ocr_prescription_review"] = {
         "request": {
             "path_params": {"prescription_id": "rx_example_0001"},
-            # This operation's request body is not yet declared in the maintained
-            # OpenAPI (upstream also has no requestBody for this route) -- empty
-            # body reflects the current real contract, not a simplification.
-            "body": {},
+            "body": {
+                "decisions": [
+                    {"line_id": "line_0002", "action": "select_candidate", "sfrx_id": "SRX-101-000311"}
+                ],
+            },
         },
         "response": reviewed_result,
     }

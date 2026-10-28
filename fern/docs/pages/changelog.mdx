@@ -15,6 +15,90 @@ Releases tracking. For the complete published version history, see
 and [NuGet (SafeRx)](https://www.nuget.org/packages/SafeRx#versions-body-tab).
 Entries below are not a backfilled reconstruction of that history.
 
+## [3.1.0] - 2026-10-28
+
+Additive: no field was removed and no request that worked before is refused. One field's
+**meaning** changed (see Changed).
+
+### Changed
+- **`winner.confidence` on a prescription line is now reading certainty.** It says how
+  sure SafeRx is that the line was *read* as written: the agreement of two independent
+  reads of the line, field by field (name, dose, unit), with the weakest field governing.
+  1 means both reads agree; a field only one read saw, or a line read once, is 0.5; a dose
+  or unit the reads disagree on is 0. Below 0.9 the line always goes to a person.
+  - Before 3.1.0 this field carried the registry **match** score. That is `final_score`,
+    which is unchanged.
+  - If you thresholded on `winner.confidence`, you were thresholding on the match. Use
+    `review_required` to decide whether a person must look; use `final_score` for match
+    quality and `confidence` for reading quality.
+  - `ocr_candidates[]` now lists every distinct reading of the line (primary first), with
+    its script in `locale` and the line's reading certainty in `confidence`.
+- **Every prescription line is resolved under the same rules as `POST /registry/resolve`**,
+  with each independent reading of the line as evidence. The readings must agree: a second
+  reading that names a different medicine or product withdraws the selection
+  (`ocr_readings_disagree`), and a line that touches a known look-alike pair
+  (hydroxyzine/hydralazine, for example) is never selected (`lookalike_risk`).
+- **Resolution decides by evidence.** A product that contradicts anything written
+  (strength on the full set, such as 875/125; dosage form; route, including "im" or
+  "syrup" in the text; salt; release type) is never selected. Unspecified release means
+  immediate release. A misspelled name is offered, never selected.
+
+### Added
+- **Prescription outcomes are stated** in `reason_code`:
+
+  | Outcome | `status` | `reason_code` | Billed |
+  |---|---|---|---|
+  | Medicines read | `completed` / `awaiting_review` | `null` | yes |
+  | Not a prescription | `completed` | `not_a_prescription` | no |
+  | A prescription with no readable medicine (review required) | `completed` | `no_medications_read` | no |
+  | The OCR provider failed; nothing was read | `failed` | `ocr_provider_unavailable` | no |
+  | Review completed with lines nobody resolved | `completed` | `review_incomplete` | yes |
+
+  A failed read is never reported as "no medicines". `document_context.medications_present`
+  is `true` only when medicines were read and is never inferred as `false`.
+- **`POST /ocr/prescriptions/{id}/review` takes decisions** (`PrescriptionReviewRequest`):
+  `decisions[]` of `{line_id, action, sfrx_id}` with `action` `select_candidate`,
+  `enter_sfrx_id` or `not_a_medicine`, and `complete`. When no line still needs a person,
+  or `complete` is true, the safety check runs and the prescription becomes `completed`.
+  An empty body still only reads the state. New errors: `409 prescription_review_not_open`,
+  `409 prescription_review_conflict`, `422 review.line_unknown`, `422 review.line_duplicated`,
+  `422 review.candidate_not_offered`, `422 review.sfrx_id_unknown`,
+  `422 request.sfrx_id_invalid`, `503 dependency_unavailable` (decisions saved; post again).
+  New status `safety_incomplete`: decisions were saved but the safety check after them could
+  not run.
+- **Each prescription line explains itself.** `review_reason_codes` says why the line needs
+  a person (resolution codes plus `ocr_reading_uncertain`, `ocr_judge_override`,
+  `ocr_line_unreadable`). `informational_reason_codes` reports
+  `equivalent_product_selected` when the clinical identity is certain and one of several
+  brands was chosen; it never blocks the safety check. No line is dropped: a line with no
+  registry match stays, `review_state: unresolved`.
+- **Alternatives are truthful.** `selection_reason: same_generic_name` is another product of
+  the selected medicine. `ocr_alternative_match` is a different medicine whose name is close
+  to what was read, never an equivalent.
+- **New resolution reason codes**, after which nothing is selected and the item's
+  `candidates` are the medicines to choose from: `strength_not_available`,
+  `form_not_available`, `route_not_available`, `salt_not_available`,
+  `release_not_available`, `approximate_name_match`, `ocr_readings_disagree` and
+  `lookalike_risk`. Treat every one of them like `ambiguous_candidates`. In a safety check
+  they make the medication `ambiguous`, with candidates and a `reason` in words.
+- Request bounds on `POST /registry/resolve` are documented: more than 50 medications is
+  `422 request.collection_too_large`, and a malformed `sfrx_id` is
+  `422 request.sfrx_id_invalid`. A well-formed id no product carries stays the item outcome
+  `sfrx_id_unknown`.
+
+### Fixed
+- **`equivalent_candidates[]` is a list of objects** (`sfrx_id`, `registry_concept_id`,
+  `display_name`, `equivalence_reason`). 3.0.1 declared it as a list of strings, so a
+  client validating against the closed schema rejected production responses that list the
+  same product in other pack sizes.
+- `candidate_medications[]` declares `review_reason_codes` and `informational_reason_codes`,
+  which production returns; a 3.0.1 closed-schema client rejected them.
+- `enterprise_ocr_prescription_resolve` and `enterprise_ocr_prescription_safety` are
+  documented as what they are: they report the resolution and safety state that the
+  workflow produces on its own, and do not run either step again.
+- `selected_candidate_id` is documented as the selected candidate's `candidate_id`, not its
+  `sfrx_id`; the resolve example used the wrong one.
+
 ## [3.0.1] - 2026-10-26
 
 ### Added

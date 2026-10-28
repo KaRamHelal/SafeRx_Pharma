@@ -89,7 +89,12 @@ components:
             given. A bare name that matches one medicine in several strengths or
             forms is evaluated as its default systemic variant and the response
             review carries default_variant_selected; add dose_text, route or
-            dosage_form, or pass sfrx_id, to pin the exact product.
+            dosage_form, or pass sfrx_id, to pin the exact product. A product that
+            contradicts anything written (strength, dosage form, route -- including
+            "im", "injection" or "syrup" written in the text -- salt, release type) is
+            never selected, and a misspelled name is offered, never selected; such a
+            medication is reported ambiguous with candidates. More than 50 is 422
+            request.collection_too_large.
           type: array
           minItems: 1
           maxItems: 50
@@ -104,9 +109,9 @@ components:
             properties:
               client_medication_id:
                 description: Caller-supplied identifier echoed back for
-                  correlating this entry with its evaluation (and with
-                  resolved_medications in the response), not interpreted by
-                  the API.
+                  correlating this entry with its evaluation (it is the
+                  entry's `ref` in the response `medications[]`), not
+                  interpreted by the API.
                 type:
                 - string
                 - 'null'
@@ -306,7 +311,7 @@ components:
                 - required: [sfrx_id]
                 properties:
                   medication_ref:
-                    description: Your identifier for the medication; echoed in resolved_medications.
+                    description: Your identifier for the medication; echoed in the result's medications[] and erx lines.
                     type: string
                     minLength: 1
                     maxLength: 64
@@ -849,13 +854,15 @@ components:
             $ref: '#/components/schemas/MedicationResolution'
       additionalProperties: false
     MedicationResolutionRequest:
-      description: Request body for medication resolution. This schema previously
-        required response-shaped fields (educational_context, source_provenance,
-        review, summary) that no client could construct -- a documentation defect,
-        since resolver-service's real request contract only accepts a locale and
-        one or more free-text medications. Corrected to match the same
-        medications[]/locale shape already used by the hosted MCP's
-        resolve_medications tool, which is validated against the same backend.
+      description: >-
+        Request body for medication resolution: a locale and 1 to 50 medications. More
+        than 50 medications is `422 request.collection_too_large`; an `sfrx_id` that does
+        not match `^SRX-[0-9]{3}-[0-9]{6}$` is `422 request.sfrx_id_invalid`. A
+        well-formed `sfrx_id` that no product carries is not an error: the item reports
+        `sfrx_id_unknown`, and its text never rescues it. (This schema previously
+        required response-shaped fields -- educational_context, source_provenance,
+        review, summary -- that no client could construct; it matches the
+        medications[]/locale shape of the hosted MCP's resolve_medications tool.)
       type: object
       required:
       - locale
@@ -870,7 +877,8 @@ components:
           - en
           - mixed
         medications:
-          description: Medications to resolve. Give input_text, sfrx_id, or both.
+          description: Medications to resolve, at most 50 (more is 422
+            request.collection_too_large). Give input_text, sfrx_id, or both.
           type: array
           minItems: 1
           maxItems: 50
@@ -892,8 +900,13 @@ components:
                 - 'null'
               input_text:
                 description: Free-text medication description to resolve.
-                  Strength, form and route written inline are parsed. Optional
-                  when sfrx_id is given.
+                  Strength (with or without a unit, decimal comma accepted,
+                  combination strengths such as 875/125), dosage form, route
+                  ("im", "injection", "syrup"), salt and release type
+                  (XR/ER/SR/MR...) written inline are parsed. A product that
+                  contradicts anything written is never selected; a misspelled
+                  name is offered as candidates, never selected. Optional when
+                  sfrx_id is given.
                 type:
                 - string
                 - 'null'
@@ -901,7 +914,8 @@ components:
               sfrx_id:
                 description: Registry identifier, when already known. Authoritative
                   when supplied; the product is fetched directly and an unknown id
-                  is reported as sfrx_id_unknown rather than matched by text.
+                  is reported as sfrx_id_unknown rather than matched by text. A
+                  malformed value is 422 request.sfrx_id_invalid.
                 type:
                 - string
                 - 'null'
@@ -2518,9 +2532,41 @@ components:
         request_id: {description: 'Echo of the request identifier for correlation.', type: string}
         prescription_id: {description: 'Identifier for this prescription workflow.', type: string}
         workflow_id: {description: 'Identifier for the specific workflow run processing this prescription.', type: string}
-        status: {description: 'Current workflow status. Poll this or subscribe to the events endpoint rather than assuming a fixed processing time.', type: string}
+        status:
+          description: |
+            Current workflow status. Poll this or subscribe to the events endpoint rather
+            than assuming a fixed processing time. In progress: `accepted`,
+            `artifact_validating`, `queued`, `processing`, `ocr_running`,
+            `resolving_medications`, `safety_running`. Waiting for a person:
+            `awaiting_review` (submit decisions with `enterprise_ocr_prescription_review`)
+            and `safety_incomplete` (decisions were saved but the safety check after them
+            could not run; post the review again to retry). Terminal: `completed`, `failed`,
+            `cancelled`, `expired`. A terminal status is always explained by `reason_code`
+            when the prescription did not produce medications. New values may be added;
+            treat an unknown value as in progress.
+          type: string
         pipeline_profile: {description: 'Which OCR pipeline processed this prescription.', type: [string, 'null']}
-        reason_code: {description: 'Machine-readable reason for the current status, when applicable (e.g. why processing failed).', type: [string, 'null']}
+        reason_code:
+          description: |
+            Why the workflow ended the way it did. `null` when medications were read normally.
+            - `ocr_provider_unavailable` (status `failed`): the document could not be read
+              because the OCR provider failed. Nothing was read; this is NOT "no medications".
+              Not billed. Retry later with a new upload.
+            - `not_a_prescription` (status `completed`): the page was read and is not a
+              prescription or medication document (see `document_context`). Not billed.
+            - `no_medications_read` (status `completed`, review required): the page looks like
+              a prescription but no medicine line could be read. A person must check the image.
+              Not billed.
+            - `ocr_capacity_unavailable`, `workflow_processing_failed` (status `failed`): a
+              SafeRx-side failure after retries. Not billed.
+            - `quota_reservation_expired` (status `expired`).
+            - `review_incomplete` (status `completed`, review required): the review was
+              completed with medicine lines nobody resolved. The safety check covered only the
+              resolved and reviewed lines; the unresolved ones remain in
+              `candidate_medications` with `review_required: true`. Never a clean result.
+            New codes may be added; treat an unknown code on `failed` as a failure and on
+            `completed` as requiring review.
+          type: [string, 'null']
         created_at: {description: 'When this prescription workflow was created.', type: string, format: date-time}
         updated_at: {description: 'When this prescription workflow last changed state.', type: string, format: date-time}
         transitions:
@@ -2573,8 +2619,9 @@ components:
                 prescription.
               type: [boolean, 'null']
             medications_present:
-              description: Whether any medications were detected in the
-                document.
+              description: True only when medicines were read. Otherwise what the
+                document classification reported, or null -- never inferred as
+                false from an empty read (see `reason_code`).
               type: [boolean, 'null']
             medication_section:
               description: Which part of the document the medication list was
@@ -2582,7 +2629,9 @@ components:
               type: [string, 'null']
         candidate_medications:
           description: One entry per recognized medication line on the
-            prescription. Empty until OCR/resolution has run.
+            prescription, in document order. Empty until OCR/resolution has run.
+            A line is never dropped -- a line with no registry candidate is kept
+            with `review_state` `unresolved` and its raw text.
           type: array
           items:
             type: object
@@ -2619,21 +2668,36 @@ components:
                       - $ref: '#/components/schemas/LocalizedString'
                       - type: 'null'
                     final_score:
-                      description: Confidence this is the correct match, 0-1.
+                      description: How well the registry product matches what was
+                        read (the resolution ordering score, 0-1, not calibrated). It
+                        says nothing about whether the line was read correctly; that
+                        is `confidence`.
                       type: [number, 'null']
                       minimum: 0
                       maximum: 1
                     confidence:
-                      description: OCR recognition confidence for this line, 0-1.
+                      description: Reading certainty, 0-1 -- how sure SafeRx is that
+                        the line was READ as written, from the agreement of two
+                        independent reads of the line per field (name, dose, unit),
+                        the weakest field governing. 1 means both reads agree on every
+                        field; a field only one read saw, or a line read once, is
+                        uncorroborated (0.5); a differing dose or unit is 0. Below 0.9
+                        the line always needs review. It is not the registry match
+                        (`final_score`); the line's own certainty is the lower of the
+                        two. (Changed meaning in 3.1.0; before, this carried the match
+                        score.)
                       type: [number, 'null']
                       minimum: 0
                       maximum: 1
                     review_state:
-                      description: Review state for this specific line.
+                      description: Review state of the line this winner belongs to
+                        (same values as the line's `review_state`).
                       type: string
                 - type: 'null'
               ocr_candidates:
-                description: Raw OCR readings for this line, ranked.
+                description: Every distinct reading of the line, primary read first
+                  (rank 1), then the other independent readings, each as written
+                  (name, dose and unit).
                 type: array
                 items:
                   type: object
@@ -2641,17 +2705,19 @@ components:
                   required: [rank, recognized_text]
                   properties:
                     rank:
-                      description: Rank of this OCR reading for the line.
+                      description: Rank of this reading; 1 is the primary read.
                       type: integer
                       minimum: 1
                     recognized_text:
-                      description: Text as recognized by OCR.
+                      description: The reading as written.
                       type: string
                     locale:
-                      description: Locale of the recognized text, when detected.
+                      description: The script the reading is written in (`en`,
+                        `ar`, or `mixed`); null when it has no letters.
                       type: [string, 'null']
                     confidence:
-                      description: OCR recognition confidence, 0-1.
+                      description: The line's reading certainty, 0-1 (see
+                        `winner.confidence`).
                       type: [number, 'null']
                       minimum: 0
                       maximum: 1
@@ -2678,26 +2744,108 @@ components:
                       - $ref: '#/components/schemas/LocalizedString'
                       - type: 'null'
                     final_score:
-                      description: Confidence this alternative matches, 0-1.
+                      description: How well this product matches what was read
+                        (ordering score, 0-1, not calibrated).
                       type: [number, 'null']
                       minimum: 0
                       maximum: 1
                     selection_reason:
-                      description: Why this alternative was surfaced.
+                      description: >-
+                        `same_generic_name`: another product of the selected medicine
+                        (same ingredients) -- for example another brand of the same
+                        clinical identity. `ocr_alternative_match`: another possible
+                        reading of the line -- a different medicine whose name is close
+                        to what was read. It is never an equivalent of the selected
+                        product; never substitute it without a person confirming.
                       type: string
                       enum: [ocr_alternative_match, same_generic_name]
               review_required:
                 description: Whether this specific line requires professional
-                  review.
+                  review. True whenever `review_reason_codes` is not empty.
                 type: boolean
               review_state:
-                description: Current review state for this line.
+                description: >-
+                  `resolved` (selected and read with certainty), `pending` (a person must
+                  choose among the alternatives), `unresolved` (nothing to offer: no
+                  registry candidate, or nothing legible), `reviewed` (a reviewer chose the
+                  product), `not_a_medicine` (a reviewer excluded the line). New values may
+                  be added.
                 type: string
+              review_reason_codes:
+                description: >-
+                  Why the line needs review (3.1.0). The medication-resolution codes
+                  (`ambiguous_candidates`, `ocr_readings_disagree`, `lookalike_risk`,
+                  `strength_not_available`, `form_not_available`, `route_not_available`,
+                  `salt_not_available`, `release_not_available`, `approximate_name_match`,
+                  `default_variant_selected`, `unmapped_medication`, ...) and the reading's
+                  own: `ocr_reading_uncertain` (the two reads disagree; reading certainty
+                  below 0.9), `ocr_judge_override` (the AI judge disagreed with the registry
+                  search), `ocr_line_unreadable` (nothing legible was read). Empty when no
+                  review is needed. New codes may be added.
+                type: array
+                items:
+                  type: string
+              informational_reason_codes:
+                description: >-
+                  How the product was chosen when that needs no review (3.1.0):
+                  `equivalent_product_selected` -- the line's medicine, salt, release type,
+                  strength, form and route are certain, and one of several brands of that
+                  identity was chosen; the other brands are the `same_generic_name`
+                  alternatives. Never blocks the safety check. Pack-size listings of one
+                  product are one medicine and carry no code.
+                type: array
+                items:
+                  type: string
               correction_anchor_id:
                 description: Opaque anchor for reporting a correction against
                   this line.
                 type: [string, 'null']
         display_obligations: {$ref: '#/components/schemas/DisplayObligations'}
+    PrescriptionReviewRequest:
+      description: >-
+        Reviewer decisions for a prescription awaiting review (3.1.0). An empty body (or
+        no body) only reads the current state. Decisions are applied; the review
+        completes when no line still needs a person, or when `complete` is true -- lines
+        left undecided are then reported unresolved and the result carries `reason_code`
+        `review_incomplete`. Completing runs the safety check over the resolved and
+        reviewed lines and moves the prescription to `completed`.
+      type: object
+      additionalProperties: false
+      properties:
+        decisions:
+          description: At most one decision per line, at most 50 decisions.
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/PrescriptionLineDecision'
+        complete:
+          description: Complete the review now, even if some lines are undecided.
+          type: boolean
+          default: false
+    PrescriptionLineDecision:
+      description: A reviewer's decision for one line of a prescription awaiting review.
+      type: object
+      additionalProperties: false
+      required: [line_id, action]
+      properties:
+        line_id:
+          description: The `line_id` of a line in `candidate_medications`.
+          type: string
+          minLength: 1
+          maxLength: 64
+        action:
+          description: >-
+            `select_candidate`: the product is the line's winner or one of its
+            alternatives (`sfrx_id` required). `enter_sfrx_id`: any active registry
+            product (`sfrx_id` required; it is verified against the registry).
+            `not_a_medicine`: the line is excluded from the safety check.
+          type: string
+          enum: [select_candidate, enter_sfrx_id, not_a_medicine]
+        sfrx_id:
+          description: Required for `select_candidate` and `enter_sfrx_id`; ignored for
+            `not_a_medicine`.
+          type: [string, 'null']
+          pattern: ^SRX-[0-9]{3}-[0-9]{6}$
     Locale:
       type: string
       enum:
@@ -3143,8 +3291,10 @@ components:
                 - string
                 - 'null'
               confidence:
-                description: Confidence this candidate matches the input, 0-1.
-                  Not comparable across different queries.
+                description: Match score used to order the candidates, 0-1. It is
+                  not calibrated, is not comparable across queries, and never
+                  decides a selection on its own -- `selected_candidate_id` and
+                  `review.reason_codes` do.
                 type: number
                 minimum: 0
                 maximum: 1
@@ -3184,23 +3334,73 @@ components:
                 items:
                   $ref: '#/components/schemas/LocalizedString'
               equivalent_candidates:
-                description: Other candidate_ids considered equivalent to
-                  this one for resolution purposes.
+                description: Other registry listings that are the same medicine
+                  as this candidate, each with the reason. Today this lists the
+                  same product in other pack sizes, published beside the selected
+                  candidate (pack-size listings are one medicine and are selected
+                  without a review code). Empty for other candidates. (3.1.0;
+                  until 3.0.1 this was mis-declared as an array of strings.)
                 type: array
                 items:
-                  type: string
+                  type: object
+                  additionalProperties: false
+                  required:
+                  - display_name
+                  - equivalence_reason
+                  properties:
+                    sfrx_id:
+                      description: Registry identifier of the equivalent listing.
+                      type:
+                      - string
+                      - 'null'
+                      pattern: ^SRX-[0-9]{3}-[0-9]{6}$
+                    registry_concept_id:
+                      description: Registry concept identifier, when the
+                        equivalent is a concept rather than one product.
+                      type:
+                      - string
+                      - 'null'
+                    display_name:
+                      $ref: '#/components/schemas/LocalizedString'
+                    equivalence_reason:
+                      description: Why this listing is the same medicine (for
+                        example "The same product in another pack size").
+                      $ref: '#/components/schemas/LocalizedString'
               review:
                 $ref: '#/components/schemas/ReviewState'
               source_provenance:
                 $ref: '#/components/schemas/SourceProvenance'
         selected_candidate_id:
-          description: sfrx_id of the candidate to treat as selected, when
-            resolution is confident enough to auto-select one. Null when the
-            caller must choose among candidates.
+          description: The `candidate_id` of the selected candidate (read its
+            `sfrx_id` from that candidate), when the text pinned one product or a
+            published policy chose one. Null when nothing was selected -- the
+            caller must choose among `candidates`; `review.reason_codes` says why.
           type:
           - string
           - 'null'
         review:
+          description: >-
+            Why the item needs review. `review.required` is true whenever any code is
+            present. Selected with review: `default_variant_selected` (a variant chosen by
+            the published preference because the text did not pin one product, or a written
+            fact could not be verified), `equivalent_product_selected` (one of several brands
+            of the same medicine, salt, release type, strength, form and route; pack-size
+            listings of one product are one medicine, carry no code and are listed in the
+            selected candidate's `equivalent_candidates`), `missing_strength` (no strength
+            written), `registry_field_conflict` (the text contradicts the product of the
+            supplied sfrx_id; the sfrx_id wins). Nothing selected, candidates offered:
+            `ambiguous_candidates` (different medicines), `strength_not_available`,
+            `form_not_available`, `route_not_available`, `salt_not_available`,
+            `release_not_available` (the medicine exists but no product has what was
+            written), `approximate_name_match` (only a close spelling matched),
+            `ocr_readings_disagree` (the readings of a prescription line name different
+            medicines or products), `lookalike_risk` (a read prescription line touches a
+            known look-alike pair). Nothing selected, nothing offered: `unmapped_medication`,
+            `sfrx_id_unknown`, `query_rejected`. Salt, release type and route are part of a
+            product's identity, and unspecified release means immediate release. Treat every
+            code in the "candidates offered" group as "choose a product", not only
+            `ambiguous_candidates`. New codes may be added; treat an unknown code as
+            requiring review.
           $ref: '#/components/schemas/ReviewState'
         limitations:
           description: Caveats about this resolution's scope or confidence.
@@ -3449,6 +3649,14 @@ components:
         input:
           type: string
         status:
+          description: >-
+            `resolved`: one product was evaluated (see `selection` and `product`).
+            `ambiguous`: nothing was selected but there are medicines to choose from
+            (`candidates`) -- different medicines for the name, a written strength, form,
+            route, salt or release type no product has, a close spelling only, or (for a
+            prescription line) readings that disagree or a look-alike pair; `reason` says
+            which. Pass the chosen `sfrx_id` to evaluate it. `unresolved`: nothing to offer
+            (no registry match, an unknown sfrx_id, or text that could not be searched).
           type: string
           enum:
           - resolved
@@ -3469,6 +3677,9 @@ components:
           items:
             $ref: '#/components/schemas/EnterpriseSafetyCandidate'
         reason:
+          description: Why the medication was not resolved, in words (for example "A
+            medicine was found, but no product has the written strength; it was not
+            evaluated. Choose a product.").
           oneOf:
           - $ref: '#/components/schemas/EnterpriseSafetyText'
           - type: 'null'

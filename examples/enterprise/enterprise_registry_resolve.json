@@ -49,7 +49,20 @@
               "ar": "كبسولة",
               "en": "Capsule"
             },
-            "equivalent_candidates": [],
+            "equivalent_candidates": [
+              {
+                "display_name": {
+                  "ar": "أموكسيسيلين 500 مجم كبسولة (عبوة 24)",
+                  "en": "Amoxicillin 500mg Capsule (pack of 24)"
+                },
+                "equivalence_reason": {
+                  "ar": "المنتج نفسه بحجم عبوة آخر",
+                  "en": "The same product in another pack size"
+                },
+                "registry_concept_id": null,
+                "sfrx_id": "SRX-101-000043"
+              }
+            ],
             "ingredient_names": [
               {
                 "ar": "أموكسيسيلين",
@@ -141,7 +154,7 @@
           "status": "not_required"
         },
         "schema_version": "1.0.0",
-        "selected_candidate_id": "SRX-101-000042",
+        "selected_candidate_id": "cand_example_0001",
         "source_provenance": {
           "claim_catalog_version": "2026.08.01",
           "policy_version": "2026.08.01",

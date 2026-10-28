@@ -8,23 +8,42 @@
   "response": {
     "candidate_medications": [
       {
-        "alternatives": [],
+        "alternatives": [
+          {
+            "display_name": {
+              "ar": "اموكسيل 500 مجم كبسولة",
+              "en": "Amoxil 500mg Capsule"
+            },
+            "final_score": 0.95,
+            "generic": {
+              "ar": "أموكسيسيلين",
+              "en": "Amoxicillin"
+            },
+            "rank": 1,
+            "selection_reason": "same_generic_name",
+            "sfrx_id": "SRX-101-000077"
+          }
+        ],
         "correction_anchor_id": null,
+        "informational_reason_codes": [
+          "equivalent_product_selected"
+        ],
         "line_id": "line_0001",
         "ocr_candidates": [
           {
-            "confidence": 0.95,
+            "confidence": 1.0,
             "locale": "en",
             "rank": 1,
-            "recognized_text": "Amoxicillin 500mg cap"
+            "recognized_text": "Amoxicillin 500 mg"
           }
         ],
         "position": 0,
         "raw_span": "Amoxicillin 500mg cap",
+        "review_reason_codes": [],
         "review_required": false,
-        "review_state": "not_required",
+        "review_state": "resolved",
         "winner": {
-          "confidence": 0.95,
+          "confidence": 1.0,
           "display_name": {
             "ar": "أموكسيسيلين 500 مجم كبسولة",
             "en": "Amoxicillin 500mg Capsule"
@@ -34,12 +53,70 @@
             "ar": "أموكسيسيلين",
             "en": "Amoxicillin"
           },
-          "review_state": "not_required",
+          "review_state": "resolved",
           "sfrx_id": "SRX-101-000042"
         }
+      },
+      {
+        "alternatives": [
+          {
+            "display_name": {
+              "ar": "هيدروكسيزين 25 مجم أقراص",
+              "en": "Hydroxyzine 25mg Tablet"
+            },
+            "final_score": 0.92,
+            "generic": {
+              "ar": "هيدروكسيزين",
+              "en": "Hydroxyzine"
+            },
+            "rank": 1,
+            "selection_reason": "ocr_alternative_match",
+            "sfrx_id": "SRX-101-000311"
+          },
+          {
+            "display_name": {
+              "ar": "هيدرالازين 25 مجم أقراص",
+              "en": "Hydralazine 25mg Tablet"
+            },
+            "final_score": 0.88,
+            "generic": {
+              "ar": "هيدرالازين",
+              "en": "Hydralazine"
+            },
+            "rank": 2,
+            "selection_reason": "ocr_alternative_match",
+            "sfrx_id": "SRX-101-000298"
+          }
+        ],
+        "correction_anchor_id": null,
+        "informational_reason_codes": [],
+        "line_id": "line_0002",
+        "ocr_candidates": [
+          {
+            "confidence": 0.73,
+            "locale": "en",
+            "rank": 1,
+            "recognized_text": "Hydroxyzine 25 mg"
+          },
+          {
+            "confidence": 0.73,
+            "locale": "en",
+            "rank": 2,
+            "recognized_text": "Hydralazine 25 mg"
+          }
+        ],
+        "position": 1,
+        "raw_span": "Hydroxyzine 25mg tab",
+        "review_reason_codes": [
+          "lookalike_risk",
+          "ocr_reading_uncertain"
+        ],
+        "review_required": true,
+        "review_state": "pending",
+        "winner": null
       }
     ],
-    "created_at": "2026-08-15T12:00:00+00:00",
+    "created_at": "2026-10-28T12:00:00+00:00",
     "display_obligations": {
       "may_not_describe_as_medical_advice": true,
       "must_preserve_arabic_text": true,
@@ -77,13 +154,14 @@
     "reason_code": null,
     "request_id": "req_example_0001",
     "review": {
-      "minimum_reviewer_role": "none",
-      "reason_codes": [],
-      "required": false,
-      "review_deadline_policy": "not_applicable",
-      "review_outcome": null,
+      "minimum_reviewer_role": "trained_operator",
+      "reason_codes": [
+        "ocr_candidate_review_required"
+      ],
+      "required": true,
+      "review_deadline_policy": "before_relying_on_output",
       "reviewed_at": null,
-      "status": "not_required"
+      "status": "pending"
     },
     "source_provenance": {
       "claim_catalog_version": "2026.08.01",
@@ -91,18 +169,26 @@
       "registry_snapshot_id": "registry-2026-08-01",
       "safety_snapshot_id": "safety-2026-08-01"
     },
-    "status": "safety_checked",
+    "status": "awaiting_review",
     "transitions": [
       {
-        "event_type": "ocr_completed",
-        "from_state": "accepted",
-        "occurred_at": "2026-08-15T12:00:05+00:00",
+        "event_type": "ocr.pipeline.completed",
+        "from_state": "ocr_running",
+        "occurred_at": "2026-10-28T12:00:08+00:00",
         "payload": {},
         "reason_code": null,
-        "to_state": "processing"
+        "to_state": "resolving_medications"
+      },
+      {
+        "event_type": "prescription.medications.resolved",
+        "from_state": "resolving_medications",
+        "occurred_at": "2026-10-28T12:00:09+00:00",
+        "payload": {},
+        "reason_code": null,
+        "to_state": "awaiting_review"
       }
     ],
-    "updated_at": "2026-08-15T12:00:05+00:00",
+    "updated_at": "2026-10-28T12:00:09+00:00",
     "workflow_id": "wf_example_0001"
   }
 }

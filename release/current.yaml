@@ -1,5 +1,5 @@
-release_id: enterprise-v1-2026.10.26.3
-release_version: 3.0.1
+release_id: enterprise-v1-2026.10.28.1
+release_version: 3.1.0
 status: available
 publishable: true
 
@@ -12,9 +12,9 @@ api_contract:
   response_policy: closed_schema
 
 artifacts:
-  python: saferx-pharma==3.0.1
-  typescript: saferx-pharma-sdk@3.0.1
-  csharp: SafeRx==3.0.1
+  python: saferx-pharma==3.1.0
+  typescript: saferx-pharma-sdk@3.1.0
+  csharp: SafeRx==3.1.0
 
 hosted_mcp:
   status: preview
@@ -36,6 +36,17 @@ availability:
   key_required: true
 
 notes:
+  - >-
+    3.1.0 -- additive. Prescription reads end in a stated outcome (reason_code
+    ocr_provider_unavailable, not_a_prescription, no_medications_read, review_incomplete);
+    each prescription line publishes review_reason_codes and informational_reason_codes;
+    winner.confidence is reading certainty (the agreement of two independent reads) and
+    final_score the registry match; enterprise_ocr_prescription_review accepts per-line
+    decisions (PrescriptionReviewRequest) and completes the prescription. Medication
+    resolution adds reason codes strength_/form_/route_/salt_/release_not_available,
+    approximate_name_match, ocr_readings_disagree and lookalike_risk, and
+    equivalent_candidates[] are objects with an equivalence_reason (3.0.1 declared strings
+    and rejected what production returns).
   - >-
     3.0.0 -- BREAKING: the safety-check result is redesigned (schema_version 2,
     EnterpriseSafetyCheckResult) for POST /safety/checks, POST /erx/safety-checks and the

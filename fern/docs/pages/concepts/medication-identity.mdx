@@ -12,10 +12,19 @@ shape, and the API turns each entry into one product before anything else runs.
 ## Free text
 
 Send whatever text you have — a prescription line, a patient-reported name,
-an OCR-extracted string — as `input_text`. Strength, form and route written
-inline are parsed: `"Warfarin 5 mg tablet"`, `"warfarin 5mg"`, `"Augmentin 1g"`
-(1 g and 1000 mg are equivalent), `"Diclofenac IM"`, and Arabic units
-(`"وارفارين 5 مجم"`) all narrow the match.
+an OCR-extracted string — as `input_text`. What is written is parsed and used
+as evidence:
+
+- **Strength**, with or without a unit (`"metformin 500"`), with a decimal comma
+  (`"2,5 mg"`), as a combination (`"Augmentin 875/125"`) or an amount per volume
+  (`"100 mg/5 ml"`). 1 g and 1000 mg are equivalent.
+- **Dosage form and route**, stated or implied: `"Diclofenac IM"`, `"injection"`,
+  `"amp"`, `"syrup"`, `"inhaler"`.
+- **Salt** (`"metoprolol succinate"`) and **release type** (XR, ER, SR, XL, CR,
+  MR, LA, retard, prolonged, extended, modified).
+- Arabic units and digits (`"وارفارين 5 مجم"`), common synonyms and spelling
+  variants (`"albuterol"`), and words in any order
+  (`"trimethoprim sulfamethoxazole"`).
 
 ## Qualifiers as fields
 
@@ -48,8 +57,9 @@ product with a stated strength, then the registry's preferred listing, with a
 deterministic tie-break. The result always says so:
 
 - the entry in `medications[]` has `selection: default_variant`, or
-  `equivalent_product` when the candidates were the same strength and form in
-  different listings, and `product` names what was evaluated;
+  `equivalent_product` when the candidates were several **brands** of one clinical
+  identity (same ingredients and salt, release type, strength, form and route),
+  and `product` names what was evaluated;
 - `review.reasons[]` contains `default_variant_selected`, asking the caller to
   confirm the product (pass its `sfrx_id`, or `dose_text` / `route` /
   `dosage_form`, to pin it);
@@ -57,6 +67,63 @@ deterministic tie-break. The result always says so:
 
 This is conservative for ingredient-level domains (interactions, allergy,
 pregnancy and lactation). For anything dose-sensitive, pin the product.
+
+The same product listed in several **pack sizes** is one medicine: one listing is
+selected with no review code, and the others are published in the selected
+candidate's `equivalent_candidates[]`, each with an `equivalence_reason`.
+
+## How a product is chosen: evidence, then elimination
+
+A wrong product selected silently is worse than no selection, so resolution is a
+sequence of explicit judgements:
+
+1. **Find everything the name can mean**, under both the English and Arabic
+   names, including close spellings.
+2. **Judge each product against what was written**: strength, form, route, salt
+   and release type are each matched, contradicted, or cannot be checked (the
+   registry holds no value).
+3. **Eliminate.** A product that contradicts anything written is never selected.
+   Strength is compared on the whole set (`875/125` matches only 875/125).
+   Salt, release type and route are part of a product's identity: products that
+   differ in any of them are never treated as equivalent. Unspecified release
+   means immediate release; a modified-release product is selected only when no
+   immediate-release product fits, and then as `default_variant_selected`. A
+   brand modifier is identity too: `Panadol Extra` never selects plain Panadol.
+4. **Decide or say why not.** If one product (or one clinical identity) survives,
+   it is selected. Otherwise nothing is selected and a reason code says which
+   written fact no product has.
+
+The candidate `confidence` only orders the candidates. It is not calibrated and
+never decides a selection on its own.
+
+## Reason codes
+
+Every item carries `review.reason_codes`; `review.required` is `true` whenever
+any code is present. New codes may be added: treat an unknown code as "needs
+review".
+
+| Code | Selected? | Meaning |
+|---|---|---|
+| `default_variant_selected` | yes, review | The text did not pin one product; the published preference chose one, or a written fact could not be verified |
+| `equivalent_product_selected` | yes, review | One of several brands of the same clinical identity was chosen |
+| `missing_strength` | yes, review | No strength was written; the product's strength was assumed |
+| `registry_field_conflict` | yes, review | The text contradicts the product of the `sfrx_id` you supplied; the `sfrx_id` wins |
+| `ambiguous_candidates` | no, candidates | The text matches different medicines |
+| `strength_not_available` | no, candidates | The medicine exists, but no product has the written strength |
+| `form_not_available` | no, candidates | ... no product has the written dosage form |
+| `route_not_available` | no, candidates | ... no product has the written (or implied) route |
+| `salt_not_available` | no, candidates | ... no product has the written salt |
+| `release_not_available` | no, candidates | ... no product has the written release type |
+| `approximate_name_match` | no, candidates | Only a close spelling matched. Confirm the intended medicine |
+| `ocr_readings_disagree` | no, candidates | The independent readings of a prescription line name different medicines or products |
+| `lookalike_risk` | no, candidates | A read prescription line touches a known look-alike pair (for example hydroxyzine/hydralazine) |
+| `unmapped_medication` | no | No registry candidate at all |
+| `sfrx_id_unknown` | no | The `sfrx_id` is well-formed but no active product carries it. Its text never rescues it |
+| `query_rejected` | no | The text could not be searched (it must be 2 to 80 characters) |
+
+Treat every "no, candidates" code the way you treat `ambiguous_candidates`:
+show the candidates and let a person choose. In a safety check, those
+medications are `status: ambiguous` with `candidates[]` and a `reason` in words.
 
 When the text names **different medicines** (two single-ingredient generics
 match equally well), nothing is selected: the medication is `status: ambiguous`
@@ -79,17 +146,27 @@ An entry whose text the registry cannot search (one character, or longer than
 are still evaluated. A check needs at least one new (`target_medication`)
 medication to resolve.
 
-## Resolution ambiguity on `enterprise_registry_resolve`
+## Resolution on `enterprise_registry_resolve`
 
-`enterprise_registry_resolve` returns `candidates[]` — ranked possible
-matches, each with a `confidence` (0–1, **not comparable across different
-queries**) — and the same selection rules: `selected_candidate_id` is set when
-a product was chosen (by identity, by a confident text match, or as a default
-variant, in which case `review.reason_codes` says so). When it is `null`, your
-integration should present the candidates for the caller to choose, rather
-than assuming the first one. An empty `candidates` array means no match was
-found — it does not mean the product does not exist; prompt for more specific
-input (dose, form) before concluding the medication is unknown.
+`enterprise_registry_resolve` takes 1 to 50 medications and returns one item
+per medication with `candidates[]` — ranked possible matches, each with a
+`confidence` (0–1, an ordering score, **not comparable across queries**) — and
+the same selection rules. `selected_candidate_id` is the `candidate_id` of the
+chosen candidate (read the `sfrx_id` from that candidate) when a product was
+chosen by identity, by what was written, or by a published policy, in which
+case `review.reason_codes` says so. When it is `null`, present the candidates
+for the caller to choose rather than assuming the first one. An empty
+`candidates` array means no match was found — it does not mean the product does
+not exist; prompt for more specific input (dose, form) before concluding the
+medication is unknown.
+
+Malformed input is refused rather than guessed: more than 50 medications is
+`422 request.collection_too_large`, and an `sfrx_id` that does not match
+`^SRX-[0-9]{3}-[0-9]{6}$` is `422 request.sfrx_id_invalid`.
+
+Prescription lines read by OCR are resolved by the same rules, with each
+independent reading of the line as evidence; see
+[OCR prescription lifecycle](/concepts/ocr-lifecycle).
 
 ## current vs. target medication roles
 
@@ -106,8 +183,7 @@ saved list of current medications; it only sees what's on this request.
 ## Review behavior
 
 Resolution results carry their own `review` state (`ReviewState`), separate
-from a safety check's review state. A resolution that's ambiguous, that was
-selected as a default variant, or that is low-confidence requires review
-before you rely on the selected candidate — check `review.required` and
-`review.reason_codes` on the resolution result, not just on a downstream
+from a safety check's review state. Any reason code on an item means review is
+required before you rely on the selected candidate — check `review.required`
+and `review.reason_codes` on the resolution result, not just on a downstream
 safety check.

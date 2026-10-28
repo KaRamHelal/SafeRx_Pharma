@@ -1,35 +1,40 @@
 ---
 title: OCR prescription lifecycle
-subtitle: Upload, track, resolve, check, and review a prescription image
+subtitle: Upload, track, read the outcome, and review a prescription image
 ---
 
-Prescription OCR is an asynchronous, multi-step workflow, not a single
-call. Six operations cover it, called roughly in this order:
+Prescription OCR is an asynchronous workflow, not a single call. You upload an
+image; SafeRx reads it, resolves every medicine line to a registry product, and
+runs the safety check. When a line needs a person, the workflow waits in
+`awaiting_review` until you submit decisions.
 
 ```text
-enterprise_ocr_prescription_create
+enterprise_ocr_prescription_create          (upload, 202)
         |
-        v  (poll or subscribe)
+        v  poll or subscribe
 enterprise_ocr_prescription_read  <---  enterprise_ocr_prescription_events (SSE)
         |
-        v
-enterprise_ocr_prescription_resolve
+        |-- status completed / failed  ->  read reason_code (below)
         |
-        v
-enterprise_ocr_prescription_safety
-        |
-        v
-enterprise_ocr_prescription_review   (when review is required)
+        '-- status awaiting_review
+                |
+                v
+        enterprise_ocr_prescription_review   (decisions -> safety check -> completed)
 ```
+
+`enterprise_ocr_prescription_resolve` and `enterprise_ocr_prescription_safety`
+return the same prescription object. Resolution and the safety check run inside
+the workflow on their own; these two calls report that state and never run
+either step again.
 
 ## 1. Upload
 
 `enterprise_ocr_prescription_create` takes a `multipart/form-data` upload —
 the image file plus optional flags (`pipeline_profile`, and which safety
-domains to eventually check via `include_ddi`/`include_allergy`/etc.).
+domains to check via `include_ddi`/`include_allergy`/etc.).
 Requires `Idempotency-Key`. Returns `202` immediately with a
 `prescription_id` and initial `status` (`accepted` or `processing`) — the
-image has not been fully processed yet.
+image has not been processed yet.
 
 <Note>
 This is the one Enterprise operation with a `multipart/form-data` body. The
@@ -45,8 +50,16 @@ Poll `enterprise_ocr_prescription_read` or subscribe to
 `enterprise_ocr_prescription_events` (a Server-Sent Events stream) rather
 than assuming a fixed processing time. The result carries `status`,
 `transitions[]` (history of state changes), and `document_context`
-(classification of the uploaded image itself — was it a prescription, did
-it contain medications, which section).
+(classification of the uploaded image itself).
+
+| `status` | Meaning |
+|---|---|
+| `accepted`, `artifact_validating`, `queued`, `processing`, `ocr_running`, `resolving_medications`, `safety_running` | In progress. Keep polling |
+| `awaiting_review` | A person must decide one or more lines. See [Prescription review](/concepts/prescription-review) |
+| `safety_incomplete` | Review decisions were saved, but the safety check after them could not run. Post the review again |
+| `completed`, `failed`, `cancelled`, `expired` | Terminal. Read `reason_code` |
+
+Treat an unknown status as in progress.
 
 `enterprise_ocr_prescription_events` returns a finite `text/event-stream` snapshot:
 one `event: transition` frame per recorded transition, whose `data` is the same
@@ -56,41 +69,137 @@ Reconnect, or poll `enterprise_ocr_prescription_read`, for later transitions. A
 transition's `payload` is always `{}` today. Until a line has been resolved,
 `educational_context.source_snapshot_id` is `unresolved`.
 
-## 3. Resolve
+## 3. Read the outcome
 
-Once OCR has produced text, `enterprise_ocr_prescription_resolve` matches
-each recognized line to registry medications. The result's
-`candidate_medications[]` has one entry per recognized line, each with:
+A prescription read ends in exactly one stated outcome, carried by `status` and
+`reason_code`. **An empty `candidate_medications` list is never the whole
+answer** — always read `reason_code`.
 
-- `raw_span` — the raw OCR text for that line.
-- `ocr_candidates[]` — ranked raw OCR readings, each with a `confidence`.
-- `winner` — the selected medication for the line, once resolution has
-  chosen one (`null` until then).
-- `alternatives[]` — other possible matches, each with a `selection_reason`
-  (`ocr_alternative_match` or `same_generic_name`).
-- `review_required` / `review_state` — per-line review status, independent
-  of the result-level `review`.
+| Outcome | `status` | `reason_code` | Review | Billed |
+|---|---|---|---|---|
+| Medicines read | `completed` or `awaiting_review` | `null` | per line | yes |
+| The page is not a prescription or medication document | `completed` | `not_a_prescription` | no | no |
+| A prescription with no readable medicine line | `completed` | `no_medications_read` | **required**: a person must check the image | no |
+| The OCR provider failed; **nothing was read** | `failed` | `ocr_provider_unavailable` | n/a | no |
+| A SafeRx-side failure after retries | `failed` | `ocr_capacity_unavailable` or `workflow_processing_failed` | n/a | no |
+| The quota reservation lapsed | `expired` | `quota_reservation_expired` | n/a | no |
+| The review was completed with lines nobody resolved | `completed` | `review_incomplete` | **required** | yes |
 
-## 4. Safety check
+<Warning>
+`ocr_provider_unavailable` means the image was **not read**. Never show it as "no
+medicines on this prescription". Upload again later.
+</Warning>
 
-`enterprise_ocr_prescription_safety` runs the standard six-domain safety
-evaluation over the resolved medications — same response semantics as
-[Safety results](/concepts/safety-results).
+`document_context.medications_present` is `true` only when medicines were read.
+Otherwise it is what the document classification reported, or `null`; it is
+never inferred as `false` from an empty read.
 
-## 5. Review
+## 4. The lines: `candidate_medications[]`
 
-When the workflow's review requirement (`review.required`) is `true`,
-`enterprise_ocr_prescription_review` records the professional review
-outcome, closing out the workflow. This is the terminal step for cases that
-require review before the result may be relied upon —
-`review.review_deadline_policy` tells you whether that's required before
-relying on the output at all, or before workflow completion.
+There is one entry per recognized medicine line, in document order. **No line is
+dropped**: a line with no registry match stays, with `review_state: unresolved`
+and its raw text.
+
+| Field | Meaning |
+|---|---|
+| `raw_span` | The text of the line as read |
+| `ocr_candidates[]` | Every distinct reading of the line, primary read first (`rank` 1), each with its script in `locale` (`en`, `ar`, `mixed`) and the line's reading certainty in `confidence` |
+| `winner` | The selected product (`null` when nothing was selected) |
+| `alternatives[]` | Other products, each with a `selection_reason` (below) |
+| `review_required` | This line needs a person |
+| `review_state` | `resolved`, `pending`, `unresolved`, `reviewed` or `not_a_medicine` |
+| `review_reason_codes` | Why the line needs a person. Empty when it does not |
+| `informational_reason_codes` | How the product was chosen when that needs no review |
+
+### Two certainties: reading and match
+
+Each line has two separate numbers. Do not mix them up.
+
+- **`winner.confidence` is reading certainty**: how sure SafeRx is that the line
+  was *read* as written. Each line is read twice, independently, and the two
+  reads are compared field by field (name, dose, unit); the weakest field
+  governs.
+
+  | The two reads... | Reading certainty |
+  |---|---|
+  | agree on every field (or both left a field empty) | 1 |
+  | differ in the name | 1 − (edit distance ÷ length), e.g. 0.73 for "hydroxyzine" vs "hydralazine" |
+  | one read saw a field the other did not, or the line was read once | 0.5 |
+  | differ in the dose or the unit | 0 |
+
+  Below **0.9** the line always needs review (`ocr_reading_uncertain`). A dose
+  the two reads disagree on is therefore always reviewed.
+- **`winner.final_score` is the match**: how well the registry product matches
+  what was read. It is an ordering score, not calibrated, and says nothing
+  about whether the line was read correctly.
+
+The line's own certainty is the lower of the two. Use `review_required` to
+decide whether a person must look, not either number on its own.
+
+<Note>
+Before 3.1.0, `winner.confidence` carried the match score. It is now reading
+certainty, as documented; `final_score` is unchanged.
+</Note>
+
+### How a line is resolved
+
+Every line is resolved by the same rules as `enterprise_registry_resolve`
+([Medication identity](/concepts/medication-identity)), with each reading of
+the line as evidence. The read dose is part of the evidence, so the selected
+product can never contradict the dose that was read: a read dose no product
+has is `strength_not_available`. In addition:
+
+- the readings must agree — a second reading that names a different medicine,
+  or selects a different product, withdraws the selection
+  (`ocr_readings_disagree`);
+- a line that touches both sides of a known look-alike pair (hydroxyzine /
+  hydralazine, Celebrex / Celexa / Cerebyx, Lamictal / Lamisil, ...) is never
+  selected (`lookalike_risk`);
+- a read line never receives a policy selection: a bare name with several
+  variants goes to a person rather than to a default variant.
+
+When the medicine, salt, release type, strength, form and route are all certain
+and only the brand is a choice, one brand is selected, the line does **not**
+need review, and `informational_reason_codes` carries
+`equivalent_product_selected`. The other brands are listed in `alternatives[]`
+as `same_generic_name`. The same product in several pack sizes is one medicine
+and carries no code.
+
+### Line review reason codes
+
+| Code | Meaning |
+|---|---|
+| `ocr_reading_uncertain` | Reading certainty below 0.9: the two reads disagree |
+| `ocr_judge_override` | The AI judge disagreed with the registry search; a person decides |
+| `ocr_line_unreadable` | Nothing legible was read on the line |
+| `ocr_readings_disagree`, `lookalike_risk` | See above |
+| `ambiguous_candidates`, `strength_not_available`, `form_not_available`, `route_not_available`, `salt_not_available`, `release_not_available`, `approximate_name_match` | No product could be selected from what was read; choose from `alternatives` |
+| `unmapped_medication` | No registry candidate; enter a product or mark the line not a medicine |
+
+New codes may be added: treat an unknown code as "needs a person".
+
+### Alternatives
+
+| `selection_reason` | Meaning |
+|---|---|
+| `same_generic_name` | Another product of the selected medicine (same ingredients), for example another brand |
+| `ocr_alternative_match` | Another **possible reading** of the line: a different medicine whose name is close to what was read. It is never an equivalent of the selected product |
+
+Never substitute an `ocr_alternative_match` without a person confirming it.
+
+## 5. Safety check
+
+When no line needs a person, the workflow runs the six-domain safety check
+over the resolved lines and the prescription becomes `completed`. When a line
+needs a person, the check waits for the review; see
+[Prescription review](/concepts/prescription-review). The safety semantics are
+those of [Safety results](/concepts/safety-results).
 
 ## Retrying
 
 Only `enterprise_ocr_prescription_create` requires (and accepts) an
 `Idempotency-Key` — retry the same upload with the same key rather than
-re-uploading. The lifecycle steps that follow (resolve, safety, review) act
-on an existing `prescription_id` and are not independently idempotent in
-the same sense; consult `enterprise_ocr_prescription_read` before retrying
-a step to confirm it hasn't already advanced.
+re-uploading. A prescription that `failed` with `ocr_provider_unavailable` is
+not retried automatically: upload it again later with a new key. Review
+decisions are safe to post again after a `503`; read the prescription first to
+confirm it has not already advanced.

@@ -275,6 +275,14 @@ def test_medication_resolution_request_is_actually_constructible_by_a_client() -
     assert medication_item["anyOf"] == [{"required": ["input_text"]}, {"required": ["sfrx_id"]}]
     assert "required" not in medication_item
     assert {"input_text", "sfrx_id", "dose_text", "route", "dosage_form"} <= set(medication_item["properties"])
+    assert schema["properties"]["medications"]["maxItems"] == 50
+    # 3.1.0: production lists the same product in other pack sizes as objects with a
+    # reason; 3.0.1 declared strings, so a closed-schema client rejected live responses.
+    candidate = components["components"]["schemas"]["MedicationResolution"]["properties"]["candidates"]["items"]
+    equivalent = candidate["properties"]["equivalent_candidates"]["items"]
+    assert equivalent["type"] == "object" and equivalent["additionalProperties"] is False
+    assert set(equivalent["required"]) == {"display_name", "equivalence_reason"}
+    assert set(equivalent["properties"]) == {"sfrx_id", "registry_concept_id", "display_name", "equivalence_reason"}
 
 
 def test_safety_check_medication_entry_matches_the_real_backend_contract() -> None:
@@ -360,6 +368,35 @@ def test_prescription_result_matches_the_real_backend_contract() -> None:
         "review_required", "review_state",
     }
     assert candidate_item["properties"]["ocr_candidates"]["items"]["properties"]
+    # 3.1.0: every line publishes why it needs review and how its product was chosen.
+    for field in ("review_reason_codes", "informational_reason_codes"):
+        assert candidate_item["properties"][field] == {
+            "description": candidate_item["properties"][field]["description"],
+            "type": "array",
+            "items": {"type": "string"},
+        }
+    assert "reading certainty" in candidate_item["properties"]["winner"]["oneOf"][0]["properties"]["confidence"]["description"].lower()
+    for reason in ("ocr_provider_unavailable", "not_a_prescription", "no_medications_read", "review_incomplete"):
+        assert reason in schema["properties"]["reason_code"]["description"]
+
+
+def test_prescription_review_accepts_line_decisions() -> None:
+    spec = yaml.safe_load((ROOT / "openapi/enterprise-v1.yaml").read_text())
+    components = yaml.safe_load((ROOT / "openapi/components.yaml").read_text())["components"]["schemas"]
+    operation = spec["paths"]["/ocr/prescriptions/{prescription_id}/review"]["post"]
+    body = operation["requestBody"]
+    # An empty body still only reads the state, so the body stays optional.
+    assert body["required"] is False
+    assert body["content"]["application/json"]["schema"]["$ref"].endswith("/PrescriptionReviewRequest")
+    request = components["PrescriptionReviewRequest"]
+    assert request["additionalProperties"] is False
+    assert set(request["properties"]) == {"decisions", "complete"}
+    assert request["properties"]["decisions"]["maxItems"] == 50
+    decision = components["PrescriptionLineDecision"]
+    assert decision["additionalProperties"] is False
+    assert set(decision["required"]) == {"line_id", "action"}
+    assert set(decision["properties"]["action"]["enum"]) == {"select_candidate", "enter_sfrx_id", "not_a_medicine"}
+    assert decision["properties"]["sfrx_id"]["pattern"] == "^SRX-[0-9]{3}-[0-9]{6}$"
 
 
 def test_prescription_transitions_and_evidence_refs_are_not_always_empty() -> None:
@@ -434,7 +471,7 @@ def test_signing_guide_worked_example_matches_the_real_implementation() -> None:
 
 def test_core_concept_guides_exist_and_are_navigated() -> None:
     docs_yml = (ROOT / "fern/docs.yml").read_text()
-    for slug in ("medication-identity", "patient-context", "safety-results", "registry", "erx", "ocr-lifecycle", "allergy-reference"):
+    for slug in ("medication-identity", "patient-context", "safety-results", "registry", "erx", "ocr-lifecycle", "prescription-review", "allergy-reference"):
         page = ROOT / f"fern/docs/pages/concepts/{slug}.mdx"
         assert page.is_file(), f"missing guide: {slug}"
         assert f"docs/pages/concepts/{slug}.mdx" in docs_yml, f"{slug} not wired into nav"

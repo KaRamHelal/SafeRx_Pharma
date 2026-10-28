@@ -44,11 +44,26 @@ There is one entry per request medication, in request order.
 |---|---|
 | `ref` | Your `client_medication_id`, or `m1`, `m2`, … |
 | `role` | `new` (a target medication) or `current` |
-| `status` | `resolved`, `ambiguous` or `unresolved` |
-| `selection` | `resolved` only. One of `exact`, `by_id` (you sent an `sfrx_id`), `default_variant` (a bare name with several variants: confirm the product) or `equivalent_product` (one of several identical listings) |
+| `status` | `resolved`, `ambiguous` or `unresolved` (see below) |
+| `selection` | `resolved` only. One of `exact`, `by_id` (you sent an `sfrx_id`), `default_variant` (a bare name with several variants: confirm the product) or `equivalent_product` (one of several brands of the same clinical identity) |
 | `product` | `resolved` only: `{sfrx_id, name, generic, strength, form}` |
 | `candidates` | `ambiguous` only: up to five products to choose from. Send the chosen `sfrx_id` |
-| `reason` | Bilingual. Present when the medication is not resolved |
+| `reason` | Bilingual. Present when the medication is not resolved, and says why |
+
+A medication is **`ambiguous`** when nothing was selected but there are medicines to
+choose from:
+
+- the text matches different medicines;
+- the medicine exists but no product has the written strength, dosage form, route, salt
+  or release type (for example a written 7 mg when the medicine is listed only in 5 mg
+  and 10 mg) — SafeRx never evaluates a product that contradicts what was written;
+- only a close spelling matched (a misspelling is offered, never selected).
+
+It is **`unresolved`** when there is nothing to offer: no registry match, an unknown
+`sfrx_id`, or text that could not be searched. An ambiguous or unresolved medication was
+**not evaluated**; findings never involve it. Resolve it (pass the chosen `sfrx_id`) and
+run the check again. The full list of resolution reason codes is in
+[Medication identity](/concepts/medication-identity#reason-codes).
 
 If no `new` medication resolves, the check is `422 enterprise.safety.target_resolution_required`.
 The problem body carries the same `medications` array, with candidates.
