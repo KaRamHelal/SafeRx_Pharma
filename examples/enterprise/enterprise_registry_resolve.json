@@ -138,6 +138,18 @@
         },
         "limitations": [],
         "locale": "en",
+        "match": {
+          "basis": "exact_product",
+          "evidence": {
+            "form": "inferred",
+            "name": "exact",
+            "release": "inferred",
+            "route": "inferred",
+            "salt": "absent",
+            "strength": "matched",
+            "strength_unit_inferred": null
+          }
+        },
         "query": {
           "locale_hint": null,
           "raw_text": "amoxicillin 500mg"

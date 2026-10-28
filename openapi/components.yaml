@@ -853,6 +853,56 @@ components:
           items:
             $ref: '#/components/schemas/MedicationResolution'
       additionalProperties: false
+    MedicationMatch:
+      type: object
+      additionalProperties: false
+      required: [basis, evidence]
+      description: >-
+        How the selection was made, and how the selected product relates to what was
+        written. `basis`: `by_id` (your `sfrx_id`), `exact_product` (the text pins one
+        product), `exact_medicine_default_variant` (the medicine is certain; strength, salt,
+        release type or variant was chosen by the published preference -- review required),
+        `equivalent_product` (one of several brands of one clinical identity -- review
+        required), `offered_only` (candidates offered, nothing selected), `none` (nothing
+        found). `evidence` is present only for a selection; per axis: `matched` (written
+        and agrees), `inferred` (not written; the selected product supplies it),
+        `unverified` (written, but the registry records nothing to check it against),
+        `conflict` (written and contradicted; only through a supplied `sfrx_id`), `absent`
+        (neither written nor recorded). A candidate's `confidence` is an ordering score,
+        not a probability; the measured precision of each basis is published in the
+        medication identity guide.
+      properties:
+        basis:
+          type: string
+          enum: [by_id, exact_product, exact_medicine_default_variant, equivalent_product, offered_only, none]
+        evidence:
+          oneOf:
+          - type: 'null'
+          - type: object
+            additionalProperties: false
+            required: [name, strength, form, route, salt, release]
+            properties:
+              name:
+                type: string
+                enum: [exact, variant, partial, approximate, absent]
+              strength:
+                type: string
+                enum: [matched, inferred, unverified, conflict, absent]
+              strength_unit_inferred:
+                description: The unit assumed for a strength written without one.
+                type: [string, 'null']
+              form:
+                type: string
+                enum: [matched, inferred, unverified, conflict, absent]
+              route:
+                type: string
+                enum: [matched, inferred, unverified, conflict, absent]
+              salt:
+                type: string
+                enum: [matched, inferred, unverified, conflict, absent]
+              release:
+                type: string
+                enum: [matched, inferred, unverified, conflict, absent]
     MedicationResolutionRequest:
       description: >-
         Request body for medication resolution: a locale and 1 to 50 medications. More
@@ -3378,6 +3428,8 @@ components:
           type:
           - string
           - 'null'
+        match:
+          $ref: '#/components/schemas/MedicationMatch'
         review:
           description: >-
             Why the item needs review. `review.required` is true whenever any code is

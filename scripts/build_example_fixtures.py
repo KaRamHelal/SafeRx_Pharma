@@ -1399,6 +1399,19 @@ def build() -> dict[str, dict[str, Any]]:
                     ],
                     # selected_candidate_id is the candidate_id of the selected candidate.
                     "selected_candidate_id": "cand_example_0001",
+                    # 3.2.0: how the selection was made (shape captured from production).
+                    "match": {
+                        "basis": "exact_product",
+                        "evidence": {
+                            "name": "exact",
+                            "strength": "matched",
+                            "strength_unit_inferred": None,
+                            "form": "inferred",
+                            "route": "inferred",
+                            "salt": "absent",
+                            "release": "inferred",
+                        },
+                    },
                     "review": NOT_REQUIRED_REVIEW,
                     "limitations": [],
                     "display_obligations": DISPLAY_OBLIGATIONS,

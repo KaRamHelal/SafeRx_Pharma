@@ -3,7 +3,7 @@
 Signed .NET client for the [SafeRx Enterprise API](https://docs.saferx.online).
 
 ```xml
-<PackageReference Include="SafeRx" Version="3.1.0" />
+<PackageReference Include="SafeRx" Version="3.2.0" />
 ```
 
 ```csharp

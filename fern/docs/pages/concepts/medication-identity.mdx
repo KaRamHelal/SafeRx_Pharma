@@ -96,6 +96,47 @@ sequence of explicit judgements:
 The candidate `confidence` only orders the candidates. It is not calibrated and
 never decides a selection on its own.
 
+## How the choice was made: `match`
+
+Every resolution carries `match`. Its `basis` says how the selection was made:
+
+| `basis` | Meaning | Review |
+|---|---|---|
+| `by_id` | Your `sfrx_id` named the product | Only if the text contradicts it |
+| `exact_product` | The text pins one product | No |
+| `exact_medicine_default_variant` | The medicine is certain; strength, salt, release or variant was chosen by the published preference | Yes |
+| `equivalent_product` | One of several brands of one clinical identity | Yes |
+| `offered_only` | Candidates offered, nothing selected | Yes |
+| `none` | Nothing found | Yes |
+
+For a selection, `evidence` says how the product relates to what you wrote, axis by axis
+(`name`, `strength`, `form`, `route`, `salt`, `release`):
+- `matched`: written, and the product agrees.
+- `inferred`: not written; the product supplies it. This is the resolver's assumption.
+- `unverified`: written, but the registry records nothing to check it against.
+- `conflict`: written and contradicted. This happens only through an `sfrx_id` you supplied.
+- `absent`: neither written nor recorded.
+
+`strength_unit_inferred` names the unit assumed for a strength written without one
+(`metformin 500` → `mg`).
+
+### Measured precision
+
+SafeRx measures the resolver on a golden set. Every line in it is written from a known
+registry product, so its correct answer is a fact of the registry. On 2,367 lines from 398
+medicines (Registry V181):
+
+| `basis` | Selections | Wrong |
+|---|---|---|
+| `exact_product` | 1,167 | 0 |
+| `equivalent_product` | 249 | 0 |
+| `exact_medicine_default_variant` | 148 | 0 |
+
+- Misspellings one edit from a brand were offered 99.7 % of the time and never selected.
+- Lines that name one product were selected 96.5 % of the time.
+- The set measures the matching rules, not real handwriting or OCR. Rely on
+  `review.required`, not on these figures, for a decision about a patient.
+
 ## Reason codes
 
 Every item carries `review.reason_codes`; `review.required` is `true` whenever

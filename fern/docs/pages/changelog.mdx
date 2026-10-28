@@ -15,6 +15,56 @@ Releases tracking. For the complete published version history, see
 and [NuGet (SafeRx)](https://www.nuget.org/packages/SafeRx#versions-body-tab).
 Entries below are not a backfilled reconstruction of that history.
 
+## [3.2.0] - 2026-10-28
+
+Additive: no field was removed, no meaning changed, and no request that worked before is
+refused.
+
+### Added
+- **`match` on every medication resolution** (`MedicationMatch`): how the selection was
+  made, and how the selected product relates to what you wrote.
+  - `basis`:
+    - `by_id`: your `sfrx_id`;
+    - `exact_product`: the text pins one product;
+    - `exact_medicine_default_variant`: the medicine is certain, and a variant was chosen
+      by the published preference; review required;
+    - `equivalent_product`: one of several brands of one clinical identity; review
+      required;
+    - `offered_only`: candidates were offered, nothing was selected;
+    - `none`: nothing was found.
+  - `evidence`, for a selection only, per axis (name, strength, form, route, salt,
+    release):
+    - `matched`: written, and the product agrees;
+    - `inferred`: not written; the product supplies it;
+    - `unverified`: written, but the registry records nothing to check it against;
+    - `conflict`: written and contradicted, possible only through a supplied `sfrx_id`;
+    - `absent`: neither written nor recorded.
+
+    `strength_unit_inferred` names the unit assumed for a strength written without one.
+
+### Fixed
+- A strength that no product of a brand has is no longer filled by a variant of that brand
+  that records no strength. "candicure 10 %" used to select CANDICURE-D.
+- One written amount that matches combinations only by their total is offered, not selected,
+  when another product carries that amount itself: "enalapril + lercanidipine 20 mg" names
+  either 10/10 or 20/10.
+- A prescription line that names one of an ISMP look-alike pair is held for review when the
+  pair's other medicine is on the same prescription (hydroxyzine and hydralazine, for
+  example).
+- A misspelling one edit from a brand is offered even when many medicines share its first
+  letters. "cefizl" offers CEFZIL.
+- `UNT` is read as an international unit, and `MIU` as a million international units.
+- A bracketed qualifier, as in "hepatitis b vaccine (recombinant)", no longer stops a
+  match.
+
+### Measured
+- On a golden set of 2,367 lines written from 398 registry medicines (Registry V181):
+  - 0 wrong selections out of 1,564 selections;
+  - misspellings offered 99.7 % of the time;
+  - lines that name one product selected 96.5 % of the time.
+- The set is drawn from the registry, not from real prescriptions. It measures the
+  matching rules, not handwriting or OCR.
+
 ## [3.1.0] - 2026-10-28
 
 Additive: no field was removed and no request that worked before is refused. One field's
