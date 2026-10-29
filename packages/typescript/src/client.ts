@@ -4,7 +4,7 @@ export type EnterpriseOperation = {
   operationId: string; method: string; path: string; idempotencyRequired: boolean;
 };
 
-export const SDK_VERSION = "3.3.0";
+export const SDK_VERSION = "3.3.1";
 export const CLIENT_KIND = "typescript_sdk";
 export const SDK_LANGUAGE = "typescript";
 export const MAX_ATTEMPTS = 3;

@@ -1,16 +1,16 @@
 {
   "api_contract_version": "enterprise-v1",
   "artifact_sha256": {
-    "packages/csharp/README.md": "ef1f08847c4495fb4d2feed5d38301f7e1a2903c8c15ebfa0fe94e3b0abeeb92",
-    "packages/csharp/SafeRx.csproj": "47593c15a782ea468b397e5a59a158ac54111701d84e1f149924a658dd3a4284",
-    "packages/csharp/SafeRxClient.cs": "95fce048a78cf1ca0ae0fba40fbc0cd841d4fe5ed8c0e420875677068c06c2f3",
+    "packages/csharp/README.md": "e74582355f978f093275be593f3e96b0ab71fcf33a6c774672790ae51f2981db",
+    "packages/csharp/SafeRx.csproj": "792b18f4737910ff18aaa68972c744014270b7757eef1dce2fff9b2782e7dd6b",
+    "packages/csharp/SafeRxClient.cs": "26d239d067c6b95eb0e1539298f06e29b72c24b6b23a628565a9acc55e6607b1",
     "packages/python/README.md": "b9b57c6a7ebd2be5728b7dd8fa6babff066bf098de67cf39fc763c4f8a0dc349",
-    "packages/python/pyproject.toml": "9a73a74b409be6279dad35373001aa2dde56f978f1dc9d0b3aaa35956d83696a",
+    "packages/python/pyproject.toml": "b1f9ec3918014a399b3f4c3e5927fd3fa4a426a10998b885742b344f4495cb2a",
     "packages/python/src/saferx_pharma/__init__.py": "4953ad16ce5dd43405180adb88766ac93fdfadcb88537659168f3714fbc4c3d2",
-    "packages/python/src/saferx_pharma/client.py": "8cc48bd30511f226b4e8838aa78b649b73b7671d1f86836315cd9aff753cfb11",
+    "packages/python/src/saferx_pharma/client.py": "19ceafceb97f55cda98e9e35a2ab16dac34389e1320b3a743156df8439608bb1",
     "packages/typescript/README.md": "9537b13b5fe69bd033cb1c9664dc14b319eb9a7f6e70655b00d584058b32a159",
-    "packages/typescript/package.json": "de4185cb947abf649212eda87d5500612112bfd2701ebabbf7bc3ef80c14fb71",
-    "packages/typescript/src/client.ts": "f36c5dc9cb5759d84edce10edec86a0b9e928aaa135400cda38e43db11a38c66",
+    "packages/typescript/package.json": "3fc0a379d1533250e347e77a5cd8f517d8099a1580e58b2c65148346765c68c1",
+    "packages/typescript/src/client.ts": "517b6eec30b55822da7c1dd6e729172e66f3c9c6d7ad0abb101ae872062fc690",
     "packages/typescript/tsconfig.json": "1dfaa085edc28800c8dbccf0c8093b855158371f8ee63da1395ec3de5b575d78"
   },
   "generator": "scripts/generate_enterprise_sdks.py",
@@ -38,11 +38,11 @@
     "enterprise_status"
   ],
   "publishable": true,
-  "release_id": "enterprise-v1-2026.10.28.3",
+  "release_id": "enterprise-v1-2026.10.29.1",
   "release_status": "available",
-  "sdk_version": "3.3.0",
+  "sdk_version": "3.3.1",
   "source_sha256": {
-    "openapi/components.yaml": "f7e091fed832c5edd9b0bff960d7ef87f0a26d54e43a6c79f19f6a617883d78d",
+    "openapi/components.yaml": "2b5b5f0add4483703766e6adf4ee76a1432e56e9d435b53e2777ceea1c78f1d7",
     "openapi/enterprise-v1.yaml": "26fb20e6b28e939342afbc9017f486183e38448ab67caa76eceab90ba747955f"
   }
 }

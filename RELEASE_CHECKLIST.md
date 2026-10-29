@@ -23,10 +23,10 @@
    and push the tag — `sdk-publish.yml` publishes all artifacts and creates the
    matching GitHub Release automatically.
 
-The current checked-in release is `3.3.0` (see `release/current.yaml`; the filename is
+The current checked-in release is `3.3.1` (see `release/current.yaml`; the filename is
 stable across releases, only its contents change). Publication is triggered only by a
-`git tag v3.3.0` + push, or the `sdk-publish.yml` `workflow_dispatch` with
-`version: 3.3.0`.
+`git tag v3.3.1` + push, or the `sdk-publish.yml` `workflow_dispatch` with
+`version: 3.3.1`.
 
 ## Publishing (credentials)
 

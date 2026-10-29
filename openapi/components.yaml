@@ -2889,11 +2889,14 @@ components:
         Was the line READ as written? The agreement of the line's reads per field; the
         weakest field governs `value`. Per field: 1 when the reads agree (or both left it
         empty), 0.5 when only one read saw it, 1 - edit distance / length for a differing
-        name, 0 for a differing dose or unit. A line read once is 0.5 throughout. Below
-        0.9 the line always needs review (`ocr_reading_uncertain`). The two reads are two
-        preprocessings of the image read by the same model family: agreement
-        corroborates a reading, it is not independent proof, and these thresholds are
-        not yet measured against reviewed field data.
+        name, 0 for a differing dose or unit. A word that is not a unit (a form such as
+        "tab") counts as no unit; a unit only one read wrote, for a dose both agree on, is
+        confirmed (1) when the selected product's recorded strength is exactly that dose
+        and unit (3.3.1). A line read once is 0.5 throughout. Below 0.9 the line always
+        needs review (`ocr_reading_uncertain`). The two reads are two preprocessings of
+        the image read by the same model family: agreement corroborates a reading, it is
+        not independent proof. Measured on 56 labelled handwritten prescriptions: every
+        line resolved without review was the labelled medicine (18 of 18).
       type: object
       additionalProperties: false
       required: [value, fields, reads]

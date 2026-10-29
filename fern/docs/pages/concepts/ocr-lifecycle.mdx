@@ -126,6 +126,10 @@ Each line has two separate numbers. Do not mix them up.
   | differ in the name | 1 − (edit distance ÷ length), e.g. 0.73 for "hydroxyzine" vs "hydralazine" |
   | one read saw a field the other did not, or the line was read once | 0.5 |
   | differ in the dose or the unit | 0 |
+  | agree on the dose, and only one wrote the unit | 1 when the selected product's recorded strength is exactly that dose and unit (3.3.1); otherwise 0.5 |
+
+  A word that is not a unit, such as a form ("tab", "amp") read into the unit field,
+  counts as no unit.
 
   Below **0.9** the line always needs review (`ocr_reading_uncertain`). A dose
   the two reads disagree on is therefore always reviewed.
@@ -170,9 +174,11 @@ everything else to a pharmacist.
 - **The two reads are not independent proof.** Both are two preprocessings of one image,
   read by the same model family. Their agreement corroborates a reading; it does not prove
   it.
-- **The 0.9 threshold is not yet measured.** It has not been checked against
-  reviewer-confirmed prescriptions. SafeRx measures it from reviewer decisions as they
-  accumulate, and will publish the result when the sample is large enough.
+- **What was measured, and what wasn't.** On 56 labelled handwritten prescriptions
+  (158 drugs), every line resolved without review was the labelled medicine (18 of 18
+  lines). 70 % of the labelled drugs appeared on some line. The rest of the lines went to
+  review. The sample is small, so treat it as evidence, not a guarantee. SafeRx keeps
+  measuring as reviewer decisions accumulate.
 - **Stored lines may show `null`.** Lines stored before 3.3.0 report `null` for a part they
   do not have.
 </Warning>

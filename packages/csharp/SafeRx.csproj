@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <PackageId>SafeRx</PackageId>
-    <Version>3.3.0</Version>
+    <Version>3.3.1</Version>
     <Authors>SafeRx</Authors>
     <Description>Signing-aware SafeRx Enterprise API preview client.</Description>
     <PackageTags>saferx;enterprise-api;medication-safety</PackageTags>

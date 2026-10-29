@@ -11,6 +11,19 @@ Releases tracking. For the complete published version history, see
 and [NuGet (SafeRx)](https://www.nuget.org/packages/SafeRx#versions-body-tab).
 Entries below are not a backfilled reconstruction of that history.
 
+## [3.3.1] - 2026-10-29
+
+Documentation and contract text only: no field, type or request changed.
+
+### Changed
+- **A unit only one OCR read wrote is now confirmed by the registry.** This applies when
+  both reads agree on the dose and the selected product's recorded strength is exactly
+  that dose and unit (`OcrReadingCertainty`). A form word read into the unit field ("tab",
+  "amp") counts as no unit. Reads that disagree on a unit still score 0.
+- **The OCR guide gains measured field figures.** On 56 labelled handwritten
+  prescriptions, every line resolved without review was the labelled medicine (18 of
+  18), and 70 % of the labelled drugs appeared on some line.
+
 ## [3.3.0] - 2026-10-28
 
 Additive: no field was removed, no meaning changed, and no request that worked before is
