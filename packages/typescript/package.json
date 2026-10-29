@@ -1,6 +1,6 @@
 {
   "name": "saferx-pharma-sdk",
-  "version": "3.3.1",
+  "version": "3.3.2",
   "description": "Signed TypeScript client for the SafeRx Enterprise API",
   "license": "MIT",
   "homepage": "https://docs.saferx.online",

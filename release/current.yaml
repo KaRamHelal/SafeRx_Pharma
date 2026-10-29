@@ -1,5 +1,5 @@
-release_id: enterprise-v1-2026.10.29.1
-release_version: 3.3.1
+release_id: enterprise-v1-2026.10.29.2
+release_version: 3.3.2
 status: available
 publishable: true
 
@@ -12,9 +12,9 @@ api_contract:
   response_policy: closed_schema
 
 artifacts:
-  python: saferx-pharma==3.3.1
-  typescript: saferx-pharma-sdk@3.3.1
-  csharp: SafeRx==3.3.1
+  python: saferx-pharma==3.3.2
+  typescript: saferx-pharma-sdk@3.3.2
+  csharp: SafeRx==3.3.2
 
 hosted_mcp:
   status: preview
@@ -36,6 +36,9 @@ availability:
   key_required: true
 
 notes:
+  - >-
+    3.3.2 -- documentation: bulk lookup protection (403 subject_restricted) documented; an
+    oversized body is a 413 problem at any size; OCR uploads up to 20 MiB.
   - >-
     3.3.1 -- documentation and contract text: a unit only one OCR read wrote is confirmed
     by the registry; measured OCR field figures (18 of 18 auto-resolved lines correct).

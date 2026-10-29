@@ -26,8 +26,9 @@ draws nothing.
 
 Every plan grants every capability: registry, safety checks, eRx, OCR and the hosted
 MCP server. Plans differ only in daily volume and in the per-key request rate. Each
-tier is at least as generous as the one below on every class, and one key can spend
-its plan's whole daily allowance within its rate.
+tier is at least as generous as the one below on every class. Registry lookups are also
+protected against bulk copying (see [Bulk lookup protection](#bulk-lookup-protection)), so
+pace bulk resolution by request count, not only by your per-minute rate.
 
 | | Free | Starter | Growth | Scale | Custom |
 |---|---|---|---|---|---|
@@ -70,6 +71,20 @@ The code is `quota.exceeded` for both ceilings. The short-term ceiling sets
 quota `429` may not carry a `Retry-After` header, so use `retry_after` or
 `quota.reset_at`.
 
+### Bulk lookup protection
+
+The registry is protected against being copied wholesale. A key that keeps sending more than
+25 `enterprise_registry_resolve` requests a minute for several minutes is treated as
+enumerating the registry and is temporarily restricted. While restricted, metered routes
+answer `403` with code `subject_restricted` (type `access-denied`). The problem has no
+`quota` member and no `Retry-After`. The restriction lifts on its own once the key's traffic
+is back to normal, usually within minutes and at most about half an hour. Requests sent
+during the restriction keep it in place.
+
+A resolve request counts once however many items it carries. To resolve many medicines,
+send up to 50 items per request and cache the `sfrx_id`s you get back; avoid many
+one-item requests in a tight loop.
+
 ## Request size
 
 Every Enterprise request is size-checked before anything is reserved or charged.
@@ -83,7 +98,8 @@ Every Enterprise request is size-checked before anything is reserved or charged.
 | `enterprise_registry_resolve` `items`: 50 | `422 request.collection_too_large` |
 
 The problem `detail` names the field and the maximum. OCR uploads (multipart) are not
-affected.
+affected by the JSON limit; they may be up to 20 MiB. A body larger than the platform
+accepts at all is refused with the same `413 request.body_too_large` problem.
 
 ## Retry-After and safe retries
 

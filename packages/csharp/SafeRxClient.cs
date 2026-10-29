@@ -45,7 +45,7 @@ public sealed class SafeRxProblemDetailsException : Exception
 
 public sealed class SafeRxClient
 {
-    public const string SdkVersion = "3.3.1";
+    public const string SdkVersion = "3.3.2";
     public static readonly IReadOnlyDictionary<string, EnterpriseOperation> Operations = new Dictionary<string, EnterpriseOperation>
     {
         ["enterprise_allergy_families"] = new EnterpriseOperation("enterprise_allergy_families", HttpMethod.Get, "/allergies/families", false),

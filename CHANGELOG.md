@@ -11,6 +11,23 @@ Releases tracking. For the complete published version history, see
 and [NuGet (SafeRx)](https://www.nuget.org/packages/SafeRx#versions-body-tab).
 Entries below are not a backfilled reconstruction of that history.
 
+## [3.3.2] - 2026-10-29
+
+Documentation only: no field, type or request changed.
+
+### Changed
+- **Bulk lookup protection is documented.** A key that sends more than 25
+  `enterprise_registry_resolve` requests a minute for several minutes is temporarily
+  restricted: metered routes answer `403 subject_restricted` until it lifts on its own.
+  A resolve request counts once whatever its item count, so resolve in batches of up to 50.
+  The earlier line that a key "can spend its plan's whole daily allowance within its
+  rate" is withdrawn for registry lookups.
+- **Request size.** A body over the 2 MiB JSON limit is a `413 request.body_too_large`
+  problem document at any size (an HTML page was returned for some sizes until
+  2026-10-29). OCR uploads may be up to 20 MiB.
+- **OCR review.** `POST /prescriptions/{prescription_id}/review` refused every request with
+  `422 invalid_request` until 2026-10-29; decisions now apply as documented.
+
 ## [3.3.1] - 2026-10-29
 
 Documentation and contract text only: no field, type or request changed.

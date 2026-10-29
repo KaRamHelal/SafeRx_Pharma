@@ -120,6 +120,7 @@ not perform the operation is `403`:
 | 503 | `capability_unavailable` | The key is entitled, but this operation is temporarily disabled on the platform. No operation is disabled today. Not retryable. |
 | 403 | `API_KEY_EXPIRED` | The key has passed its expiry. |
 | 403 | `API_KEY_DENIED` | The key or its organization is suspended, revoked, or otherwise not authorized. |
+| 403 | `subject_restricted` | The key is temporarily restricted after a sustained bulk-lookup pattern; it lifts on its own. See [Bulk lookup protection](/authentication/rate-limits#bulk-lookup-protection). |
 
 ## Denial order
 
