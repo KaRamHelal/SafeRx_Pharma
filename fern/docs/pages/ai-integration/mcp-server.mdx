@@ -4,7 +4,7 @@ subtitle: Hosted Streamable HTTP MCP for the Enterprise API
 ---
 
 The hosted SafeRx MCP is a preview-availability, gateway-routed Streamable HTTP
-facade over six Enterprise API operations. It is not a general-purpose
+facade over eight Enterprise API operations. It is not a general-purpose
 registry browser and does not expose resources or prompts.
 
 ## Endpoint and transport
@@ -33,7 +33,7 @@ method, including `initialize` and `tools/list`, before the request reaches
 the MCP server. The self-service `enterprise_free` plan includes
 `mcp_standard`.
 
-## The six tools
+## The eight tools
 
 <Note>
 SafeRx does not expose registry enumeration, raw interaction-pair dumps, or
@@ -160,12 +160,70 @@ A typical agent flow is: `resolve_allergies` for what the patient reports, then
 `check_medication_safety` with those entries in `patient_context.allergies`, then
 `get_safety_check` to re-read the stored result later.
 
+### `submit_prescription_ocr`
+
+Starts reading a prescription photo. The image is patient data and is kept under
+the same retention policy as a REST OCR upload.
+
+- Backend operation: `POST /ocr/prescriptions` (same contract as
+  `enterprise_ocr_prescription_create`; the tool sends your image as its
+  multipart `file`)
+- Output: `PrescriptionCreated` (`prescription_id`, `status`)
+- Requires the `ocr_prescription` entitlement as well as `mcp_standard`; without
+  it the tool is not listed and a call is refused
+- Requires `idempotency_key`; retry with the same key to avoid a second charge
+- `image_base64`: bare standard base64 (no `data:` prefix, no line breaks), at most
+  5 MiB decoded. URLs and file paths are not accepted.
+- `mime_type`: `image/jpeg`, `image/png`, `image/webp`, `image/heic` or
+  `image/heif`. It must match the image's content (magic bytes); a mismatch is
+  refused before anything is sent or charged.
+- `pipeline_profile` (optional): `auto` (default), `v50_fast` or `v70_smart`
+
+```json title="Input"
+{
+  "image_base64": "<base64 JPEG>",
+  "mime_type": "image/jpeg",
+  "idempotency_key": "mcp-ocr-example-1"
+}
+```
+
+Processing is asynchronous. Poll `get_prescription_ocr_result` every few seconds.
+
+### `get_prescription_ocr_result`
+
+Reads the status and medication lines of a prescription submitted by
+`submit_prescription_ocr`, within your organization.
+
+- Backend operation: `GET /ocr/prescriptions/{prescription_id}` (same contract as
+  `enterprise_ocr_prescription_read`)
+- Output: `PrescriptionResult`, exactly as the REST operation returns it
+- Requires the `ocr_prescription` entitlement as well as `mcp_standard`
+
+```json title="Input"
+{
+  "prescription_id": "RX-0123456789AB"
+}
+```
+
+<Warning>
+The result is patient data and a review aid, not a confirmed prescription. Every
+line carries `review_required`, `review_state` and `certainty`; only a line a
+person reviewed (`review_state: reviewed`) is confirmed. Never present a pending,
+unresolved or machine-resolved line as confirmed, and have a person confirm the
+medicines before passing them to `check_medication_safety`.
+</Warning>
+
+Stop polling at a terminal status (`completed`, `failed`, `cancelled`, `expired`)
+or at `awaiting_review`; `reason_code` explains a result without medications. See
+[OCR prescription lifecycle](/concepts/ocr-lifecycle) for the full result shape.
+
 ## Structured output
 
 Every tool call returns MCP `structuredContent` as the authoritative payload,
 matching the same public schema (`MedicationResolutionList`,
 `EnterpriseSafetyCheckResult`, `SafetyCapabilities`, `AllergyResolutionResponse`,
-`AllergySubstanceList`, `SafetyCheckRecord`) as the equivalent REST operation.
+`AllergySubstanceList`, `SafetyCheckRecord`, `PrescriptionCreated`,
+`PrescriptionResult`) as the equivalent REST operation.
 Each tool also needs the REST operation's own entitlement: the allergy and
 stored-check tools need the safety bundle, exactly as their REST operations do.
 The accompanying MCP `text` content is a short human-readable status only
@@ -177,7 +235,11 @@ Enterprise API."`) — do not parse it for data; read `structuredContent`.
 MCP calls draw from the same daily `mcp_calls` allowance as your plan (see
 [Rate limits](/authentication/rate-limits)); each tool call counts as one
 unit regardless of which tool. `tools/list` calls are metadata reads and do
-not draw down that allowance. On a transient upstream failure the tool
+not draw down that allowance. A `submit_prescription_ocr` call also counts
+one OCR page from your `ocr_prescriptions` allowance, exactly like a REST scan;
+each `get_prescription_ocr_result` poll is one MCP call and no OCR page. A
+`tools/call` request body may be at most 256 KiB, except `submit_prescription_ocr`,
+which may be up to 7 MiB. On a transient upstream failure the tool
 returns an MCP error result rather than a partial clinical answer — no
 clinical conclusion is returned on failure. Apply the same bounded-retry and
 `Idempotency-Key` guidance as the REST API for `check_medication_safety`.

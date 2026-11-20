@@ -22,7 +22,7 @@ hosted_mcp:
   protocol_version: '2025-06-18'
   transport: streamable_http
   tools: [resolve_medications, check_medication_safety, get_safety_capabilities, resolve_allergies,
-    search_allergy_substances, get_safety_check]
+    search_allergy_substances, get_safety_check, submit_prescription_ocr, get_prescription_ocr_result]
   resources: []
   prompts: []
   promoted_at: '2026-08-15'
@@ -127,9 +127,10 @@ notes:
     (LocalizedString empty strings, provenance/pharmacology/warnings fields, the 401/403
     denial-code table). See CHANGELOG.md [2.0.3].
   - >-
-    Hosted MCP is preview, with exactly the six tools listed above and no resources or
+    Hosted MCP is preview, with exactly the eight tools listed above and no resources or
     prompts. The whole endpoint requires the mcp_standard entitlement, which
-    enterprise_free includes.
+    enterprise_free includes; the two prescription OCR tools also require
+    ocr_prescription (MIS docs/decisions/2026-11-20--hosted-mcp-adds-prescription-ocr-tools.md).
   - >-
     The legacy stdio @saferx_pharma/mcp-server package remains internal_only and
     deprecated; it is not the supported MCP integration path.

@@ -523,6 +523,8 @@ def test_hosted_mcp_release_manifest_matches_the_promoted_tools() -> None:
         "resolve_allergies",
         "search_allergy_substances",
         "get_safety_check",
+        "submit_prescription_ocr",
+        "get_prescription_ocr_result",
     }
     assert hosted_mcp["resources"] == []
     assert hosted_mcp["prompts"] == []
