@@ -126,7 +126,13 @@ jobs:
           npm install -g npm@11.6.2
           npm install
           npm run build
-          npm publish --access public
+          if npm view "saferx-pharma-sdk@${VERSION}" version >/dev/null 2>&1; then
+            echo "saferx-pharma-sdk@${VERSION} is already published on npm; skipping"
+          else
+            npm publish --access public
+          fi
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
 
       - name: Setup .NET
         # Each registry publishes independently: an expired token for one must not
@@ -136,6 +142,13 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
+
+      - name: NuGet Login (Trusted Publishing)
+        id: nuget_login
+        if: ${{ !cancelled() && steps.changelog.outcome == 'success' }}
+        uses: NuGet/login@v1
+        with:
+          user: SafeRx
 
       - name: Pack and publish C# client
         # Each registry publishes independently: an expired token for one must not
@@ -147,7 +160,7 @@ jobs:
           dotnet pack -c Release -o nupkg
           dotnet nuget push nupkg/*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          NUGET_API_KEY: ${{ steps.nuget_login.outputs.NUGET_API_KEY }}
 
       - name: Create GitHub Release
         run: |
