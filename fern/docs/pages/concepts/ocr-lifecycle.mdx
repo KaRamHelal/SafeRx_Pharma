@@ -253,8 +253,10 @@ confirm it has not already advanced.
 
 ## Retention
 
-A prescription photo is patient data. The stored files of a prescription (the uploaded
-image, the normalized copy SafeRx reads, and the raw OCR output) are deleted **90 days after
-upload**, for every caller. Deletion runs daily, is audited, and skips only material under a
-legal hold. Keep your own copy of anything you need beyond that window.
+A prescription photo is patient data. **90 days after upload**, for every caller, the
+prescription and everything stored for it are deleted: the uploaded image, the normalized copy
+SafeRx reads, the raw OCR output, the medicine lines, the safety result and the review history.
+After that the prescription is no longer available to `enterprise_ocr_prescription_read`.
+Deletion runs daily, is audited, and skips only material under a legal hold. Keep your own copy
+of anything you need beyond that window.
 

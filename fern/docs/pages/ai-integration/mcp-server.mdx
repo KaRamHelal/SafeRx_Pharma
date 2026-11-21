@@ -163,8 +163,8 @@ A typical agent flow is: `resolve_allergies` for what the patient reports, then
 ### `submit_prescription_ocr`
 
 Starts reading a prescription photo. The image is patient data and is kept under
-the same retention policy as a REST OCR upload: the photo and its stored OCR files
-are deleted 90 days after upload (see
+the same retention policy as a REST OCR upload: the prescription, its photo and its OCR
+results are deleted 90 days after upload (see
 [OCR prescription lifecycle](/concepts/ocr-lifecycle#retention)).
 
 - Backend operation: `POST /ocr/prescriptions` (same contract as
