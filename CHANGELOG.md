@@ -11,10 +11,10 @@ Releases tracking. For the complete published version history, see
 and [NuGet (SafeRx)](https://www.nuget.org/packages/SafeRx#versions-body-tab).
 Entries below are not a backfilled reconstruction of that history.
 
-## [Unreleased]
+## [3.3.3] - 2026-11-21
 
-Hosted MCP only: no SDK field, type or request changed. Publish after the hosted
-tools are live-verified.
+Hosted MCP only: no SDK field, type or request changed. The hosted tools were
+live-verified on 2026-11-20 (submit, image-type refusal, polling to awaiting_review).
 
 ### Added
 - **Hosted MCP prescription OCR tools** (preview): `submit_prescription_ocr` takes a
@@ -22,7 +22,8 @@ tools are live-verified.
   magic bytes checked; no URLs or file paths) and returns a `prescription_id`;
   `get_prescription_ocr_result` returns the REST `PrescriptionResult` unchanged. Both
   need the `ocr_prescription` entitlement as well as `mcp_standard`. A submission counts
-  one MCP call and one OCR page, exactly like a REST scan; a poll counts one MCP call.
+  one MCP call and one OCR page, exactly like a REST scan; a poll counts one MCP call
+  and no OCR page, and is recorded as one prescription read, like a REST result read.
   Results are review aids: only a line a person reviewed is confirmed.
 
 ## [3.3.2] - 2026-10-29

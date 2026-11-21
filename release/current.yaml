@@ -1,5 +1,5 @@
 release_id: enterprise-v1-2026.10.29.2
-release_version: 3.3.2
+release_version: 3.3.3
 status: available
 publishable: true
 
@@ -12,9 +12,9 @@ api_contract:
   response_policy: closed_schema
 
 artifacts:
-  python: saferx-pharma==3.3.2
-  typescript: saferx-pharma-sdk@3.3.2
-  csharp: SafeRx==3.3.2
+  python: saferx-pharma==3.3.3
+  typescript: saferx-pharma-sdk@3.3.3
+  csharp: SafeRx==3.3.3
 
 hosted_mcp:
   status: preview
@@ -36,6 +36,9 @@ availability:
   key_required: true
 
 notes:
+  - >-
+    3.3.3 -- hosted MCP adds submit_prescription_ocr and get_prescription_ocr_result (preview);
+    no SDK field, type or request changed.
   - >-
     3.3.2 -- documentation: bulk lookup protection (403 subject_restricted) documented; an
     oversized body is a 413 problem at any size; OCR uploads up to 20 MiB.
@@ -130,7 +133,7 @@ notes:
     Hosted MCP is preview, with exactly the eight tools listed above and no resources or
     prompts. The whole endpoint requires the mcp_standard entitlement, which
     enterprise_free includes; the two prescription OCR tools also require
-    ocr_prescription (MIS docs/decisions/2026-11-20--hosted-mcp-adds-prescription-ocr-tools.md).
+    ocr_prescription.
   - >-
     The legacy stdio @saferx_pharma/mcp-server package remains internal_only and
     deprecated; it is not the supported MCP integration path.

@@ -237,7 +237,8 @@ MCP calls draw from the same daily `mcp_calls` allowance as your plan (see
 unit regardless of which tool. `tools/list` calls are metadata reads and do
 not draw down that allowance. A `submit_prescription_ocr` call also counts
 one OCR page from your `ocr_prescriptions` allowance, exactly like a REST scan;
-each `get_prescription_ocr_result` poll is one MCP call and no OCR page. A
+each `get_prescription_ocr_result` poll is one MCP call and no OCR page, and is
+recorded as one prescription read, exactly like a REST `enterprise_ocr_prescription_read`. A
 `tools/call` request body may be at most 256 KiB, except `submit_prescription_ocr`,
 which may be up to 7 MiB. On a transient upstream failure the tool
 returns an MCP error result rather than a partial clinical answer — no
