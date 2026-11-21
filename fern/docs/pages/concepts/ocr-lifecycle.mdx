@@ -250,3 +250,11 @@ re-uploading. A prescription that `failed` with `ocr_provider_unavailable` is
 not retried automatically: upload it again later with a new key. Review
 decisions are safe to post again after a `503`; read the prescription first to
 confirm it has not already advanced.
+
+## Retention
+
+A prescription photo is patient data. The stored files of a prescription (the uploaded
+image, the normalized copy SafeRx reads, and the raw OCR output) are deleted **90 days after
+upload**, for every caller. Deletion runs daily, is audited, and skips only material under a
+legal hold. Keep your own copy of anything you need beyond that window.
+
