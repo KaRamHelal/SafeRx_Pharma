@@ -3591,6 +3591,11 @@ components:
               minimum: 0
             blocked:
               type: boolean
+              description: >-
+                True when any requested domain was not evaluated (status other than evaluated,
+                reference_only or not_applicable) or any medication did not resolve to a registry
+                product. Only trust an empty findings list when blocked is false; a blocked
+                result is unknown, never clear.
         release:
           type: object
           additionalProperties: false
@@ -3837,6 +3842,13 @@ components:
           - type: 'null'
         status:
           type: string
+          description: >-
+            evaluated: every medication was checked in this domain. reference_only: only general
+            reference applied, not a patient-specific check. not_applicable: the check does not
+            apply to the medicines or context sent. not_enough_context: not checked; missing_context
+            names what to send. unmapped: not checked for some or all medicines (reason
+            partial_coverage when findings exist for the others). unavailable / failed: not checked.
+            Only evaluated, reference_only and not_applicable are settled.
           enum:
           - evaluated
           - reference_only

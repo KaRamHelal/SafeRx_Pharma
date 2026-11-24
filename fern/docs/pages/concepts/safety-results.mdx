@@ -34,7 +34,7 @@ The one-line summary.
 | `highest_severity` | The most severe **alert** (`informational`, `low`, `moderate`, `high` or `critical`), or `null` when there is none |
 | `action` | That alert's action (see `findings`), or `null` |
 | `finding_count`, `alert_count` | All findings, and those of `kind: alert` |
-| `blocked` | `true` when any requested domain was not evaluated. Treat the result as incomplete, never as clear |
+| `blocked` | `true` when any requested domain was not evaluated **or any medication did not resolve to a registry product**. Treat the result as incomplete, never as clear. Trust an empty `findings` list only when `blocked` is `false` |
 
 ## medications
 
@@ -78,6 +78,12 @@ Each requested domain appears exactly once.
 | `reference_only` | Only general reference applies, for example dose maximums with no patient-specific dose rule. This is **not** "dose checked" |
 | `not_applicable` | The check does not apply, for example lactation for a patient who is not lactating |
 | `not_enough_context`, `unmapped`, `unavailable`, `failed` | **Not evaluated.** Treat as unknown, not clear. `reason` explains why, and `missing_context` names the fields to send for `not_enough_context` |
+
+Some cases are easy to misread as "checked, clear", so they are reported as not evaluated (since 2026-11-24):
+
+- **Partial coverage.** A domain with findings for some medicines but no data for the others is `unmapped` with reason `partial_coverage`. Its findings are still listed.
+- **No allergies declared.** `allergy` is `not_enough_context` with `missing_context: ["allergy_state_unknown"]`. Send `allergy_state: "confirmed_none"` when the patient has no known allergies.
+- **No dose context.** `clinical_dose` with no age, weight or other patient context, and nothing to match, is `not_enough_context` with `missing_context: ["dose_context_missing"]`.
 
 Each domain also carries `name`, `finding_count` and the database `release_id` it used.
 
